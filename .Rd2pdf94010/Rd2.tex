@@ -1,0 +1,30 @@
+\nonstopmode{}
+\documentclass[a4paper]{book}
+\usepackage[times,inconsolata,hyper]{Rd}
+\usepackage{makeidx}
+\usepackage[utf8]{inputenc} % @SET ENCODING@
+% \usepackage{graphicx} % @USE GRAPHICX@
+\makeindex{}
+\begin{document}
+\chapter*{}
+\begin{center}
+{\textbf{\huge Package `fastrerandomize'}}
+\par\bigskip{\large \today}
+\end{center}
+\inputencoding{utf8}
+\ifthenelse{\boolean{Rd@use@hyper}}{\hypersetup{pdftitle = {fastrerandomize: fastrerandomize: R Package for Ultra-fast Re-randomization Using a JAX Backend}}}{}
+\begin{description}
+\raggedright{}
+\item[Title]\AsIs{fastrerandomize: R Package for Ultra-fast Re-randomization Using a JAX Backend}
+\item[Version]\AsIs{0.1}
+\item[Author]\AsIs{'Connor Jerzak }\email{connor.jerzak@gmail.com}\AsIs{ [aut, cre], Rebecca Goldstein }\email{rgoldstein@berkeley.edu}\AsIs{ [aut]'}
+\item[Description]\AsIs{An R Package for Ultra-fast Re-randomization Using a JAX Backend}
+\item[Depends]\AsIs{R (>= 3.3.3)}
+\item[License]\AsIs{Creative Commons Attribution-Noncommercial-No Derivative Works 4.0, for academic use only.}
+\item[Encoding]\AsIs{UTF-8}
+\item[LazyData]\AsIs{false}
+\item[Maintainer]\AsIs{'Connor Jerzak' }\email{connor.jerzak@gmail.com}\AsIs{}
+\item[Imports]\AsIs{reticulate}
+\item[RoxygenNote]\AsIs{7.2.3}
+\end{description}
+\Rdcontents{\R{} topics documented:}
