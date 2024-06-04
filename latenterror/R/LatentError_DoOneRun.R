@@ -22,9 +22,10 @@ LatentOneRun <- function(Yobs,
                          ObservablesMat, 
                          ObservablesGroupings = colnames(ObservablesMat),
                          MakeObservablesGroupings = F){
-  items.split1_names <- sample(unique(ObservablesGroupings), size = floor(length(unique(ObservablesGroupings))/2), replace=F)
+  items.split1_names <- sample(unique(ObservablesGroupings), 
+                               size = floor(length(unique(ObservablesGroupings))/2), replace=F)
   items.split2_names <- unique(ObservablesGroupings)[! (ObservablesGroupings %in% items.split1_names)]
-  for(split_ in c("", 1, 2)){
+  for(split_ in c("", "1", "2")){
     if(split_ == ""){ items.split_ <- 1:length(ObservablesGroupings) }
     if(split_ == "1"){ items.split_ <- (1:length(ObservablesGroupings))[ObservablesGroupings %in% items.split1_names] }
     if(split_ == "2"){ items.split_ <- (1:length(ObservablesGroupings))[ObservablesGroupings %in% items.split2_names] }
@@ -46,15 +47,14 @@ LatentOneRun <- function(Yobs,
     
     # fixing in case directions of s1 and s2 x starts are flipped
     if(split_ %in% c("1","2")){ if(cor(s_$x, s_past$x) < 0){ s_$x <- -s_$x; s_$beta <- -s_$beta } }
-    lout.sim_ <- binIRT(.rc = rc_,
-                        .starts = s_, .priors = p_, .control={
+    lout.sim_ <- binIRT(.rc = rc_, .starts = s_, .priors = p_, .control={
                           list(threads=1, verbose=FALSE, thresh=1e-6) },
                         .anchor_subject = which.max(x_init)) # set direction
     x.est_ <- scale(lout.sim_$means$x); s_past <- s_
     if(cor(x.est_, Yobs, use="p") < 0){ x.est_ <- -x.est_ }
     eval(parse(text = sprintf("x.est%s <- x.est_", split_)))
   }
-  
+
   # simple linear reg 
   simpleReg <- lm(Yobs ~ x.est)
   
@@ -64,7 +64,7 @@ LatentOneRun <- function(Yobs,
   # save baseline IV results
   IVStage2 <- AER::ivreg(Yobs ~ x.est2 | x.est1)
   
-  list("OLSCoef" = coef(summary(simpleReg))[1,2],
+  list("OLSCoef" = coef(summary(simpleReg))[2,1],
        "OLSSE" = coef(summary(simpleReg))[2,2],
        "OLSTstat" = coef(summary(simpleReg))[2,3],
        
