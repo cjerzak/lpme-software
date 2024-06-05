@@ -70,8 +70,6 @@ LatentOneRun <- function(Yobs,
   # regress x1 and x2, calculate 
   
   # bootstrap 
-  browser()
-  
   list("OLSCoef" = coef(summary(simpleReg))[2,1],
        "OLSSE" = coef(summary(simpleReg))[2,2],
        "OLSTstat" = coef(summary(simpleReg))[2,3],
