@@ -64,6 +64,14 @@ LatentOneRun <- function(Yobs,
   # save baseline IV results
   IVStage2 <- AER::ivreg(Yobs ~ x.est2 | x.est1)
   
+  # corrected ols
+  # use estimate of measurement error using Y with x1 or x2 estimates 
+  # resid(lm(x.est2 ~ x.est1))
+  # regress x1 and x2, calculate 
+  
+  # bootstrap 
+  browser()
+  
   list("OLSCoef" = coef(summary(simpleReg))[2,1],
        "OLSSE" = coef(summary(simpleReg))[2,2],
        "OLSTstat" = coef(summary(simpleReg))[2,3],
