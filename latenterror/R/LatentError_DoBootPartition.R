@@ -46,7 +46,8 @@ LatentRun <- function(Yobs,
         eval(parse(text = sprintf("LatentRunResults$%s <- cbind(LatentRunResults$%s, LatentRunResults_$%s)",name_,name_,name_ )))
       } }
     } }
-  theSumFxn <- median # mean
+  #theSumFxn <- median 
+  theSumFxn <- mean
   names( LatentRunResults ) <- paste0("Intermediary_",names(LatentRunResults))
   VarEst_split <- theSumFxn(apply(LatentRunResults$Intermediary_x.est1[,which(LatentRunResults$Intermediary_BootIndex==1)] - 
                              LatentRunResults$Intermediary_x.est2[,which(LatentRunResults$Intermediary_BootIndex==1)], 1, sd))
