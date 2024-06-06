@@ -66,11 +66,20 @@ LatentOneRun <- function(Yobs,
   # use estimate of measurement error using Y with x1 or x2 estimates 
   # resid(lm(x.est2 ~ x.est1))
   # regress x1 and x2, calculate 
+  sigma2_corrected1 <- max(0.01, var(x.est1) - var( (x.est-x.est1) ) )
+  sigma2_corrected2 <- max(0.01, var(x.est2) - var( (x.est-x.est2) ) )
+  Corrected_OLSCoef1 <- coef(lm(Yobs ~ x.est1))[2] / (sigma2_corrected1 / var(x.est1))
+  Corrected_OLSCoef2 <- coef(lm(Yobs ~ x.est2))[2] / (sigma2_corrected2 / var(x.est2))
   
-  # bootstrap 
+  # save results 
+  return(
   list("OLSCoef" = coef(summary(simpleReg))[2,1],
        "OLSSE" = coef(summary(simpleReg))[2,2],
        "OLSTstat" = coef(summary(simpleReg))[2,3],
+       
+       "Corrected_OLSCoef" = (Corrected_OLSCoef1+Corrected_OLSCoef2)/2, 
+       "Corrected_OLSSE" = NA,
+       "Corrected_OLSTstat" = NA,
        
        "IVRegCoef" = coef(summary(IVStage2))[2,1], 
        "IVRegSE" = coef(summary(IVStage2))[2,2],
@@ -82,8 +91,8 @@ LatentOneRun <- function(Yobs,
        "Corrected_IVRegCoef" = (Corrected_IVRegCoef <- (coef(IVStage2)[2] / sqrt(1 + var(x.est1 - x.est2)/2))),
        "Corrected_IVRegSE" = NA,
        "Corrected_IVRegTstat" =  Corrected_IVRegCoef / coef(summary(IVStage2))[2,2],
-       "VarEst_split" = var(x.est1 - x.est2) / 2 
-       )
+       "VarEst_split" = var(x.est1 - x.est2) / 2 )
+  )
 }
 
 

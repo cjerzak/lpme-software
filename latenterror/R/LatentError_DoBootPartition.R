@@ -59,20 +59,26 @@ LatentRun <- function(Yobs,
   # (Corrected_IVRegCoef <- (coef(IVStage2)[2] / sqrt(1 + var(x.est1 - x.est2)/2))),
     
   return( 
-    list("OLSCoef" = (m1_ <- tapply(LatentRunResults$Intermediary_OLSCoef,LatentRunResults$Intermediary_BootIndex,theSumFxn)[1]),
+    list(
+       "OLSCoef" = (m1_ <- tapply(LatentRunResults$Intermediary_OLSCoef,LatentRunResults$Intermediary_BootIndex,theSumFxn)[1]),
        "OLSSE" = (se1_ <- sd( tapply(LatentRunResults$Intermediary_OLSCoef,LatentRunResults$Intermediary_BootIndex,theSumFxn)[-1] )),
        "OLSTstat" = (m1_/se1_),
+       
+       "Corrected_OLSCoef" = (m1b_ <- tapply(LatentRunResults$Intermediary_Corrected_OLSCoef,LatentRunResults$Intermediary_BootIndex,theSumFxn)[1]),
+       "Corrected_OLSSE" = (se1b_ <- sd( tapply(LatentRunResults$Intermediary_Corrected_OLSCoef,LatentRunResults$Intermediary_BootIndex,theSumFxn)[-1] )),
+       "Corrected_OLSTstat" = (m1b_/se1b_),
        
        "IVRegCoef" = (m2_ <- tapply(LatentRunResults$Intermediary_IVRegCoef,LatentRunResults$Intermediary_BootIndex,theSumFxn)[1]),
        "IVRegSE" = (se2_ <- sd(tapply(LatentRunResults$Intermediary_IVRegCoef,LatentRunResults$Intermediary_BootIndex,theSumFxn)[-1] )),
        "IVRegTstat" = (m2_/se2_),
        
-       "x.est1" = LatentRunResults$Intermediary_x.est1[,1],
-       "x.est2" = LatentRunResults$Intermediary_x.est2[,1],
-       
        "Corrected_IVRegCoef" = (m3_ <- Corrected_IVRegCoef_vec[1]),
        "Corrected_IVRegSE" = (se3_ <- sd(Corrected_IVRegCoef_vec[-1])),
        "Corrected_IVRegTstat"  = (m3_/se3_),
+       
+       "x.est1" = LatentRunResults$Intermediary_x.est1[,1],
+       "x.est2" = LatentRunResults$Intermediary_x.est2[,1],
+       
        "VarEst_split" = VarEst_split,
        "VarEst_split_se" = VarEst_split_se)
   ) 
