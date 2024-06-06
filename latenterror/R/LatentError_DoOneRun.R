@@ -14,8 +14,6 @@
 #' # Comment here
 #' #x <- MainFunction(x)
 #' @export
-
-#' @import Rfast
 #' @md
 
 LatentOneRun <- function(Yobs,

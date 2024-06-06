@@ -3,4 +3,3 @@
 export(LatentErrorSensitivity)
 export(LatentOneRun)
 export(LatentRun)
-import(Rfast)

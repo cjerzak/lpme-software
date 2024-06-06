@@ -11,6 +11,7 @@ LatentRun(
   MakeObservablesGroupings = F,
   nBoot = 32L,
   nPartition = 10L,
+  bootBasis = 1:length(Yobs),
   ReturnIntermediaries = T
 )
 }
