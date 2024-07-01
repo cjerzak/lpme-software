@@ -54,7 +54,7 @@ LatentOneRun <- function(Yobs,
   }
 
   # simple linear reg 
-  simpleReg <- lm(Yobs ~ x.est)
+  theOLS <- lm(Yobs ~ x.est)
   
   # stage 1 results
   IVStage1 <- lm(x.est2 ~ x.est1)
@@ -66,18 +66,51 @@ LatentOneRun <- function(Yobs,
   # use estimate of measurement error using Y with x1 or x2 estimates 
   # resid(lm(x.est2 ~ x.est1))
   # regress x1 and x2, calculate 
-  sigma2_corrected1 <- max(0.01, var(x.est1) - var( (x.est-x.est1) ) )
-  sigma2_corrected2 <- max(0.01, var(x.est2) - var( (x.est-x.est2) ) )
-  Corrected_OLSCoef1 <- coef(lm(Yobs ~ x.est1))[2] / (sigma2_corrected1 / var(x.est1))
-  Corrected_OLSCoef2 <- coef(lm(Yobs ~ x.est2))[2] / (sigma2_corrected2 / var(x.est2))
+  # variance(truth) + variance of noise 
+  # method 1 
+  if(T == F){ 
+    sigma2_corrected1 <- max(0.01, var(x.est1) - var( (x.est - x.est1) ) )
+    sigma2_corrected2 <- max(0.01, var(x.est2) - var( (x.est - x.est2) ) )
+    Corrected_OLSCoef1 <- coef(lm(Yobs ~ x.est1))[2] / (sigma2_corrected1 / var(x.est1))
+    Corrected_OLSCoef2 <- coef(lm(Yobs ~ x.est2))[2] / (sigma2_corrected2 / var(x.est2))
+    Corrected_OLSCoef_alt <- (Corrected_OLSCoef1+Corrected_OLSCoef2)/2
+  }
+  
+  # method 2 
+  # assume x.est1 and x.est2 have same measurement error variance 
+  # then var(x.est1 - x.est2) = var(x.est1) + var(x.est2) =  var(u.1) + var(u.2)
+  # then var(x.true + u.1 - (x.true + u.2)) = var(u.1-u.2) = var(u.1) + var(u.2) = 2*var(u.1) = 2*var(u.2)
+  # assume same measurement error variance
+  # covariance - vary to do sensitivity 
+  # x.est1 = x.true + u.1, u.1 -> measurement error for partition 1
+  # x.est2 = x.true + u.2, u.2 -> measurement error for partition 1
+  # assume indepedence and then var(u.1) = var(u.2)
+  # var(u.1) = 2 * var( x.est1 - x.est2 ) 
+  if(T == T){ 
+  sigma2_corrected2 <- sigma2_corrected1 <- 2 * var( (x.est1 - x.est2) )  
+  Corrected_OLSCoef1 <- coef(lm(Yobs ~ x.est1))[2] * (sqrt(1 + sigma2_corrected1))
+  Corrected_OLSCoef2 <- coef(lm(Yobs ~ x.est2))[2] * (sqrt(1 + sigma2_corrected2))
+  Corrected_OLSCoef_alt <- (Corrected_OLSCoef1 + Corrected_OLSCoef2)/2
+  }
+  
+  # method 3
+  if(T == T){ 
+    Corrected_OLSCoef1 <- coef(lm(Yobs ~ x.est1))[2] * (CorrectionFactor <- 1/sqrt( max(c(0.01,cor(x.est1, x.est2) ))))
+    Corrected_OLSCoef2 <- coef(lm(Yobs ~ x.est2))[2] * CorrectionFactor
+    Corrected_OLSCoef <- (Corrected_OLSCoef1 + Corrected_OLSCoef2)/2
+  }
   
   # save results 
   return(
-  list("OLSCoef" = coef(summary(simpleReg))[2,1],
-       "OLSSE" = coef(summary(simpleReg))[2,2],
-       "OLSTstat" = coef(summary(simpleReg))[2,3],
+  list("OLSCoef" = coef(summary(theOLS))[2,1],
+       "OLSSE" = coef(summary(theOLS))[2,2],
+       "OLSTstat" = coef(summary(theOLS))[2,3],
        
-       "Corrected_OLSCoef" = (Corrected_OLSCoef1+Corrected_OLSCoef2)/2, 
+       "Corrected_OLSCoef" = Corrected_OLSCoef, 
+       "Corrected_OLSSE" = NA,
+       "Corrected_OLSTstat" = NA,
+       
+       "Corrected_OLSCoef_alt" = Corrected_OLSCoef_alt, 
        "Corrected_OLSSE" = NA,
        "Corrected_OLSTstat" = NA,
        

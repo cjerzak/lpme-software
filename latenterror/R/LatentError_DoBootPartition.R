@@ -68,6 +68,10 @@ LatentRun <- function(Yobs,
        "Corrected_OLSSE" = (se1b_ <- sd( tapply(LatentRunResults$Intermediary_Corrected_OLSCoef,LatentRunResults$Intermediary_BootIndex,theSumFxn)[-1] )),
        "Corrected_OLSTstat" = (m1b_/se1b_),
        
+       "Corrected_OLSCoef_alt" = (m1b_ <- tapply(LatentRunResults$Intermediary_Corrected_OLSCoef_alt,LatentRunResults$Intermediary_BootIndex,theSumFxn)[1]),
+       "Corrected_OLSSE_alt" = (se1b_ <- sd( tapply(LatentRunResults$Intermediary_Corrected_OLSCoef_alt,LatentRunResults$Intermediary_BootIndex,theSumFxn)[-1] )),
+       "Corrected_OLSTstat_alt" = (m1b_/se1b_),
+       
        "IVRegCoef" = (m2_ <- tapply(LatentRunResults$Intermediary_IVRegCoef,LatentRunResults$Intermediary_BootIndex,theSumFxn)[1]),
        "IVRegSE" = (se2_ <- sd(tapply(LatentRunResults$Intermediary_IVRegCoef,LatentRunResults$Intermediary_BootIndex,theSumFxn)[-1] )),
        "IVRegTstat" = (m2_/se2_),
