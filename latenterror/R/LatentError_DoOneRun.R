@@ -60,21 +60,11 @@ LatentOneRun <- function(Yobs,
   IVStage1 <- lm(x.est2 ~ x.est1)
   
   # save baseline IV results
-  IVStage2 <- AER::ivreg(Yobs ~ x.est2 | x.est1)
-  
-  # corrected ols
-  # use estimate of measurement error using Y with x1 or x2 estimates 
-  # resid(lm(x.est2 ~ x.est1))
-  # regress x1 and x2, calculate 
-  # variance(truth) + variance of noise 
-  # method 1 
-  if(T == F){ 
-    sigma2_corrected1 <- max(0.01, var(x.est1) - var( (x.est - x.est1) ) )
-    sigma2_corrected2 <- max(0.01, var(x.est2) - var( (x.est - x.est2) ) )
-    Corrected_OLSCoef1 <- coef(lm(Yobs ~ x.est1))[2] / (sigma2_corrected1 / var(x.est1))
-    Corrected_OLSCoef2 <- coef(lm(Yobs ~ x.est2))[2] / (sigma2_corrected2 / var(x.est2))
-    Corrected_OLSCoef_alt <- (Corrected_OLSCoef1+Corrected_OLSCoef2)/2
-  }
+  IVStage2_a <- AER::ivreg(Yobs ~ x.est2 | x.est1)
+  IVStage2_b <- AER::ivreg(Yobs ~ x.est1 | x.est2)
+  Corrected_IVRegCoef_a <- (coef(IVStage2_a)[2] * sqrt( max(c(0.01,cor(x.est1, x.est2) ))))
+  Corrected_IVRegCoef_b <- (coef(IVStage2_b)[2] * sqrt( max(c(0.01,cor(x.est1, x.est2) ))))
+  Corrected_IVRegCoef <- ( Corrected_IVRegCoef_a + Corrected_IVRegCoef_b )/2
   
   # method 2 
   # assume x.est1 and x.est2 have same measurement error variance 
@@ -100,6 +90,7 @@ LatentOneRun <- function(Yobs,
     Corrected_OLSCoef <- (Corrected_OLSCoef1 + Corrected_OLSCoef2)/2
   }
   
+  browser() 
   # save results 
   return(
   list("OLSCoef" = coef(summary(theOLS))[2,1],
@@ -121,9 +112,9 @@ LatentOneRun <- function(Yobs,
        "x.est1" = x.est1,
        "x.est2" = x.est2,
        
-       "Corrected_IVRegCoef" = (Corrected_IVRegCoef <- (coef(IVStage2)[2] / sqrt(1 + var(x.est1 - x.est2)/2))),
+       "Corrected_IVRegCoef" = Corrected_IVRegCoef,
        "Corrected_IVRegSE" = NA,
-       "Corrected_IVRegTstat" =  Corrected_IVRegCoef / coef(summary(IVStage2))[2,2],
+       "Corrected_IVRegTstat" =  NA,
        "VarEst_split" = var(x.est1 - x.est2) / 2 )
   )
 }
