@@ -114,7 +114,7 @@ LatentOneRun <- function(Yobs,
        
        "Corrected_IVRegCoef" = Corrected_IVRegCoef,
        "Corrected_IVRegSE" = NA,
-       "Corrected_IVRegTstat" =  NA,
+       "Corrected_IVRegTstat" =  Corrected_IVRegCoef / coef(summary(IVStage2_a))[2,2],
        "VarEst_split" = var(x.est1 - x.est2) / 2 )
   )
 }
