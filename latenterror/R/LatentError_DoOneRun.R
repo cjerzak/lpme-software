@@ -90,7 +90,6 @@ LatentOneRun <- function(Yobs,
     Corrected_OLSCoef <- (Corrected_OLSCoef1 + Corrected_OLSCoef2)/2
   }
   
-  browser() 
   # save results 
   return(
   list("OLSCoef" = coef(summary(theOLS))[2,1],
@@ -105,9 +104,9 @@ LatentOneRun <- function(Yobs,
        "Corrected_OLSSE" = NA,
        "Corrected_OLSTstat" = NA,
        
-       "IVRegCoef" = coef(summary(IVStage2))[2,1], 
-       "IVRegSE" = coef(summary(IVStage2))[2,2],
-       "IVRegTstat" = coef(summary(IVStage2))[2,3],
+       "IVRegCoef" = coef(summary(IVStage2_a))[2,1], 
+       "IVRegSE" = coef(summary(IVStage2_a))[2,2],
+       "IVRegTstat" = coef(summary(IVStage2_a))[2,3],
        
        "x.est1" = x.est1,
        "x.est2" = x.est2,
