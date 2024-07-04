@@ -19,7 +19,8 @@
 LatentOneRun <- function(Yobs,
                          ObservablesMat, 
                          ObservablesGroupings = colnames(ObservablesMat),
-                         MakeObservablesGroupings = F){
+                         MakeObservablesGroupings = F, 
+                         seed = runif(1, 1, 10000)){
   items.split1_names <- sample(unique(ObservablesGroupings), 
                                size = floor(length(unique(ObservablesGroupings))/2), replace=F)
   items.split2_names <- unique(ObservablesGroupings)[! (ObservablesGroupings %in% items.split1_names)]
