@@ -6,7 +6,7 @@
 `lpme` is an R package that provides tools for analyzing latent variable models with measurement error correction, using bootstrapping techniques for inference.
 
 # Package Installation<a id="installation"></a>
-Within an `R` session, you can install the development version of `latenterror` from GitHub with:
+Within an `R` session, you can install the development version of `lpme` from GitHub with:
 ```
 # install.packages("devtools") 
 devtools::install_github("cjerzak/lpme/lpme-software")
