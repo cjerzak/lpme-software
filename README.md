@@ -53,4 +53,4 @@ Contributions to latenterror are welcome! Feel free to submit a [pull request](h
 We thank [Jeff Lewis](https://polisci.ucla.edu/person/jeffrey-b-lewis/), [Umberto Mignozzetti](https://umbertomig.com/), [Aaron Pancost](https://sites.google.com/site/aaronpancost/), [Erik Snowberg](https://eriksnowberg.com/), [Chris Tausanovitch](https://ctausanovitch.com/), and participants of a panel at an MPSA panel for very helpful comments. We thank [Major Valls](https://www.linkedin.com/in/major-valls-39b6b9229/) for excellent research assistance.
 
 # References<a id="references"></a>
-Connor T. Jerzak, Stephen A. Jessee. Measurement Error in Latent Predictors: The Role of Identification Restrictions *Working Paper to be released summer 2024!*
+Connor T. Jerzak, Stephen A. Jessee. Measurement Error in Latent Predictors: The Role of Identification Restrictions *Working paper to be released summer 2024!*
