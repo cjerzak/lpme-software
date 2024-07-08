@@ -1,7 +1,7 @@
 {
   rm(list=ls())
   # set path and specify package name
-  setwd(sprintf("~/Documents/%s-software", package_name <- "latenterror"))
+  setwd(sprintf("~/Documents/%s-software", package_name <- "lpme"))
 
   # document package
   tools::add_datalist(package_path <- sprintf("~/Documents/%s-software/%s",package_name,package_name),

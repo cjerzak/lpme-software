@@ -1,15 +1,15 @@
-# `latenterror`:  An `R` Packge for Measurement Error Corrections Under Identification Restrictions
+# `lpme`:  An `R` Packge for Measurement Error Corrections Under Identification Restrictions
 [**Installation**](#installation)
 | [**Key Functions**](#keyfxns)
 | [**References**](#references)
 
-`latenterror` is an R package that provides tools for analyzing latent variable models with measurement error correction, using bootstrapping techniques for robust estimation and inference.
+`lpme` is an R package that provides tools for analyzing latent variable models with measurement error correction, using bootstrapping techniques for robust estimation and inference.
 
 # Package Installation<a id="installation"></a>
 Within an `R` session, you can install the development version of `latenterror` from GitHub with:
 ```
 # install.packages("devtools") 
-devtools::install_github("cjerzak/latenterror")
+devtools::install_github("cjerzak/lpme/lpme-software")
 ```
 
 # Key Functions<a id="keyfxns"></a>
@@ -21,8 +21,8 @@ Yobs <- rnorm(1000)
 ObservablesMat <- matrix(sample(c(0,1), 1000*10, replace = T), ncol = 10)
 
 # One run of latent error correction method 
-LatentOneRun(Yobs, ObservablesMat, 
-             MakeObservablesGroupings = FALSE, seed = runif(1, 1, 10000))
+lpme::lpme_OneRun(Yobs, ObservablesMat, 
+                  MakeObservablesGroupings = FALSE, seed = runif(1, 1, 10000))
 ```
 
 ## `LatentRun`
@@ -33,7 +33,7 @@ Yobs <- rnorm(1000)
 ObservablesMat <- matrix(sample(c(0,1), 1000*10, replace = T), ncol = 10)
 
 # Latent error correction method, with partitioning and bootstrap 
-results  <- LatentRun(Yobs, ObservablesMat, 
+results  <- lpme::lpme(Yobs, ObservablesMat, 
 	     MakeObservablesGroupings = FALSE, nBoot = 32L, nPartition = 10L,
 	     bootBasis = 1:length(Yobs), ReturnIntermediaries = TRUE,
 	     seed = runif(1, 1, 10000)) 
