@@ -1,4 +1,4 @@
-# `latenterror`:  An `R` Packge for Measurement Error Corrections under Identification Restriction
+# `latenterror`:  An `R` Packge for Measurement Error Corrections Under Identification Restrictions
 
 `latenterror` is an R package that provides tools for analyzing latent variable models with measurement error correction, using bootstrapping techniques for robust estimation and inference.
 
@@ -43,4 +43,4 @@ print(c(results$Corrected_IVRegCoef, results$Corrected_IVRegSE))
 ```
 
 # Contributing
-Contributions to latenterror are welcome. Please feel free to submit a Pull Request or open an (issue)[https://github.com/cjerzak/latenterror/issues]. 
+Contributions to latenterror are welcome. Please feel free to submit a Pull Request or open an [issue[(https://github.com/cjerzak/latenterror/issues).
