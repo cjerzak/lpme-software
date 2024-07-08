@@ -21,8 +21,8 @@ Yobs <- rnorm(1000)
 ObservablesMat <- matrix(sample(c(0,1), 1000*10, replace = T), ncol = 10)
 
 # One run of latent error correction method 
-LatentOneRun(Yobs, ObservablesMat, ObservablesGroupings = colnames(ObservablesMat),
-MakeObservablesGroupings = FALSE, seed = runif(1, 1, 10000))
+LatentOneRun(Yobs, ObservablesMat, 
+             MakeObservablesGroupings = FALSE, seed = runif(1, 1, 10000))
 ```
 
 ## `LatentRun`
@@ -33,25 +33,11 @@ Yobs <- rnorm(1000)
 ObservablesMat <- matrix(sample(c(0,1), 1000*10, replace = T), ncol = 10)
 
 # Latent error correction method, with partitioning and bootstrap 
-LatentRun(Yobs, ObservablesMat, ObservablesGroupings = colnames(ObservablesMat),
+results  <- LatentRun(Yobs, ObservablesMat, 
 	     MakeObservablesGroupings = FALSE, nBoot = 32L, nPartition = 10L,
 	     bootBasis = 1:length(Yobs), ReturnIntermediaries = TRUE,
 	     seed = runif(1, 1, 10000)) 
-```
-
-### Example
-Here's an example of how to use the main `LatentRun` function:
-```
-library(latenterror)
-
-# Generate some example data
-set.seed(123)
-Yobs <- rnorm(1000)
-
-
-# Run the bootstrapped analysis
-results <- latenterror::LatentRun(Yobs, ObservablesMat, nBoot = 100, nPartition = 5)
-
+		 
 #View the corrected IV coefficient and its standard error
 print(c(results$Corrected_IVRegCoef, results$Corrected_IVRegSE))
 ```
