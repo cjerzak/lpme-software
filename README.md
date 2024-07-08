@@ -26,7 +26,7 @@ LatentOneRun(Yobs, ObservablesMat,
 ```
 
 ## `LatentRun`
-`LatentRun` implements a bootstrapped analysis for latent variable models with measurement error correction.
+`LatentRun` implements a bootstrap analysis for latent variable models with measurement error correction. We average over `nPartition` split sample partitions. 
 ```
 # Generate data 
 Yobs <- rnorm(1000)
