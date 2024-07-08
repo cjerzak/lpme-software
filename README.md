@@ -43,4 +43,10 @@ print(c(results$Corrected_IVRegCoef, results$Corrected_IVRegSE))
 ```
 
 # Contributing
-Contributions to latenterror are welcome. Please feel free to submit a Pull Request or open an [issue[(https://github.com/cjerzak/latenterror/issues).
+Contributions to latenterror are welcome! Feel free to submit a [pull request](https://github.com/cjerzak/latenterror-software/pulls) or open an [issue](https://github.com/cjerzak/latenterror/issues).
+
+# Acknowledgements 
+We thank [Jeff Lewis](https://polisci.ucla.edu/person/jeffrey-b-lewis/), [Umberto Mignozzetti](https://umbertomig.com/), [Aaron Pancost](https://sites.google.com/site/aaronpancost/), [Erik Snowberg](https://eriksnowberg.com/), [Chris Tausanovitch](https://ctausanovitch.com/), and participants of a panel at an MPSA panel for very helpful comments. We thank [Major Valls](https://www.linkedin.com/in/major-valls-39b6b9229/) for excellent research assistance.
+
+# References 
+Connor T. Jerzak, Stephen A. Jessee. Measurement Error in Latent Predictors: The Role of Identification Restrictions *Working Paper to be released soon!*, 2024.
