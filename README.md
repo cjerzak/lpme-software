@@ -1,15 +1,18 @@
 # `latenterror`:  An `R` Packge for Measurement Error Corrections Under Identification Restrictions
+| [**Installation**](#installation)
+| [**Key Functions**](#keyfxns)
+| [**References**](#references)
 
 `latenterror` is an R package that provides tools for analyzing latent variable models with measurement error correction, using bootstrapping techniques for robust estimation and inference.
 
-# Installation
-You can install the development version of latenterror from GitHub with:
+# Package Installation<a id="installation"></a>
+Within an `R` session, you can install the development version of `latenterror` from GitHub with:
 ```
 install.packages("devtools")
 devtools::install_github("cjerzak/latenterror")
 ```
 
-# Key Functions
+# Key Functions<a id="keyfxns"></a>
 ## `LatentOneRun`
 `LatentOneRun` performs a single run of latent variable analysis with measurement error correction.
 ```
@@ -49,5 +52,5 @@ Contributions to latenterror are welcome! Feel free to submit a [pull request](h
 # Acknowledgements 
 We thank [Jeff Lewis](https://polisci.ucla.edu/person/jeffrey-b-lewis/), [Umberto Mignozzetti](https://umbertomig.com/), [Aaron Pancost](https://sites.google.com/site/aaronpancost/), [Erik Snowberg](https://eriksnowberg.com/), [Chris Tausanovitch](https://ctausanovitch.com/), and participants of a panel at an MPSA panel for very helpful comments. We thank [Major Valls](https://www.linkedin.com/in/major-valls-39b6b9229/) for excellent research assistance.
 
-# References 
+# References<a id="references"></a>
 Connor T. Jerzak, Stephen A. Jessee. Measurement Error in Latent Predictors: The Role of Identification Restrictions *Working Paper to be released soon!*, 2024.
