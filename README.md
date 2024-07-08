@@ -14,7 +14,7 @@ devtools::install_github("cjerzak/latenterror")
 
 # Key Functions<a id="keyfxns"></a>
 ## `LatentOneRun`
-`LatentOneRun` performs a single run of latent variable analysis with measurement error correction.
+`LatentOneRun` performs a single run of latent variable analysis with measurement error correction (no bootstrapping; 1 split sample partition): 
 ```
 # Generate data 
 Yobs <- rnorm(1000)
