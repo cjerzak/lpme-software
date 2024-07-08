@@ -26,7 +26,7 @@ bootBasis = 1:length(Yobs), ReturnIntermediaries = TRUE,
 seed = runif(1, 1, 10000))
 ```
 
-# Example
+### Example
 Here's an example of how to use the main `LatentRun` function:
 ```
 library(latenterror)
