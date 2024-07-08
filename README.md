@@ -1,5 +1,5 @@
 # `latenterror`:  An `R` Packge for Measurement Error Corrections Under Identification Restrictions
-| [**Installation**](#installation)
+[**Installation**](#installation)
 | [**Key Functions**](#keyfxns)
 | [**References**](#references)
 
