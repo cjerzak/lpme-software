@@ -1,0 +1,30 @@
+Package: lpme
+Title: R Package for Measurement Error Analysis Under Identification Restrictions
+Version: 0.1
+Authors@R: c(
+    person("Connor", "Jerzak", email = "connor.jerzak@gmail.com", role = c("aut", "cre")),
+    person("Stephen", "Jessee", email = "sjessee@austin.utexas.edu", role = c("aut"))
+  )
+Description: An R package for analyzing latent variable models with measurement 
+    error correction. It provides tools for implementing various correction methods 
+    for measurement error in latent variables, uses bootstrapping for robust 
+    estimation of standard errors, and offers both OLS and IV-based approaches. 
+    The package allows for flexible specification of observable indicators and 
+    groupings, making it suitable for a wide range of latent variable analyses 
+    in social sciences and other fields.
+Depends: R (>= 3.3.3)
+License: CC BY-NC-ND 4.0
+Encoding: UTF-8
+LazyData: false
+Maintainer: Connor Jerzak <connor.jerzak@gmail.com>
+Imports: 
+    reticulate,
+    stats,
+    AER,
+    MCMCpack
+Suggests: 
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+RoxygenNote: 7.3.1
+URL: https://github.com/username/lpme
+BugReports: https://github.com/cjerzak/lpme/issues
