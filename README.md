@@ -13,8 +13,8 @@ devtools::install_github("cjerzak/lpme/lpme-software")
 ```
 
 # Key Functions<a id="keyfxns"></a>
-## `LatentOneRun`
-`LatentOneRun` performs a single run of latent variable analysis with measurement error correction (no bootstrapping; 1 split sample partition): 
+## `lpme_OneRun`
+`lpme_OneRun` performs a single run of latent variable analysis with measurement error correction (no bootstrapping; 1 split sample partition): 
 ```
 # Generate data 
 Yobs <- rnorm(1000)
@@ -25,8 +25,8 @@ lpme::lpme_OneRun(Yobs, ObservablesMat,
                   MakeObservablesGroupings = FALSE, seed = runif(1, 1, 10000))
 ```
 
-## `LatentRun`
-`LatentRun` implements a bootstrap analysis for latent variable models with measurement error correction. We average over `nPartition` split sample partitions. 
+## `lpme`
+`lpme` implements a bootstrap analysis for latent variable models with measurement error correction. We average over `nPartition` split sample partitions. 
 ```
 # Generate data 
 Yobs <- rnorm(1000)
