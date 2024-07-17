@@ -1,4 +1,4 @@
-# `lpme`:  An `R` Packge for Measurement Error Corrections Under Identification Restrictions
+# `lpme`:  R Packge for Dealing with Latent Predictor Measurement Error Under Identification Restrictions
 [**Installation**](#installation)
 | [**Key Functions**](#keyfxns)
 | [**References**](#references)
