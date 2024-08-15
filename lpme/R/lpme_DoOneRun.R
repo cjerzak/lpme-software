@@ -57,6 +57,8 @@ lpme_OneRun <- function(Yobs,
                          MakeObservablesGroupings = F, 
                          seed = runif(1, 1, 10000)){
   library(emIRT);
+  starting_seed <- sample(runif(1,1,10000))
+  if(!is.null(seed)){ set.seed(seed) } 
   items.split1_names <- sample(unique(ObservablesGroupings), 
                                size = floor(length(unique(ObservablesGroupings))/2), replace=F)
   items.split2_names <- unique(ObservablesGroupings)[! (ObservablesGroupings %in% items.split1_names)]
@@ -74,21 +76,22 @@ lpme_OneRun <- function(Yobs,
         list( model.matrix(~0+as.factor(zer))[,-1] )}),recursive = F))
     }
     x_init <- apply( ObservablesMat_, 1, function(x){ mean(f2n(x), na.rm=T)})
-    rc_ <- convertRC( RC.SIM_ <- rollcall(ObservablesMat_) )
-    p_ <- makePriors(rc_$n, rc_$m, 1)
-    s_ <- list("alpha" = matrix(rnorm(ncol(ObservablesMat_))),
-               "beta" = matrix(rnorm(ncol(ObservablesMat_))),
-               "x" = matrix(x_init))
+    rc_ <- convertRC( rollcall(ObservablesMat_) )
+    s_ <- list("alpha" = matrix(rnorm(ncol(ObservablesMat_), sd = 1)),"beta" = matrix(rnorm(ncol(ObservablesMat_), sd = 1)), "x" = matrix(x_init))
+    s_ <- getStarts(.N= rc_$n, .J = rc_$m, .D = 1)
     
     # fixing in case directions of s1 and s2 x starts are flipped
     if(split_ %in% c("1","2")){ if(cor(s_$x, s_past$x) < 0){ s_$x <- -s_$x; s_$beta <- -s_$beta } }
-    lout.sim_ <- binIRT(.rc = rc_, .starts = s_, .priors = p_, .control={
-                          list(threads=1, verbose=FALSE, thresh=1e-6) },
+    lout.sim_ <- binIRT(.rc = rc_, 
+                        .starts = s_, 
+                        .priors = makePriors(.N= rc_$n, .J = rc_$m, .D = 1), 
+                        .control= list(threads=1, verbose=FALSE, thresh=1e-6) ,
                         .anchor_subject = which.max(x_init)) # set direction
     x.est_ <- scale(lout.sim_$means$x); s_past <- s_
     if(cor(x.est_, Yobs, use="p") < 0){ x.est_ <- -x.est_ }
     eval(parse(text = sprintf("x.est%s <- x.est_", split_)))
   }
+  if(!is.null(seed)){ set.seed(starting_seed) } 
 
   # simple linear reg 
   theOLS <- lm(Yobs ~ x.est)
@@ -103,16 +106,14 @@ lpme_OneRun <- function(Yobs,
   Corrected_IVRegCoef_b <- (coef(IVStage2_b)[2] * sqrt( max(c(0.01,cor(x.est1, x.est2) ))))
   Corrected_IVRegCoef <- ( Corrected_IVRegCoef_a + Corrected_IVRegCoef_b )/2
   
-  # method 2 
-  # assume x.est1 and x.est2 have same measurement error variance 
-  # then var(x.est1 - x.est2) = var(x.est1) + var(x.est2) =  var(u.1) + var(u.2)
-  # then var(x.true + u.1 - (x.true + u.2)) = var(u.1-u.2) = var(u.1) + var(u.2) = 2*var(u.1) = 2*var(u.2)
-  # assume same measurement error variance
-  # covariance - vary to do sensitivity 
-  # x.est1 = x.true + u.1, u.1 -> measurement error for partition 1
-  # x.est2 = x.true + u.2, u.2 -> measurement error for partition 1
-  # assume indepedence and then var(u.1) = var(u.2)
-  # var(u.1) = 2 * var( x.est1 - x.est2 ) 
+  # example: Y -> earnings
+  # Treatment -> educational attainment 
+  # instrument: proximity 
+  mstage1 <- lm(x.est2 ~ x.est1)
+  mreduced <- lm(Yobs ~ x.est1)
+  mstage1ERV <- sensemakr::extreme_robustness_value(mstage1)[[2]]
+  mreducedERV <- sensemakr::extreme_robustness_value(mreduced)[[2]]
+
   if(T == T){ 
   sigma2_corrected2 <- sigma2_corrected1 <- 2 * var( (x.est1 - x.est2) )  
   Corrected_OLSCoef1 <- coef(lm(Yobs ~ x.est1))[2] * (sqrt(1 + sigma2_corrected1))
@@ -122,7 +123,7 @@ lpme_OneRun <- function(Yobs,
   
   # method 3
   if(T == T){ 
-    Corrected_OLSCoef1 <- coef(lm(Yobs ~ x.est1))[2] * (CorrectionFactor <- 1/sqrt( max(c(0.01,cor(x.est1, x.est2) ))))
+    Corrected_OLSCoef1 <- coef(lm(Yobs ~ x.est1))[2] * (CorrectionFactor <- 1/sqrt( max(c(0.01^2,cor(x.est1, x.est2) ))))
     Corrected_OLSCoef2 <- coef(lm(Yobs ~ x.est2))[2] * CorrectionFactor
     Corrected_OLSCoef <- (Corrected_OLSCoef1 + Corrected_OLSCoef2)/2
   }
@@ -148,6 +149,9 @@ lpme_OneRun <- function(Yobs,
        "x.est1" = x.est1,
        "x.est2" = x.est2,
        
+       "mstage1ERV" = mstage1ERV, 
+       "mreducedERV" = mreducedERV, 
+
        "Corrected_IVRegCoef" = Corrected_IVRegCoef,
        "Corrected_IVRegSE" = NA,
        "Corrected_IVRegTstat" =  Corrected_IVRegCoef / coef(summary(IVStage2_a))[2,2],

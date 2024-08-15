@@ -66,20 +66,21 @@ lpme <- function(Yobs,
                       nBoot = 32L, nPartition = 10L, 
                       bootBasis = 1:length(Yobs),
                       ReturnIntermediaries = T, 
-                      seed = runif(1, 1, 10000)){ 
-  set.seed(seed)
+                      seed = NULL){ 
+  if(!is.null(seed)){ set.seed(seed) } 
   for(booti_ in 1L:(nBoot+1L)){
     boot_indices <- 1:length(Yobs); if(booti_ > 1L){
         boot_indices <- sample(unique(as.character(bootBasis)),length(unique(bootBasis)), replace = T)
-        boot_indices <- unlist(tapply(1:length(bootBasis),as.character(bootBasis),c)[boot_indices])
+        boot_indices <- unlist(tapply(1:length(bootBasis), as.character(bootBasis), c)[boot_indices])
     }
     for(parti_ in 1L:nPartition){
       LatentRunResults_ <- lpme::lpme_OneRun(
                    Yobs[boot_indices],
                    ObservablesMat[boot_indices,], 
                    ObservablesGroupings = colnames(ObservablesMat),
-                   MakeObservablesGroupings = F , 
-                   seed = seed+parti_)
+                   MakeObservablesGroupings = MakeObservablesGroupings, 
+                   seed = NULL)
+                   #seed = (seed+parti_)) # if fixing the partitions across bootstrap iterations 
       
       # save indices indices 
       LatentRunResults_$PartitionIndex <- parti_; LatentRunResults_$BootIndex <- booti_
@@ -98,28 +99,53 @@ lpme <- function(Yobs,
   VarEst_split_se <- sd( sapply(2:(nBoot+1),function(boot_){
                             theSumFxn(apply(LatentRunResults$Intermediary_x.est1[,which(LatentRunResults$Intermediary_BootIndex==boot_)] - 
                                LatentRunResults$Intermediary_x.est2[,which(LatentRunResults$Intermediary_BootIndex==boot_)], 1, sd)) }))
-    
+  
+  # tapply(LatentRunResults$Intermediary_Corrected_OLSCoef,LatentRunResults$Intermediary_BootIndex,theSumFxn)
+  qLow <- 0.025; qUp <- 0.975
+  qf <- function(q,x){quantile(x,prob = q)}
   return( 
     list(
-       "OLSCoef" = (m1_ <- tapply(LatentRunResults$Intermediary_OLSCoef,LatentRunResults$Intermediary_BootIndex,theSumFxn)[1]),
-       "OLSSE" = (se1_ <- sd( tapply(LatentRunResults$Intermediary_OLSCoef,LatentRunResults$Intermediary_BootIndex,theSumFxn)[-1] )),
+       "OLSCoef" = (m1_ <- tapply(LatentRunResults$Intermediary_OLSCoef,LatentRunResults$Intermediary_BootIndex,theSumFxn)[1] ),
+       "OLSSE" = (se1_ <- sd( tapply(LatentRunResults$Intermediary_OLSCoef,LatentRunResults$Intermediary_BootIndex,theSumFxn) )),
+       "OLSLower" = ( qf(qLow,tapply(LatentRunResults$Intermediary_OLSCoef,LatentRunResults$Intermediary_BootIndex,theSumFxn) )),
+       "OLSUpper" = ( qf(qUp,tapply(LatentRunResults$Intermediary_OLSCoef,LatentRunResults$Intermediary_BootIndex,theSumFxn) )),
        "OLSTstat" = (m1_/se1_),
        
        "Corrected_OLSCoef" = (m1b_ <- tapply(LatentRunResults$Intermediary_Corrected_OLSCoef,LatentRunResults$Intermediary_BootIndex,theSumFxn)[1]),
-       "Corrected_OLSSE" = (se1b_ <- sd( tapply(LatentRunResults$Intermediary_Corrected_OLSCoef,LatentRunResults$Intermediary_BootIndex,theSumFxn)[-1] )),
+       "Corrected_OLSSE" = (se1b_ <- sd( tapply(LatentRunResults$Intermediary_Corrected_OLSCoef,LatentRunResults$Intermediary_BootIndex,theSumFxn) )),
+       "Corrected_OLSLower" =  qf(qLow, tapply(LatentRunResults$Intermediary_Corrected_OLSCoef,LatentRunResults$Intermediary_BootIndex,theSumFxn) ),
+       "Corrected_OLSUpper" =  qf(qUp, tapply(LatentRunResults$Intermediary_Corrected_OLSCoef,LatentRunResults$Intermediary_BootIndex,theSumFxn) ),
        "Corrected_OLSTstat" = (m1b_/se1b_),
        
        "Corrected_OLSCoef_alt" = (m1b_ <- tapply(LatentRunResults$Intermediary_Corrected_OLSCoef_alt,LatentRunResults$Intermediary_BootIndex,theSumFxn)[1]),
-       "Corrected_OLSSE_alt" = (se1b_ <- sd( tapply(LatentRunResults$Intermediary_Corrected_OLSCoef_alt,LatentRunResults$Intermediary_BootIndex,theSumFxn)[-1] )),
+       "Corrected_OLSSE_alt" = (se1b_ <- sd( tapply(LatentRunResults$Intermediary_Corrected_OLSCoef_alt,LatentRunResults$Intermediary_BootIndex,theSumFxn) )),
+       "Corrected_OLSLower_alt" = ( qf(qLow, tapply(LatentRunResults$Intermediary_Corrected_OLSCoef_alt,LatentRunResults$Intermediary_BootIndex,theSumFxn) )),
+       "Corrected_OLSUpper_alt" = ( qf(qUp, tapply(LatentRunResults$Intermediary_Corrected_OLSCoef_alt,LatentRunResults$Intermediary_BootIndex,theSumFxn) )),
        "Corrected_OLSTstat_alt" = (m1b_/se1b_),
        
        "IVRegCoef" = (m2_ <- tapply(LatentRunResults$Intermediary_IVRegCoef,LatentRunResults$Intermediary_BootIndex,theSumFxn)[1]),
-       "IVRegSE" = (se2_ <- sd(tapply(LatentRunResults$Intermediary_IVRegCoef,LatentRunResults$Intermediary_BootIndex,theSumFxn)[-1] )),
+       "IVRegSE" = (se2_ <- sd(tapply(LatentRunResults$Intermediary_IVRegCoef,LatentRunResults$Intermediary_BootIndex,theSumFxn) )),
+       "IVRegLower" = ( qf(qLow, tapply(LatentRunResults$Intermediary_IVRegCoef,LatentRunResults$Intermediary_BootIndex,theSumFxn) )),
+       "IVRegUpper" = ( qf(qUp, tapply(LatentRunResults$Intermediary_IVRegCoef,LatentRunResults$Intermediary_BootIndex,theSumFxn) )),
        "IVRegTstat" = (m2_/se2_),
        
        "Corrected_IVRegCoef" = (m4_ <- tapply(LatentRunResults$Intermediary_Corrected_IVRegCoef,LatentRunResults$Intermediary_BootIndex,theSumFxn)[1]),
-       "Corrected_IVRegSE" = (se4_ <- sd(tapply(LatentRunResults$Intermediary_Corrected_IVRegCoef,LatentRunResults$Intermediary_BootIndex,theSumFxn)[-1] )),
+       "Corrected_IVRegSE" = (se4_ <- sd(tapply(LatentRunResults$Intermediary_Corrected_IVRegCoef,LatentRunResults$Intermediary_BootIndex,theSumFxn) )),
+       "Corrected_IVRegLower" = ( qf(qLow, tapply(LatentRunResults$Intermediary_Corrected_IVRegCoef,LatentRunResults$Intermediary_BootIndex,theSumFxn) )),
+       "Corrected_IVRegUpper" = ( qf(qUp, tapply(LatentRunResults$Intermediary_Corrected_IVRegCoef,LatentRunResults$Intermediary_BootIndex,theSumFxn) )),
        "Corrected_IVRegTstat"  = (m4_/se4_),
+       
+       "mstage1ERV" = (m2_ <- tapply(LatentRunResults$Intermediary_mstage1ERV,LatentRunResults$Intermediary_BootIndex,theSumFxn)[1]),
+       "mstage1ERVSE" = (se2_ <- sd(tapply(LatentRunResults$Intermediary_mstage1ERV,LatentRunResults$Intermediary_BootIndex,theSumFxn) )),
+       "mstage1ERVLower" = ( qf(qLow, tapply(LatentRunResults$Intermediary_mstage1ERV,LatentRunResults$Intermediary_BootIndex,theSumFxn) )),
+       "mstage1ERVUpper" = ( qf(qUp, tapply(LatentRunResults$Intermediary_mstage1ERV,LatentRunResults$Intermediary_BootIndex,theSumFxn) )),
+       "mstage1ERVTstat" = (m2_/se2_),
+       
+       "mreducedERV" = (m2_ <- tapply(LatentRunResults$Intermediary_mreducedERV,LatentRunResults$Intermediary_BootIndex,theSumFxn)[1]),
+       "mreducedERVSE" = (se2_ <- sd(tapply(LatentRunResults$Intermediary_mreducedERV,LatentRunResults$Intermediary_BootIndex,theSumFxn) )),
+       "mreducedERVLower" = ( qf(qLow, tapply(LatentRunResults$Intermediary_mreducedERV,LatentRunResults$Intermediary_BootIndex,theSumFxn) )),
+       "mreducedERVUpper" = ( qf(qUp, tapply(LatentRunResults$Intermediary_mreducedERV,LatentRunResults$Intermediary_BootIndex,theSumFxn) )),
+       "mreducedERVTstat" = (m2_/se2_),
        
        "x.est1" = LatentRunResults$Intermediary_x.est1[,1],
        "x.est2" = LatentRunResults$Intermediary_x.est2[,1],

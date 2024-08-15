@@ -50,3 +50,5 @@ We thank [Guilherme Duarte](https://duarteguilherme.github.io/), [Jeff Lewis](ht
 
 # References<a id="references"></a>
 [Connor T. Jerzak](https://github.com/cjerzak), [Stephen A. Jessee](https://github.com/sjessee). Measurement Error in Latent Predictors: The Role of Identification Restrictions *Working paper to be released summer 2024!*
+
+[<img src="https://connorjerzak.com/wp-content/uploads/2024/08/LatentErrorViz.png" width="420" height="400">](https://connorjerzak.com/)
