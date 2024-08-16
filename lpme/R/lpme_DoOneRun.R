@@ -77,7 +77,7 @@ lpme_OneRun <- function(Yobs,
     }
     x_init <- apply( ObservablesMat_, 1, function(x){ mean(f2n(x), na.rm=T)})
     rc_ <- convertRC( rollcall(ObservablesMat_) )
-    s_ <- list("alpha" = matrix(rnorm(ncol(ObservablesMat_), sd = 1)),"beta" = matrix(rnorm(ncol(ObservablesMat_), sd = 1)), "x" = matrix(x_init))
+    #s_ <- list("alpha" = matrix(rnorm(ncol(ObservablesMat_), sd = 1)),"beta" = matrix(rnorm(ncol(ObservablesMat_), sd = 1)), "x" = matrix(x_init))
     s_ <- getStarts(.N= rc_$n, .J = rc_$m, .D = 1)
     
     # fixing in case directions of s1 and s2 x starts are flipped
