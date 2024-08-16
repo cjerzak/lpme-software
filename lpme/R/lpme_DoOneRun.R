@@ -123,7 +123,7 @@ lpme_OneRun <- function(Yobs,
   
   # method 3
   if(T == T){ 
-    Corrected_OLSCoef1 <- coef(lm(Yobs ~ x.est1))[2] * (CorrectionFactor <- 1/sqrt( max(c(0.01^2,cor(x.est1, x.est2) ))))
+    Corrected_OLSCoef1 <- coef(lm(Yobs ~ x.est1))[2] * (CorrectionFactor <- 1/sqrt( max(c(0.01,cor(x.est1, x.est2) ))))
     Corrected_OLSCoef2 <- coef(lm(Yobs ~ x.est2))[2] * CorrectionFactor
     Corrected_OLSCoef <- (Corrected_OLSCoef1 + Corrected_OLSCoef2)/2
   }
