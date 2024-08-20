@@ -99,62 +99,54 @@ lpme_OneRun <- function(Yobs,
   # stage 1 results
   IVStage1 <- lm(x.est2 ~ x.est1)
   
-  # save baseline IV results
+  # cor epsilon
+  ep_ <- 0.01
+  
+  # corrected IV
   IVStage2_a <- AER::ivreg(Yobs ~ x.est2 | x.est1)
   IVStage2_b <- AER::ivreg(Yobs ~ x.est1 | x.est2)
-  Corrected_IVRegCoef_a <- (coef(IVStage2_a)[2] * sqrt( max(c(0.01,cor(x.est1, x.est2) ))))
-  Corrected_IVRegCoef_b <- (coef(IVStage2_b)[2] * sqrt( max(c(0.01,cor(x.est1, x.est2) ))))
+  Corrected_IVRegCoef_a <- (coef(IVStage2_a)[2] * sqrt( max(c(ep_, cor(x.est1, x.est2) ))))
+  Corrected_IVRegCoef_b <- (coef(IVStage2_b)[2] * sqrt( max(c(ep_, cor(x.est1, x.est2) ))))
   Corrected_IVRegCoef <- ( Corrected_IVRegCoef_a + Corrected_IVRegCoef_b )/2
   
-  # example: Y -> earnings
-  # Treatment -> educational attainment 
-  # instrument: proximity 
+  # corrected OLS 
+  Corrected_OLSCoef1 <- coef(lm(Yobs ~ x.est1))[2] * (CorrectionFactor <- 1/sqrt( max(c(ep_, cor(x.est1, x.est2) ))))
+  Corrected_OLSCoef2 <- coef(lm(Yobs ~ x.est2))[2] * CorrectionFactor
+  Corrected_OLSCoef <- (Corrected_OLSCoef1 + Corrected_OLSCoef2)/2
+  
+  # ERV analysis 
   mstage1 <- lm(x.est2 ~ x.est1)
   mreduced <- lm(Yobs ~ x.est1)
-  mstage1ERV <- sensemakr::extreme_robustness_value(mstage1)[[2]]
-  mreducedERV <- sensemakr::extreme_robustness_value(mreduced)[[2]]
-
-  if(T == T){ 
-  sigma2_corrected2 <- sigma2_corrected1 <- 2 * var( (x.est1 - x.est2) )  
-  Corrected_OLSCoef1 <- coef(lm(Yobs ~ x.est1))[2] * (sqrt(1 + sigma2_corrected1))
-  Corrected_OLSCoef2 <- coef(lm(Yobs ~ x.est2))[2] * (sqrt(1 + sigma2_corrected2))
-  Corrected_OLSCoef_alt <- (Corrected_OLSCoef1 + Corrected_OLSCoef2)/2
-  }
-  
-  # method 3
-  if(T == T){ 
-    Corrected_OLSCoef1 <- coef(lm(Yobs ~ x.est1))[2] * (CorrectionFactor <- 1/sqrt( max(c(0.01,cor(x.est1, x.est2) ))))
-    Corrected_OLSCoef2 <- coef(lm(Yobs ~ x.est2))[2] * CorrectionFactor
-    Corrected_OLSCoef <- (Corrected_OLSCoef1 + Corrected_OLSCoef2)/2
-  }
+  mstage1ERV <- sensemakr::extreme_robustness_value( mstage1 )[[2]]
+  mreducedERV <- sensemakr::extreme_robustness_value( mreduced )[[2]]
   
   # save results 
-  return(
-  list("OLSCoef" = coef(summary(theOLS))[2,1],
+  ret_ <- list("OLSCoef" = coef(summary(theOLS))[2,1],
        "OLSSE" = coef(summary(theOLS))[2,2],
        "OLSTstat" = coef(summary(theOLS))[2,3],
-       
-       "Corrected_OLSCoef" = Corrected_OLSCoef, 
-       "Corrected_OLSSE" = NA,
-       "Corrected_OLSTstat" = NA,
-       
-       "Corrected_OLSCoef_alt" = Corrected_OLSCoef_alt, 
-       "Corrected_OLSSE" = NA,
-       "Corrected_OLSTstat" = NA,
        
        "IVRegCoef" = coef(summary(IVStage2_a))[2,1], 
        "IVRegSE" = coef(summary(IVStage2_a))[2,2],
        "IVRegTstat" = coef(summary(IVStage2_a))[2,3],
        
-       "x.est1" = x.est1,
-       "x.est2" = x.est2,
-       
-       "mstage1ERV" = mstage1ERV, 
-       "mreducedERV" = mreducedERV, 
-
        "Corrected_IVRegCoef" = Corrected_IVRegCoef,
        "Corrected_IVRegSE" = NA,
        "Corrected_IVRegTstat" =  Corrected_IVRegCoef / coef(summary(IVStage2_a))[2,2],
-       "VarEst_split" = var(x.est1 - x.est2) / 2 )
-  )
+       "VarEst_split" = var(x.est1 - x.est2) / 2 ,
+  
+        "Corrected_OLSCoef" = Corrected_OLSCoef, 
+        "Corrected_OLSSE" = NA,
+        "Corrected_OLSTstat" = NA,
+        
+        "Corrected_OLSCoef_alt" = NA, 
+        "Corrected_OLSSE_alt" = NA,
+        "Corrected_OLSTstat_alt" = NA,
+    
+        "mstage1ERV" = mstage1ERV, 
+        "mreducedERV" = mreducedERV, 
+  
+        "x.est1" = x.est1,
+        "x.est2" = x.est2)
+
+    return( ret_ ) 
 }

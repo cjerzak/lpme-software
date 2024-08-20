@@ -102,7 +102,7 @@ lpme <- function(Yobs,
   
   # tapply(LatentRunResults$Intermediary_Corrected_OLSCoef,LatentRunResults$Intermediary_BootIndex,theSumFxn)
   qLow <- 0.025; qUp <- 0.975
-  qf <- function(q,x){quantile(x,prob = q)}
+  qf <- function(q,x){quantile(x,prob = q, na.rm = T)}
   return( 
     list(
        "OLSCoef" = (m1_ <- tapply(LatentRunResults$Intermediary_OLSCoef,LatentRunResults$Intermediary_BootIndex,theSumFxn)[1] ),
