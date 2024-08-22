@@ -17,10 +17,7 @@ License: CC BY-NC-ND 4.0
 Encoding: UTF-8
 LazyData: false
 Maintainer: Connor Jerzak <connor.jerzak@gmail.com>
-Imports: 
-    reticulate,
-    stats,
-    AER
+Imports: reticulate, stats, sensemakr, AER
 Suggests: 
     testthat (>= 3.0.0)
 Config/testthat/edition: 3

@@ -66,6 +66,8 @@ lpme <- function(Yobs,
                       nBoot = 32L, nPartition = 10L, 
                       bootBasis = 1:length(Yobs),
                       ReturnIntermediaries = T, 
+                      EstimationMethod = "emIRT", 
+                      conda_env = NULL, 
                       seed = NULL){ 
   if(!is.null(seed)){ set.seed(seed) } 
   for(booti_ in 1L:(nBoot+1L)){
@@ -79,6 +81,8 @@ lpme <- function(Yobs,
                    ObservablesMat[boot_indices,], 
                    ObservablesGroupings = colnames(ObservablesMat),
                    MakeObservablesGroupings = MakeObservablesGroupings, 
+                   EstimationMethod = EstimationMethod, 
+                   conda_env = conda_env, 
                    seed = NULL)
                    #seed = (seed+parti_)) # if fixing the partitions across bootstrap iterations 
       

@@ -55,7 +55,9 @@ lpme_OneRun <- function(Yobs,
                          ObservablesMat, 
                          ObservablesGroupings = colnames(ObservablesMat),
                          MakeObservablesGroupings = F, 
-                         seed = runif(1, 1, 10000)){
+                         EstimationMethod = "emIRT", 
+                         conda_env = NULL, 
+                         seed = NULL){
   library(emIRT);
   starting_seed <- sample(runif(1,1,10000))
   if(!is.null(seed)){ set.seed(seed) } 
@@ -75,19 +77,123 @@ lpme_OneRun <- function(Yobs,
       ObservablesMat_ <- do.call(cbind,unlist(apply(ObservablesMat[,items.split_],2,function(zer){
         list( model.matrix(~0+as.factor(zer))[,-1] )}),recursive = F))
     }
-    x_init <- apply( ObservablesMat_, 1, function(x){ mean(f2n(x), na.rm=T)})
-    rc_ <- convertRC( rollcall(ObservablesMat_) )
-    #s_ <- list("alpha" = matrix(rnorm(ncol(ObservablesMat_), sd = 1)),"beta" = matrix(rnorm(ncol(ObservablesMat_), sd = 1)), "x" = matrix(x_init))
-    s_ <- getStarts(.N= rc_$n, .J = rc_$m, .D = 1)
     
-    # fixing in case directions of s1 and s2 x starts are flipped
-    if(split_ %in% c("1","2")){ if(cor(s_$x, s_past$x) < 0){ s_$x <- -s_$x; s_$beta <- -s_$beta } }
-    lout.sim_ <- binIRT(.rc = rc_, 
-                        .starts = s_, 
-                        .priors = makePriors(.N= rc_$n, .J = rc_$m, .D = 1), 
-                        .control= list(threads=1, verbose=FALSE, thresh=1e-6) ,
-                        .anchor_subject = which.max(x_init)) # set direction
-    x.est_ <- scale(lout.sim_$means$x); s_past <- s_
+    if(EstimationMethod == "MCMC"){
+      # Load required libraries
+      library(reticulate)
+      reticulate::use_condaenv(conda_env)
+
+      # Import necessary Python modules
+      np <- import("numpy", convert = F)
+      jax <- import("jax")
+      jnp <- import("jax.numpy")
+      random <- import("jax.random")
+      numpyro <- import("numpyro")
+      dist <- import("numpyro.distributions")
+      f2i <- function(f_){jnp$array(f_,jnp$int32)}
+      f2a <- function(x){jnp$array(x,jnp$float32)}
+      ai <- as.integer
+      
+      # Construct for annotating conditionally independent variables.
+      # Within a plate context manager, sample sites will be automatically broadcasted
+      # to the size of the plate. 
+      # Additionally, a scale factor might be applied by certain inference algorithms
+      # if  subsample_size is specified.
+      
+      # Set up MCMC
+      nChains <- 1L
+      numpyro$set_host_device_count(nDevices <- 1L)
+      ChainMethod <- "sequential"
+      nSamplesWarmup <- (1000L)
+      nSamplesMCMC <- (500L)
+      nThinBy <- 2L
+      N <- ai(nrow(ObservablesMat_))
+      K <- ai(ncol(ObservablesMat_))
+      
+      # Define the two-parameter IRT model
+      irt_model <- function(X, # binary indicators 
+                            N, # number of observations  
+                            K # number of items 
+                            ) {
+        # Priors
+        #ability <- numpyro$sample(name = "ability", fn = dist$Normal(0, 1), sample_shape = N)
+        with(numpyro$plate("rows", N), {
+          ability <- numpyro$sample("ability", dist$Normal(0, 1))
+        })
+        #print( ability )
+        with(numpyro$plate("columns", K), {
+          difficulty <- numpyro$sample("difficulty", dist$Normal(0, 1))
+          discrimination <- numpyro$sample("discrimination", dist$LogNormal(0, 1)) # mass on positive values 
+        })
+
+        # likelihood
+        logits <- jnp$outer(ability, discrimination) - difficulty
+        
+        # sanity check prints 
+        if(T == F){ 
+          print("ability shape:"); print(ability$shape)
+          print("discrimination shape:"); print(discrimination$shape)
+          print("difficulty shape:");print(difficulty$shape)
+          print("X shape:");print(X$shape)
+          print("logits shape:");print(logits$shape)
+        }
+        
+        # return
+        return( numpyro$sample("obs", dist$Bernoulli(logits = logits), obs = X) ) 
+      }
+
+      # setup & run MCMC 
+      sampler <- numpyro$infer$MCMC(
+        numpyro$infer$NUTS(irt_model),
+        num_warmup = nSamplesWarmup,
+        num_samples = nSamplesMCMC,
+        thinning = nThinBy, # Positive integer that controls the fraction of post-warmup samples that are retained. For example if thinning is 2 then every other sample is retained. Defaults to 1, i.e. no thinning.
+        chain_method = ChainMethod, # ‘parallel’ (default), ‘sequential’, ‘vectorized’. 
+        num_chains = nChains
+      )
+      # PosteriorDraws$ability$shape
+      sampler$run(jax$random$PRNGKey( ai(runif(1,0,10000)) ), 
+                  X = jnp$array(as.matrix(ObservablesMat_))$astype(jnp$int16), 
+                  N = N, K = K) # don't use numpy array for N and K inputs here! 
+      PosteriorDraws <- sampler$get_samples(group_by_chain = T)
+      
+      ExtractAbil <- function(abil){ # note: deals with identifiability of scale 
+        abil <- do.call(cbind, sapply(0L:(nChains-1L), function(c_){
+          abil_c <- as.matrix(np$array(abil)[c_,,])
+          abil_c <- t(abil_c)
+          if(cor(rowMeans(abil_c),Yobs)<0){ abil_c <- -1*abil_c }
+          return( list(abil_c) )
+        }))
+        return( abil ) 
+      }
+      
+      # Calculate posterior means
+      AbilityMean <- rowMeans(  ExtractAbil(PosteriorDraws$ability) )
+      DifficultyMean <- as.matrix(np$array(jnp$mean(PosteriorDraws$difficulty,0L:1L))) #  colMeans( as.matrix(np$array(PosteriorDraws$difficulty)) )
+      DiscriminationMean <- as.matrix(np$array(jnp$mean(PosteriorDraws$discrimination,0L:1L))) # colMeans( as.matrix(np$array(PosteriorDraws$discrimination)) )
+      
+      # resacle 
+      x.est_MCMC <- x.est_ <- as.matrix(scale(AbilityMean)); s_past <- 1
+      # as.matrix(np$array(PosteriorDraws$ability))[,1:3]
+      # plot(DifficultyMean,DiscriminationMean)
+      # plot(x.est_MCMC, x.est_EM); abline(a=0,b=1); cor(x.est_MCMC, x.est_EM)
+    }
+      
+    if(EstimationMethod == "emIRT"){ 
+      x_init <- apply( ObservablesMat_, 1, function(x){ mean(f2n(x), na.rm=T)})
+      rc_ <- convertRC( rollcall(ObservablesMat_) )
+      #s_ <- list("alpha" = matrix(rnorm(ncol(ObservablesMat_), sd = 1)),"beta" = matrix(rnorm(ncol(ObservablesMat_), sd = 1)), "x" = matrix(x_init))
+      s_ <- getStarts(.N= rc_$n, .J = rc_$m, .D = 1)
+      
+      # fixing in case directions of s1 and s2 x starts are flipped
+      if(split_ %in% c("1","2")){ if(cor(s_$x, s_past$x) < 0){ s_$x <- -s_$x; s_$beta <- -s_$beta } }
+      lout.sim_ <- binIRT(.rc = rc_, 
+                          .starts = s_, 
+                          .priors = makePriors(.N= rc_$n, .J = rc_$m, .D = 1), 
+                          .control= list(threads=1, verbose=FALSE, thresh=1e-6) ,
+                          .anchor_subject = which.max(x_init)) # set direction
+      x.est_EM <- x.est_ <- scale(lout.sim_$means$x); s_past <- s_
+    }
     if(cor(x.est_, Yobs, use="p") < 0){ x.est_ <- -x.est_ }
     eval(parse(text = sprintf("x.est%s <- x.est_", split_)))
   }
@@ -113,6 +219,7 @@ lpme_OneRun <- function(Yobs,
   Corrected_OLSCoef1 <- coef(lm(Yobs ~ x.est1))[2] * (CorrectionFactor <- 1/sqrt( max(c(ep_, cor(x.est1, x.est2) ))))
   Corrected_OLSCoef2 <- coef(lm(Yobs ~ x.est2))[2] * CorrectionFactor
   Corrected_OLSCoef <- (Corrected_OLSCoef1 + Corrected_OLSCoef2)/2
+  # 0.3923193 
   
   # ERV analysis 
   mstage1 <- lm(x.est2 ~ x.est1)
