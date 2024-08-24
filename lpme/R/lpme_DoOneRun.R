@@ -78,7 +78,7 @@ lpme_OneRun <- function(Yobs,
         list( model.matrix(~0+as.factor(zer))[,-1] )}),recursive = F))
     }
     
-    if(EstimationMethod == "MCMC"){
+    if(grepl(EstimationMethod,pattern = "MCMC")){
       # Load required libraries
       library(reticulate)
       reticulate::use_condaenv(conda_env)
@@ -110,17 +110,19 @@ lpme_OneRun <- function(Yobs,
       N <- ai(nrow(ObservablesMat_))
       K <- ai(ncol(ObservablesMat_))
       
+      EstimationMethod <- "MCMC_full"
+      #EstimationMethod <- "MCMC"
+      
       # Define the two-parameter IRT model
       irt_model <- function(X, # binary indicators 
+                            Y, # outcome (used if EstimationMethod <- "MCMC_full")
                             N, # number of observations  
                             K # number of items 
                             ) {
         # Priors
-        #ability <- numpyro$sample(name = "ability", fn = dist$Normal(0, 1), sample_shape = N)
         with(numpyro$plate("rows", N), {
           ability <- numpyro$sample("ability", dist$Normal(0, 1))
         })
-        #print( ability )
         with(numpyro$plate("columns", K), {
           difficulty <- numpyro$sample("difficulty", dist$Normal(0, 1))
           discrimination <- numpyro$sample("discrimination", dist$LogNormal(0, 1)) # mass on positive values 
@@ -138,9 +140,31 @@ lpme_OneRun <- function(Yobs,
           print("logits shape:");print(logits$shape)
         }
         
-        # return
-        return( numpyro$sample("obs", dist$Bernoulli(logits = logits), obs = X) ) 
+        numpyro$sample("Xlik", dist$Bernoulli(logits = logits), obs = X)
+        
+        if(EstimationMethod == "MCMC_full"){
+          # Outcome priors 
+          Y_intercept <- numpyro$sample("YModel_intercept", dist$Normal(0, 1))
+          Y_slope <- numpyro$sample("YModel_slope", dist$Normal(0, 2))
+          #Y_slope <- numpyro$sample("YModel_slope", dist$LogNormal(0, 1))
+          #Y_sigma <- numpyro$sample("YModel_sigma", dist$LogNormal(0, 1))
+          Y_sigma <- numpyro$sample("YModel_sigma", dist$HalfNormal(1))
+          
+          # Outcome model likelihood
+          ability <- jnp$expand_dims(ability,1L)
+          Y_mu <- Y_intercept + jnp$multiply(Y_slope, 
+                                             jax$nn$standardize(ability,0L) )
+          if(T == T){ 
+            print("ability");print(ability$shape)
+            print("Y_mu"); print(Y_mu$shape)
+            print("Y"); print(Y$shape)
+            print("Y_slope"); print(Y_slope$shape)
+            print("Y_sigma"); print(Y_sigma$shape)
+          }
+          numpyro$sample("Ylik", dist$Normal(Y_mu, Y_sigma), obs=Y) # Y_mu has to have same shape as Y
+        }
       }
+      browser()
 
       # setup & run MCMC 
       sampler <- numpyro$infer$MCMC(
@@ -151,11 +175,13 @@ lpme_OneRun <- function(Yobs,
         chain_method = ChainMethod, # ‘parallel’ (default), ‘sequential’, ‘vectorized’. 
         num_chains = nChains
       )
-      # PosteriorDraws$ability$shape
       sampler$run(jax$random$PRNGKey( ai(runif(1,0,10000)) ), 
                   X = jnp$array(as.matrix(ObservablesMat_))$astype(jnp$int16), 
+                  Y = jnp$array(as.matrix(Yobs))$astype(jnp$float32), 
                   N = N, K = K) # don't use numpy array for N and K inputs here! 
       PosteriorDraws <- sampler$get_samples(group_by_chain = T)
+      hist(YModel_SlopeMean <- c(as.matrix(np$array(PosteriorDraws$YModel_slope))))
+      YModel_SlopeMean <- mean(YModel_SlopeMean)
       
       ExtractAbil <- function(abil){ # note: deals with identifiability of scale 
         abil <- do.call(cbind, sapply(0L:(nChains-1L), function(c_){
