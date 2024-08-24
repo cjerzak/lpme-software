@@ -60,6 +60,7 @@ lpme_OneRun <- function(Yobs,
                          seed = NULL){
   library(emIRT);
   starting_seed <- sample(runif(1,1,10000))
+  FullBayesiasn_OLSCoef_se <- FullBayesiasn_OLSCoef <- NA; 
   if(!is.null(seed)){ set.seed(seed) } 
   items.split1_names <- sample(unique(ObservablesGroupings), 
                                size = floor(length(unique(ObservablesGroupings))/2), replace=F)
@@ -79,93 +80,94 @@ lpme_OneRun <- function(Yobs,
     }
     
     if(grepl(EstimationMethod,pattern = "MCMC")){
-      # Load required libraries
-      library(reticulate)
-      reticulate::use_condaenv(conda_env)
-
-      # Import necessary Python modules
-      np <- import("numpy", convert = F)
-      jax <- import("jax")
-      jnp <- import("jax.numpy")
-      random <- import("jax.random")
-      numpyro <- import("numpyro")
-      dist <- import("numpyro.distributions")
-      f2i <- function(f_){jnp$array(f_,jnp$int32)}
-      f2a <- function(x){jnp$array(x,jnp$float32)}
-      ai <- as.integer
-      
-      # Construct for annotating conditionally independent variables.
-      # Within a plate context manager, sample sites will be automatically broadcasted
-      # to the size of the plate. 
-      # Additionally, a scale factor might be applied by certain inference algorithms
-      # if  subsample_size is specified.
-      
-      # Set up MCMC
-      nChains <- 1L
-      numpyro$set_host_device_count(nDevices <- 1L)
-      ChainMethod <- "sequential"
-      nSamplesWarmup <- (1000L)
-      nSamplesMCMC <- (500L)
-      nThinBy <- 2L
-      N <- ai(nrow(ObservablesMat_))
-      K <- ai(ncol(ObservablesMat_))
-      
-      EstimationMethod <- "MCMC_full"
-      #EstimationMethod <- "MCMC"
-      
-      # Define the two-parameter IRT model
-      irt_model <- function(X, # binary indicators 
-                            Y, # outcome (used if EstimationMethod <- "MCMC_full")
-                            N, # number of observations  
-                            K # number of items 
-                            ) {
-        # Priors
-        with(numpyro$plate("rows", N), {
-          ability <- numpyro$sample("ability", dist$Normal(0, 1))
-        })
-        with(numpyro$plate("columns", K), {
-          difficulty <- numpyro$sample("difficulty", dist$Normal(0, 1))
-          discrimination <- numpyro$sample("discrimination", dist$LogNormal(0, 1)) # mass on positive values 
-        })
-
-        # likelihood
-        logits <- jnp$outer(ability, discrimination) - difficulty
+      if(split_ == ""){
+        # Load required libraries
+        library(reticulate)
+        reticulate::use_condaenv(conda_env)
+  
+        # Import necessary Python modules
+        np <- import("numpy", convert = F)
+        jax <- import("jax")
+        jnp <- import("jax.numpy")
+        random <- import("jax.random")
+        numpyro <- import("numpyro")
+        dist <- import("numpyro.distributions")
+        f2i <- function(f_){jnp$array(f_,jnp$int32)}
+        f2a <- function(x){jnp$array(x,jnp$float32)}
+        ai <- as.integer
+    
+    }  
+        # Construct for annotating conditionally independent variables.
+        # Within a plate context manager, sample sites will be automatically broadcasted
+        # to the size of the plate. 
+        # Additionally, a scale factor might be applied by certain inference algorithms
+        # if  subsample_size is specified.
         
-        # sanity check prints 
-        if(T == F){ 
-          print("ability shape:"); print(ability$shape)
-          print("discrimination shape:"); print(discrimination$shape)
-          print("difficulty shape:");print(difficulty$shape)
-          print("X shape:");print(X$shape)
-          print("logits shape:");print(logits$shape)
-        }
+        # Set up MCMC
+        nChains <- 1L
+        numpyro$set_host_device_count(nDevices <- 1L)
+        ChainMethod <- "sequential"
+        nSamplesWarmup <- (1000L)
+        nSamplesMCMC <- (500L)
+        nThinBy <- 2L
+        N <- ai(nrow(ObservablesMat_))
+        K <- ai(ncol(ObservablesMat_))
         
-        numpyro$sample("Xlik", dist$Bernoulli(logits = logits), obs = X)
+        EstimationMethod <- "MCMC_full"
+        #EstimationMethod <- "MCMC"
         
-        if(EstimationMethod == "MCMC_full"){
-          # Outcome priors 
-          Y_intercept <- numpyro$sample("YModel_intercept", dist$Normal(0, 1))
-          Y_slope <- numpyro$sample("YModel_slope", dist$Normal(0, 2))
-          #Y_slope <- numpyro$sample("YModel_slope", dist$LogNormal(0, 1))
-          #Y_sigma <- numpyro$sample("YModel_sigma", dist$LogNormal(0, 1))
-          Y_sigma <- numpyro$sample("YModel_sigma", dist$HalfNormal(1))
+        # Define the two-parameter IRT model
+        irt_model <- function(X, # binary indicators 
+                              Y, # outcome (used if EstimationMethod <- "MCMC_full")
+                              N, # number of observations  
+                              K # number of items 
+                              ) {
+          # Priors
+          with(numpyro$plate("rows", N), {
+            ability <- numpyro$sample("ability", dist$Normal(0, 1))
+          })
+          with(numpyro$plate("columns", K), {
+            difficulty <- numpyro$sample("difficulty", dist$Normal(0, 1))
+            discrimination <- numpyro$sample("discrimination", dist$LogNormal(0, 1)) # mass on positive values 
+          })
+  
+          # likelihood
+          logits <- jnp$outer(ability, discrimination) - difficulty
           
-          # Outcome model likelihood
-          ability <- jnp$expand_dims(ability,1L)
-          Y_mu <- Y_intercept + jnp$multiply(Y_slope, 
-                                             jax$nn$standardize(ability,0L) )
-          if(T == T){ 
-            print("ability");print(ability$shape)
-            print("Y_mu"); print(Y_mu$shape)
-            print("Y"); print(Y$shape)
-            print("Y_slope"); print(Y_slope$shape)
-            print("Y_sigma"); print(Y_sigma$shape)
+          # sanity check prints 
+          if(T == F){ 
+            print("ability shape:"); print(ability$shape)
+            print("discrimination shape:"); print(discrimination$shape)
+            print("difficulty shape:");print(difficulty$shape)
+            print("X shape:");print(X$shape)
+            print("logits shape:");print(logits$shape)
           }
-          numpyro$sample("Ylik", dist$Normal(Y_mu, Y_sigma), obs=Y) # Y_mu has to have same shape as Y
+          
+          numpyro$sample("Xlik", dist$Bernoulli(logits = logits), obs = X)
+          
+          if(EstimationMethod == "MCMC_full"){
+            # Outcome priors 
+            Y_intercept <- numpyro$sample("YModel_intercept", dist$Normal(0, 1))
+            Y_slope <- numpyro$sample("YModel_slope", dist$Normal(0, 2))
+            #Y_slope <- numpyro$sample("YModel_slope", dist$LogNormal(0, 1))
+            #Y_sigma <- numpyro$sample("YModel_sigma", dist$LogNormal(0, 1))
+            Y_sigma <- numpyro$sample("YModel_sigma", dist$HalfNormal(1))
+            
+            # Outcome model likelihood
+            ability <- jnp$expand_dims(ability,1L)
+            Y_mu <- Y_intercept + jnp$multiply(Y_slope, 
+                                               jax$nn$standardize(ability,0L) )
+            if(T == T){ 
+              print("ability");print(ability$shape)
+              print("Y_mu"); print(Y_mu$shape)
+              print("Y"); print(Y$shape)
+              print("Y_slope"); print(Y_slope$shape)
+              print("Y_sigma"); print(Y_sigma$shape)
+            }
+            numpyro$sample("Ylik", dist$Normal(Y_mu, Y_sigma), obs=Y) # Y_mu has to have same shape as Y
+          }
         }
-      }
-      browser()
-
+        
       # setup & run MCMC 
       sampler <- numpyro$infer$MCMC(
         numpyro$infer$NUTS(irt_model),
@@ -180,8 +182,11 @@ lpme_OneRun <- function(Yobs,
                   Y = jnp$array(as.matrix(Yobs))$astype(jnp$float32), 
                   N = N, K = K) # don't use numpy array for N and K inputs here! 
       PosteriorDraws <- sampler$get_samples(group_by_chain = T)
-      hist(YModel_SlopeMean <- c(as.matrix(np$array(PosteriorDraws$YModel_slope))))
-      YModel_SlopeMean <- mean(YModel_SlopeMean)
+      if(EstimationMethod == "MCMC_full" & split_ == ""){
+        hist(FullBayesiasn_OLSCoef <- c(as.matrix(np$array(PosteriorDraws$YModel_slope))))
+        FullBayesiasn_OLSCoef <- mean(FullBayesiasn_OLSCoef)
+        FullBayesiasn_OLSSE <- sd(FullBayesiasn_OLSCoef)
+      }
       
       ExtractAbil <- function(abil){ # note: deals with identifiability of scale 
         abil <- do.call(cbind, sapply(0L:(nChains-1L), function(c_){
@@ -274,6 +279,10 @@ lpme_OneRun <- function(Yobs,
         "Corrected_OLSCoef_alt" = NA, 
         "Corrected_OLSSE_alt" = NA,
         "Corrected_OLSTstat_alt" = NA,
+       
+       "FullBayesiasn_OLSCoef" = FullBayesiasn_OLSCoef, 
+       "FullBayesiasn_OLSSE" = FullBayesiasn_OLSSE,
+       "FullBayesiasn_OLSTstat" = FullBayesiasn_OLSCoef/FullBayesiasn_OLSSE,
     
         "mstage1ERV" = mstage1ERV, 
         "mreducedERV" = mreducedERV, 

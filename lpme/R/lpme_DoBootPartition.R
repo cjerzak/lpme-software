@@ -139,6 +139,12 @@ lpme <- function(Yobs,
        "Corrected_IVRegUpper" = ( qf(qUp, tapply(LatentRunResults$Intermediary_Corrected_IVRegCoef,LatentRunResults$Intermediary_BootIndex,theSumFxn) )),
        "Corrected_IVRegTstat"  = (m4_/se4_),
        
+       "FullBayesian_OLSRegCoef" = (m4_ <- tapply(LatentRunResults$Intermediary_FullBayesiasn_OLSCoef,LatentRunResults$Intermediary_BootIndex,theSumFxn)[1]),
+       "FullBayesian_OLSRegSE" = (se4_ <- sd(tapply(LatentRunResults$Intermediary_FullBayesiasn_OLSCoef,LatentRunResults$Intermediary_BootIndex,theSumFxn) )),
+       "FullBayesian_OLSLower" = ( qf(qLow, tapply(LatentRunResults$Intermediary_FullBayesiasn_OLSCoef,LatentRunResults$Intermediary_BootIndex,theSumFxn) )),
+       "FullBayesian_OLSUpper" = ( qf(qUp, tapply(LatentRunResults$Intermediary_FullBayesiasn_OLSCoef,LatentRunResults$Intermediary_BootIndex,theSumFxn) )),
+       "FullBayesian_OLSTstat"  = (m4_/se4_),
+       
        "mstage1ERV" = (m2_ <- tapply(LatentRunResults$Intermediary_mstage1ERV,LatentRunResults$Intermediary_BootIndex,theSumFxn)[1]),
        "mstage1ERVSE" = (se2_ <- sd(tapply(LatentRunResults$Intermediary_mstage1ERV,LatentRunResults$Intermediary_BootIndex,theSumFxn) )),
        "mstage1ERVLower" = ( qf(qLow, tapply(LatentRunResults$Intermediary_mstage1ERV,LatentRunResults$Intermediary_BootIndex,theSumFxn) )),
