@@ -148,16 +148,16 @@ lpme_OneRun <- function(Yobs,
           if(EstimationMethod == "MCMC_full"){
             # Outcome priors 
             Y_intercept <- numpyro$sample("YModel_intercept", dist$Normal(0, 1))
-            Y_slope <- numpyro$sample("YModel_slope", dist$Normal(0, 2))
+            Y_slope <- numpyro$sample("YModel_slope", dist$Normal(0.1, 2))
             #Y_slope <- numpyro$sample("YModel_slope", dist$LogNormal(0, 1))
             #Y_sigma <- numpyro$sample("YModel_sigma", dist$LogNormal(0, 1))
             Y_sigma <- numpyro$sample("YModel_sigma", dist$HalfNormal(1))
             
             # Outcome model likelihood
             ability <- jnp$expand_dims(ability,1L)
-            Y_mu <- Y_intercept + jnp$multiply(Y_slope, 
-                                               jax$nn$standardize(ability,0L) )
-            if(T == T){ 
+            Y_mu <- Y_intercept + jnp$multiply(Y_slope, jax$nn$standardize(ability,0L) )
+            
+            if(T == F){ # sanity check prints 
               print("ability");print(ability$shape)
               print("Y_mu"); print(Y_mu$shape)
               print("Y"); print(Y$shape)
