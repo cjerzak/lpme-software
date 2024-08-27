@@ -87,7 +87,7 @@ lpme_OneRun <- function(Yobs,
         reticulate::use_condaenv(conda_env)
         
         # set environmental variables 
-        if(!is.null(Sys.setenv_text)){ 
+        if( !is.null(Sys.setenv_text) ){ 
           eval(parse(text = Sys.setenv_text), envir = .GlobalEnv)
         }
   
