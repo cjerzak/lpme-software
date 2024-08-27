@@ -104,7 +104,7 @@ lpme_OneRun <- function(Yobs,
         # if  subsample_size is specified.
         
         # Set up MCMC
-        nChains <- 1L
+        nChains <- 2L
         numpyro$set_host_device_count(nDevices <- 1L)
         ChainMethod <- "sequential"
         nSamplesWarmup <- (1000L)
@@ -183,9 +183,10 @@ lpme_OneRun <- function(Yobs,
                   N = N, K = K) # don't use numpy array for N and K inputs here! 
       PosteriorDraws <- sampler$get_samples(group_by_chain = T)
       if(EstimationMethod == "MCMCFull" & split_ == ""){
-        hist(FullBayesiasn_OLSCoef <- c(as.matrix(np$array(PosteriorDraws$YModel_slope))))
-        FullBayesiasn_OLSCoef <- mean(FullBayesiasn_OLSCoef)
-        FullBayesiasn_OLSSE <- sd(FullBayesiasn_OLSCoef)
+        FullBayesiasn_OLSCoef <- c(as.matrix(np$array(PosteriorDraws$YModel_slope)))
+        # hist(FullBayesiasn_OLSCoef)
+        FullBayesiasn_OLSSE <- sd( FullBayesiasn_OLSCoef )
+        FullBayesiasn_OLSCoef <- mean( FullBayesiasn_OLSCoef )
       }
       
       ExtractAbil <- function(abil){ # note: deals with identifiability of scale 
@@ -221,7 +222,7 @@ lpme_OneRun <- function(Yobs,
       lout.sim_ <- binIRT(.rc = rc_, 
                           .starts = s_, 
                           .priors = makePriors(.N= rc_$n, .J = rc_$m, .D = 1), 
-                          .control= list(threads=1, verbose=FALSE, thresh=1e-6) ,
+                          .control= list(threads=1, verbose=FALSE, thresh=1e-6,verbose=F),
                           .anchor_subject = which.max(x_init)) # set direction
       x.est_EM <- x.est_ <- scale(lout.sim_$means$x); s_past <- s_
     }
