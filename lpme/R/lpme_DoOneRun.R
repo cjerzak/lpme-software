@@ -113,12 +113,12 @@ lpme_OneRun <- function(Yobs,
         N <- ai(nrow(ObservablesMat_))
         K <- ai(ncol(ObservablesMat_))
         
-        EstimationMethod <- "MCMC_full"
-        #EstimationMethod <- "MCMC"
+        # EstimationMethod <- "MCMCFull"
+        # EstimationMethod <- "MCMC"
         
         # Define the two-parameter IRT model
         irt_model <- function(X, # binary indicators 
-                              Y, # outcome (used if EstimationMethod <- "MCMC_full")
+                              Y, # outcome (used if EstimationMethod <- "MCMCFull")
                               N, # number of observations  
                               K # number of items 
                               ) {
@@ -145,11 +145,11 @@ lpme_OneRun <- function(Yobs,
           
           numpyro$sample("Xlik", dist$Bernoulli(logits = logits), obs = X)
           
-          if(EstimationMethod == "MCMC_full"){
+          if(EstimationMethod == "MCMCFull"){
             # Outcome priors 
             Y_intercept <- numpyro$sample("YModel_intercept", dist$Normal(0, 1))
-            Y_slope <- numpyro$sample("YModel_slope", dist$Normal(0.1, 2))
-            #Y_slope <- numpyro$sample("YModel_slope", dist$LogNormal(0, 1))
+            #Y_slope <- numpyro$sample("YModel_slope", dist$Normal(0, 2))
+            Y_slope <- numpyro$sample("YModel_slope", dist$LogNormal(0, 1)) # constrain slope to be positive 
             #Y_sigma <- numpyro$sample("YModel_sigma", dist$LogNormal(0, 1))
             Y_sigma <- numpyro$sample("YModel_sigma", dist$HalfNormal(1))
             
@@ -182,7 +182,7 @@ lpme_OneRun <- function(Yobs,
                   Y = jnp$array(as.matrix(Yobs))$astype(jnp$float32), 
                   N = N, K = K) # don't use numpy array for N and K inputs here! 
       PosteriorDraws <- sampler$get_samples(group_by_chain = T)
-      if(EstimationMethod == "MCMC_full" & split_ == ""){
+      if(EstimationMethod == "MCMCFull" & split_ == ""){
         hist(FullBayesiasn_OLSCoef <- c(as.matrix(np$array(PosteriorDraws$YModel_slope))))
         FullBayesiasn_OLSCoef <- mean(FullBayesiasn_OLSCoef)
         FullBayesiasn_OLSSE <- sd(FullBayesiasn_OLSCoef)
