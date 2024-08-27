@@ -57,6 +57,7 @@ lpme_OneRun <- function(Yobs,
                          MakeObservablesGroupings = F, 
                          EstimationMethod = "emIRT", 
                          conda_env = NULL, 
+                         Sys.setenv_text = NULL,
                          seed = NULL){
   library(emIRT);
   starting_seed <- sample(runif(1,1,10000))
@@ -84,6 +85,11 @@ lpme_OneRun <- function(Yobs,
         # Load required libraries
         library(reticulate)
         reticulate::use_condaenv(conda_env)
+        
+        # set environmental variables 
+        if(!is.null(Sys.setenv_text)){ 
+          eval(parse(text = Sys.setenv_text), envir = .GlobalEnv)
+        }
   
         # Import necessary Python modules
         np <- import("numpy", convert = F)
