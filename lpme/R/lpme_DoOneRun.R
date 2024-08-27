@@ -84,11 +84,12 @@ lpme_OneRun <- function(Yobs,
       if(split_ == ""){
         # Load required libraries
         library(reticulate)
-        reticulate::use_condaenv(conda_env)
+        reticulate::use_condaenv( conda_env )
         
         # set environmental variables 
         if( !is.null(Sys.setenv_text) ){ 
-          eval(parse(text = Sys.setenv_text), envir = .GlobalEnv)
+          #eval(parse(text = Sys.setenv_text), envir = .GlobalEnv)
+          eval(parse(text = Sys.setenv_text) )
         }
   
         # Import necessary Python modules
