@@ -100,15 +100,16 @@ lpme <- function(Yobs,
   theSumFxn <- median 
   #theSumFxn <- mean # high variance - do not use
   names( LatentRunResults ) <- paste0("Intermediary_",names(LatentRunResults))
-  VarEst_split <- theSumFxn(apply(LatentRunResults$Intermediary_x.est1[,which(LatentRunResults$Intermediary_BootIndex==1)] - 
-                             LatentRunResults$Intermediary_x.est2[,which(LatentRunResults$Intermediary_BootIndex==1)], 1, sd))
-  VarEst_split_se <- sd( sapply(2:(nBoot+1),function(boot_){
+  VarEst_split <- try(theSumFxn(apply(LatentRunResults$Intermediary_x.est1[,which(LatentRunResults$Intermediary_BootIndex==1)] - 
+                             LatentRunResults$Intermediary_x.est2[,which(LatentRunResults$Intermediary_BootIndex==1)], 1, sd)),T)
+  if("try-error" %in% class(VarEst_split)){ VarEst_split <- NA }
+  VarEst_split_se <- try(sd( sapply(2:(nBoot+1),function(boot_){
                             theSumFxn(apply(LatentRunResults$Intermediary_x.est1[,which(LatentRunResults$Intermediary_BootIndex==boot_)] - 
-                               LatentRunResults$Intermediary_x.est2[,which(LatentRunResults$Intermediary_BootIndex==boot_)], 1, sd)) }))
+                               LatentRunResults$Intermediary_x.est2[,which(LatentRunResults$Intermediary_BootIndex==boot_)], 1, sd)) })),T)
+  if("try-error" %in% class(VarEst_split_se)){ VarEst_split_se <- NA }
   
-  # tapply(LatentRunResults$Intermediary_Corrected_OLSCoef,LatentRunResults$Intermediary_BootIndex,theSumFxn)
   qLow <- 0.025; qUp <- 0.975
-  qf <- function(q,x){quantile(x,prob = q, na.rm = T)}
+  qf <- function(q,x){ifelse(length(x) < 2, yes = NA, no = quantile(x,prob = q, na.rm = T))}
   return( 
     list(
        "OLSCoef" = (m1_ <- tapply(LatentRunResults$Intermediary_OLSCoef,LatentRunResults$Intermediary_BootIndex,theSumFxn)[1] ),
@@ -141,14 +142,14 @@ lpme <- function(Yobs,
        "Corrected_IVRegUpper" = ( qf(qUp, tapply(LatentRunResults$Intermediary_Corrected_IVRegCoef,LatentRunResults$Intermediary_BootIndex,theSumFxn) )),
        "Corrected_IVRegTstat"  = (m4_/se4_),
        
-       "FullBayesian_OLSRegCoef" = (m4_ <- tapply(LatentRunResults$Intermediary_FullBayesiasn_OLSCoef,LatentRunResults$Intermediary_BootIndex,theSumFxn)[1]),
-       "FullBayesian_OLSRegSE_parametric" = (se4_b <- tapply(LatentRunResults$Intermediary_FullBayesiasn_OLSSE,
+       "Bayesian_OLSRegCoef" = (m4_ <- tapply(LatentRunResults$Intermediary_Bayesian_OLSCoef,LatentRunResults$Intermediary_BootIndex,theSumFxn)[1]),
+       "Bayesian_OLSRegSE_parametric" = (se4_b <- tapply(LatentRunResults$Intermediary_Bayesian_OLSSE,
                                                              LatentRunResults$Intermediary_BootIndex,
                                                            function(x){ 1/length(x) * sum(x^2)^0.5  }))[1],
-       "FullBayesian_OLSRegSE" = (se4_ <- sd(tapply(LatentRunResults$Intermediary_FullBayesiasn_OLSCoef,LatentRunResults$Intermediary_BootIndex,theSumFxn) )),
-       "FullBayesian_OLSLower" = ( qf(qLow, tapply(LatentRunResults$Intermediary_FullBayesiasn_OLSCoef,LatentRunResults$Intermediary_BootIndex,theSumFxn) )),
-       "FullBayesian_OLSUpper" = ( qf(qUp, tapply(LatentRunResults$Intermediary_FullBayesiasn_OLSCoef,LatentRunResults$Intermediary_BootIndex,theSumFxn) )),
-       "FullBayesian_OLSTstat"  = (m4_/se4_),
+       "Bayesian_OLSRegSE" = (se4_ <- sd(tapply(LatentRunResults$Intermediary_Bayesian_OLSCoef,LatentRunResults$Intermediary_BootIndex,theSumFxn) )),
+       "Bayesian_OLSLower" = ( qf(qLow, tapply(LatentRunResults$Intermediary_Bayesian_OLSCoef,LatentRunResults$Intermediary_BootIndex,theSumFxn) )),
+       "Bayesian_OLSUpper" = ( qf(qUp, tapply(LatentRunResults$Intermediary_Bayesian_OLSCoef,LatentRunResults$Intermediary_BootIndex,theSumFxn) )),
+       "Bayesian_OLSTstat"  = (m4_/se4_),
        
        "mstage1ERV" = (m2_ <- tapply(LatentRunResults$Intermediary_mstage1ERV,LatentRunResults$Intermediary_BootIndex,theSumFxn)[1]),
        "mstage1ERVSE" = (se2_ <- sd(tapply(LatentRunResults$Intermediary_mstage1ERV,LatentRunResults$Intermediary_BootIndex,theSumFxn) )),

@@ -59,9 +59,8 @@ lpme_OneRun <- function(Yobs,
                          conda_env = NULL, 
                          Sys.setenv_text = NULL,
                          seed = NULL){
-  library(emIRT);
   starting_seed <- sample(runif(1,1,10000))
-  FullBayesiasn_OLSCoef_se <- FullBayesiasn_OLSCoef <- NA; 
+  Bayesian_OLSCoef_se <- Bayesian_OLSCoef <- NA; 
   if(!is.null(seed)){ set.seed(seed) } 
   items.split1_names <- sample(unique(ObservablesGroupings), 
                                size = floor(length(unique(ObservablesGroupings))/2), replace=F)
@@ -114,32 +113,33 @@ lpme_OneRun <- function(Yobs,
         nChains <- 2L
         numpyro$set_host_device_count(nDevices <- 1L)
         ChainMethod <- "sequential"
-        nSamplesWarmup <- (1000L)
-        nSamplesMCMC <- (500L)
+        #ChainMethod <- "vectorized"
+        nSamplesWarmup <- (2000L)
+        nSamplesMCMC <- (512L)
         nThinBy <- 2L
         N <- ai(nrow(ObservablesMat_))
         K <- ai(ncol(ObservablesMat_))
         
-        # EstimationMethod <- "MCMCFull"
-        # EstimationMethod <- "MCMC"
-        
         # Define the two-parameter IRT model
-        irt_model <- function(X, # binary indicators 
+        IRTModel <- function(X, # binary indicators 
                               Y, # outcome (used if EstimationMethod <- "MCMCFull")
                               N, # number of observations  
                               K # number of items 
-                              ) {
+                              ){
           # Priors
           with(numpyro$plate("rows", N), {
             ability <- numpyro$sample("ability", dist$Normal(0, 1))
           })
           with(numpyro$plate("columns", K), {
-            difficulty <- numpyro$sample("difficulty", dist$Normal(0, 1))
-            discrimination <- numpyro$sample("discrimination", dist$LogNormal(0, 1)) # mass on positive values 
+            difficulty <- numpyro$sample("difficulty", dist$Normal(0, 10))
+            discrimination <- numpyro$sample("discrimination", dist$Normal(0, 10))  
+            #discrimination <- numpyro$sample("discrimination", dist$LogNormal(0, 10)) # if placing mass on positive values
+            discrimination <- jnp$where(jnp$arange(K) == 1, 1.0, discrimination)  # Fix one discrimination
           })
   
           # likelihood
           logits <- jnp$outer(ability, discrimination) - difficulty
+          probs <- jax$scipy$stats$norm$cdf( logits ) # probit link 
           
           # sanity check prints 
           if(T == F){ 
@@ -150,19 +150,26 @@ lpme_OneRun <- function(Yobs,
             print("logits shape:");print(logits$shape)
           }
           
-          numpyro$sample("Xlik", dist$Bernoulli(logits = logits), obs = X)
+          # dist$Bernoulli(prob)
+          # contribution of the factors/observed traits to the model 
+          numpyro$sample("Xlik", dist$Bernoulli(probs = probs), obs=X)
           
           if(EstimationMethod == "MCMCFull"){
-            # Outcome priors 
+            # Outcome intercept prior
             Y_intercept <- numpyro$sample("YModel_intercept", dist$Normal(0, 1))
-            #Y_slope <- numpyro$sample("YModel_slope", dist$Normal(0, 2))
-            Y_slope <- numpyro$sample("YModel_slope", dist$LogNormal(0, 1)) # constrain slope to be positive 
-            #Y_sigma <- numpyro$sample("YModel_sigma", dist$LogNormal(0, 1))
-            Y_sigma <- numpyro$sample("YModel_sigma", dist$HalfNormal(1))
+            
+            # Outcome slope prior
+            Y_slope <- numpyro$sample("YModel_slope", dist$Normal(0, 1))
+            #Y_slope <- numpyro$sample("YModel_slope", dist$LogNormal(0, 1)) # constrain slope to be positive 
+            
+            # Outcome sigma prior
+            Y_sigma <- numpyro$sample("YModel_sigma", dist$LogNormal(0, 2))
+            #Y_sigma <- numpyro$sample("YModel_sigma", dist$HalfNormal(1))
             
             # Outcome model likelihood
-            ability <- jnp$expand_dims(ability,1L)
-            Y_mu <- Y_intercept + jnp$multiply(Y_slope, jax$nn$standardize(ability,0L) )
+            ability <- jnp$expand_dims(ability, 1L)
+            #Y_mu <- Y_intercept + jnp$multiply(Y_slope,  jax$nn$standardize(ability, 0L, epsilon = 0.001))
+            Y_mu <- Y_intercept + jnp$multiply(Y_slope,  ability)
             
             if(T == F){ # sanity check prints 
               print("ability");print(ability$shape)
@@ -173,11 +180,11 @@ lpme_OneRun <- function(Yobs,
             }
             numpyro$sample("Ylik", dist$Normal(Y_mu, Y_sigma), obs=Y) # Y_mu has to have same shape as Y
           }
-        }
+      }
         
       # setup & run MCMC 
       sampler <- numpyro$infer$MCMC(
-        numpyro$infer$NUTS(irt_model),
+        numpyro$infer$NUTS( IRTModel ),
         num_warmup = nSamplesWarmup,
         num_samples = nSamplesMCMC,
         thinning = nThinBy, # Positive integer that controls the fraction of post-warmup samples that are retained. For example if thinning is 2 then every other sample is retained. Defaults to 1, i.e. no thinning.
@@ -185,17 +192,32 @@ lpme_OneRun <- function(Yobs,
         num_chains = nChains
       )
       sampler$run(jax$random$PRNGKey( ai(runif(1,0,10000)) ), 
-                  X = jnp$array(as.matrix(ObservablesMat_))$astype(jnp$int16), 
-                  Y = jnp$array(as.matrix(Yobs))$astype(jnp$float32), 
+                  X = jnp$array(as.matrix(ObservablesMat_))$astype( jnp$int16 ), 
+                  Y = jnp$array(as.matrix(Yobs))$astype( jnp$float32 ), 
                   N = N, K = K) # don't use numpy array for N and K inputs here! 
       PosteriorDraws <- sampler$get_samples(group_by_chain = T)
-      if(EstimationMethod == "MCMCFull" & split_ == ""){
-        FullBayesiasn_OLSCoef <- c(as.matrix(np$array(PosteriorDraws$YModel_slope)))
-        # hist(FullBayesiasn_OLSCoef)
-        FullBayesiasn_OLSSE <- sd( FullBayesiasn_OLSCoef )
-        FullBayesiasn_OLSCoef <- mean( FullBayesiasn_OLSCoef )
-      }
       
+        # post process iterations -> 
+        # divide the iterations by standard deviation by posterior mean (
+        # just do something to get the standard deviation of the posterior means across x to be 1 
+        # multiply slope coefficient by the standard deviation too. 
+        # put identifying restrictions on posterior MEANS of xt 
+        # no partitining with BAYESIAN 
+        
+        # method of compositions: MCMC model for irt; 
+        # identify with the MEAN normalization 
+        # poster means 
+        # recently modified papers in literature section (blackwell paper; coe thing)
+        
+        # over imputation: 
+        # estimate X's 
+        # cell level priors? 
+        # method of composition once, also do MI 
+        # with new monte carlo simulation 
+        # # run irt once -> get estimates -> use prior over X's 
+        # run again the joint model; let Y inform draws  
+        # https://www.rdocumentation.org/packages/Amelia/versions/1.8.1 
+
       ExtractAbil <- function(abil){ # note: deals with identifiability of scale 
         abil <- do.call(cbind, sapply(0L:(nChains-1L), function(c_){
           abil_c <- as.matrix(np$array(abil)[c_,,])
@@ -206,19 +228,97 @@ lpme_OneRun <- function(Yobs,
         return( abil ) 
       }
       
+      # hist( apply(ExtractAbil(PosteriorDraws$ability), 2, sd) ) 
+      # hist( apply(ExtractAbil(PosteriorDraws$ability), 2, sd) ) 
+      # hist(AbilityMean)
+      # summary( lm(Yobs~AbilityMean) )
+      # summary( lm(Yobs~scale(AbilityMean) ) )
+      
       # Calculate posterior means
       AbilityMean <- rowMeans(  ExtractAbil(PosteriorDraws$ability) )
       DifficultyMean <- as.matrix(np$array(jnp$mean(PosteriorDraws$difficulty,0L:1L))) #  colMeans( as.matrix(np$array(PosteriorDraws$difficulty)) )
       DiscriminationMean <- as.matrix(np$array(jnp$mean(PosteriorDraws$discrimination,0L:1L))) # colMeans( as.matrix(np$array(PosteriorDraws$discrimination)) )
       
+      if(EstimationMethod == "MCMCFull" & split_ == ""){ # full bayesian model 
+        RescaledAbilities <- (ExtractAbil(PosteriorDraws$ability)-mean(AbilityMean))/sd(AbilityMean)
+        #plot(RescaledAbilities[,1],RescaledAbilities[,2])
+        #SignSwap <- sign(cor(RescaledAbilities)[1,])
+        #RescaledAbilities <- SignSwap
+        #AbilityMean <- rowMeans(  ExtractAbil(PosteriorDraws$ability)*SignSwap )
+        Bayesian_OLSCoef <- c(as.matrix(np$array(PosteriorDraws$YModel_slope)))/sd(AbilityMean) # CONFIRM 
+        # sd(rowMeans(RescaledAbilities));mean(rowMeans(RescaledAbilities)) # confirm sanity values of 1,0
+        # hist(Bayesian_OLSCoef)
+        Bayesian_OLSSE <- sd( Bayesian_OLSCoef )
+        Bayesian_OLSCoef <- mean( Bayesian_OLSCoef )
+      }
+      if(EstimationMethod == "MCMC" & split_ == ""){ # method of compositions 
+        RescaledAbilities  <- (ExtractAbil(PosteriorDraws$ability)-mean(AbilityMean))/sd(AbilityMean)
+        Bayesian_OLSCoef <- apply(RescaledAbilities, 2, function(x_){ coef(lm(Yobs~x_))[2]})
+        # sd(rowMeans(RescaledAbilities));mean(rowMeans(RescaledAbilities)) # confirm sanity value of 1, 0
+        # hist(Bayesian_OLSCoef)
+        Bayesian_OLSSE <- sd( Bayesian_OLSCoef )
+        Bayesian_OLSCoef <- mean( Bayesian_OLSCoef )
+      }
+      
       # resacle 
       x.est_MCMC <- x.est_ <- as.matrix(scale(AbilityMean)); s_past <- 1
+      # summary( lm(Yobs~x.est_MCMC) ) 
       # as.matrix(np$array(PosteriorDraws$ability))[,1:3]
       # plot(DifficultyMean,DiscriminationMean)
       # plot(x.est_MCMC, x.est_EM); abline(a=0,b=1); cor(x.est_MCMC, x.est_EM)
+      
+      if(EstimationMethod == "MCMCOverImputation" & split_ == ""){ 
+        # file:///Users/cjerzak/Dropbox/LatentMeasures/literature/CAUGHEY-ps8-solution.html
+        RescaledAbilities  <- (ExtractAbil(PosteriorDraws$ability)-mean(AbilityMean))/sd(AbilityMean)
+        Xobs_mean <- apply(RescaledAbilities, 1, function(x_){ mean(x_) } ) 
+        Xobs_SE <- apply(RescaledAbilities, 1, function(x_){ sd(x_) } ) 
+        
+        dat_ <- cbind(Yobs, x.est_MCMC)
+        
+        # Specify (over-)imputation model
+        # priors: #a numeric matrix with four columns 
+        # (row, column, mean, standard deviation) 
+        # indicating noisy estimates of the values to be imputed.
+        outcome_priors <- cbind(
+          1:nrow(dat_), 1,              
+          Yobs, # mean 
+          1 # sd 
+        )
+        policy_priors <- cbind( 
+          1:nrow(dat_), 2,              
+          Xobs_mean,
+          Xobs_SE
+        )
+        #priors <- rbind(policy_priors, outcome_priors)
+        priors <- policy_priors
+        
+        #a numeric matrix where each row indicates a row and column of x to be overimputed.
+        # overimp <- rbind(cbind(1:nrow(dat_), 1), cbind(1:nrow(dat_), 2))
+        overimp <- cbind(1:nrow(dat_), 2)
+        
+        overimputed_data <- Amelia::amelia( 
+          x = dat_, m = 50L,
+          p2s = 0,
+          priors = priors, 
+          overimp = overimp 
+        )
+        
+        # Perform multiple overimputation
+        overimputed_Yobs <- do.call(cbind,lapply(overimputed_data$imputations,function(l_){l_[,1]}))
+        overimputed_x.est_MCMC <- do.call(cbind,lapply(overimputed_data$imputations,function(l_){l_[,2]}))
+        
+        # cor(cbind(x.est_MCMC, overimputed_x.est_MCMC))
+        # plot(x.est_MCMC,overimputed_x.est_MCMC[,1])
+        
+        # Analyze overimputed datasets
+        overimputed_analysis <- unlist(unlist( lapply(overimputed_data$imputations, function(l_){ coef(lm(l_[,1]~l_[,2]))[2]  }) ))
+        Bayesian_OLSSE <- sd( overimputed_analysis )
+        Bayesian_OLSCoef <- mean( overimputed_analysis )
+      }
     }
       
     if(EstimationMethod == "emIRT"){ 
+      library(emIRT)
       x_init <- apply( ObservablesMat_, 1, function(x){ mean(f2n(x), na.rm=T)})
       rc_ <- convertRC( rollcall(ObservablesMat_) )
       #s_ <- list("alpha" = matrix(rnorm(ncol(ObservablesMat_), sd = 1)),"beta" = matrix(rnorm(ncol(ObservablesMat_), sd = 1)), "x" = matrix(x_init))
@@ -288,9 +388,9 @@ lpme_OneRun <- function(Yobs,
         "Corrected_OLSSE_alt" = NA,
         "Corrected_OLSTstat_alt" = NA,
        
-       "FullBayesiasn_OLSCoef" = FullBayesiasn_OLSCoef, 
-       "FullBayesiasn_OLSSE" = FullBayesiasn_OLSSE,
-       "FullBayesiasn_OLSTstat" = FullBayesiasn_OLSCoef/FullBayesiasn_OLSSE,
+       "Bayesian_OLSCoef" = Bayesian_OLSCoef, 
+       "Bayesian_OLSSE" = Bayesian_OLSSE,
+       "Bayesian_OLSTstat" = Bayesian_OLSCoef/Bayesian_OLSSE,
     
         "mstage1ERV" = mstage1ERV, 
         "mreducedERV" = mreducedERV, 
