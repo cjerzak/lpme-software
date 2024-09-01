@@ -60,7 +60,7 @@ lpme_OneRun <- function(Yobs,
                          Sys.setenv_text = NULL,
                          seed = NULL){
   starting_seed <- sample(runif(1,1,10000))
-  Bayesian_OLSCoef_se <- Bayesian_OLSCoef <- NA; 
+  Bayesian_OLSSE <- Bayesian_OLSCoef <- NA; 
   if(!is.null(seed)){ set.seed(seed) } 
   items.split1_names <- sample(unique(ObservablesGroupings), 
                                size = floor(length(unique(ObservablesGroupings))/2), replace=F)
@@ -112,9 +112,9 @@ lpme_OneRun <- function(Yobs,
         # Set up MCMC
         nChains <- 2L
         numpyro$set_host_device_count(nDevices <- 1L)
-        ChainMethod <- "sequential"
-        #ChainMethod <- "vectorized"
-        nSamplesWarmup <- (2000L)
+        #ChainMethod <- "sequential"
+        ChainMethod <- "vectorized"
+        nSamplesWarmup <- (1024L)
         nSamplesMCMC <- (512L)
         nThinBy <- 2L
         N <- ai(nrow(ObservablesMat_))
@@ -182,6 +182,8 @@ lpme_OneRun <- function(Yobs,
           }
       }
         
+        #user  system elapsed 
+        #59.232  49.131  30.767 
       # setup & run MCMC 
       sampler <- numpyro$infer$MCMC(
         numpyro$infer$NUTS( IRTModel ),
@@ -189,7 +191,8 @@ lpme_OneRun <- function(Yobs,
         num_samples = nSamplesMCMC,
         thinning = nThinBy, # Positive integer that controls the fraction of post-warmup samples that are retained. For example if thinning is 2 then every other sample is retained. Defaults to 1, i.e. no thinning.
         chain_method = ChainMethod, # ‘parallel’ (default), ‘sequential’, ‘vectorized’. 
-        num_chains = nChains
+        num_chains = nChains,
+        progress_bar = F # set to TRUE for progress 
       )
       sampler$run(jax$random$PRNGKey( ai(runif(1,0,10000)) ), 
                   X = jnp$array(as.matrix(ObservablesMat_))$astype( jnp$int16 ), 
@@ -227,8 +230,7 @@ lpme_OneRun <- function(Yobs,
         }))
         return( abil ) 
       }
-      
-      # hist( apply(ExtractAbil(PosteriorDraws$ability), 2, sd) ) 
+
       # hist( apply(ExtractAbil(PosteriorDraws$ability), 2, sd) ) 
       # hist(AbilityMean)
       # summary( lm(Yobs~AbilityMean) )
@@ -318,7 +320,7 @@ lpme_OneRun <- function(Yobs,
     }
       
     if(EstimationMethod == "emIRT"){ 
-      library(emIRT)
+      suppressPackageStartupMessages( library(emIRT, quietly = T) ) 
       x_init <- apply( ObservablesMat_, 1, function(x){ mean(f2n(x), na.rm=T)})
       rc_ <- convertRC( rollcall(ObservablesMat_) )
       #s_ <- list("alpha" = matrix(rnorm(ncol(ObservablesMat_), sd = 1)),"beta" = matrix(rnorm(ncol(ObservablesMat_), sd = 1)), "x" = matrix(x_init))
@@ -326,11 +328,11 @@ lpme_OneRun <- function(Yobs,
       
       # fixing in case directions of s1 and s2 x starts are flipped
       if(split_ %in% c("1","2")){ if(cor(s_$x, s_past$x) < 0){ s_$x <- -s_$x; s_$beta <- -s_$beta } }
-      lout.sim_ <- binIRT(.rc = rc_, 
+      tmp_ <- capture.output( lout.sim_ <- binIRT(.rc = rc_, 
                           .starts = s_, 
                           .priors = makePriors(.N= rc_$n, .J = rc_$m, .D = 1), 
                           .control= list(threads=1, verbose=FALSE, thresh=1e-6,verbose=F),
-                          .anchor_subject = which.max(x_init)) # set direction
+                          .anchor_subject = which.max(x_init))) # set direction
       x.est_EM <- x.est_ <- scale(lout.sim_$means$x); s_past <- s_
     }
     if(cor(x.est_, Yobs, use="p") < 0){ x.est_ <- -x.est_ }
