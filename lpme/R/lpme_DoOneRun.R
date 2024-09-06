@@ -59,9 +59,8 @@ lpme_OneRun <- function(Yobs,
                          conda_env = NULL, 
                          Sys.setenv_text = NULL,
                          seed = NULL){
-  starting_seed <- sample(runif(1,1,10000))
-  Bayesian_OLSSE <- Bayesian_OLSCoef <- NA; 
-  if(!is.null(seed)){ set.seed(seed) } 
+  Bayesian_OLSSE_InnerNormed <- Bayesian_OLSCoef_InnerNormed <- NA; 
+  starting_seed <- sample(runif(1,1,10000)); if(!is.null(seed)){ set.seed(seed) } 
   items.split1_names <- sample(unique(ObservablesGroupings), 
                                size = floor(length(unique(ObservablesGroupings))/2), replace=F)
   items.split2_names <- unique(ObservablesGroupings)[! (ObservablesGroupings %in% items.split1_names)]
@@ -247,19 +246,36 @@ lpme_OneRun <- function(Yobs,
         #SignSwap <- sign(cor(RescaledAbilities)[1,])
         #RescaledAbilities <- SignSwap
         #AbilityMean <- rowMeans(  ExtractAbil(PosteriorDraws$ability)*SignSwap )
-        Bayesian_OLSCoef <- c(as.matrix(np$array(PosteriorDraws$YModel_slope)))/sd(AbilityMean) # CONFIRM 
-        # sd(rowMeans(RescaledAbilities));mean(rowMeans(RescaledAbilities)) # confirm sanity values of 1,0
-        # hist(Bayesian_OLSCoef)
-        Bayesian_OLSSE <- sd( Bayesian_OLSCoef )
-        Bayesian_OLSCoef <- mean( Bayesian_OLSCoef )
+        Bayesian_OLSCoef_OuterNormed <- c(as.matrix(np$array(PosteriorDraws$YModel_slope)))/sd(AbilityMean) # CONFIRM 
+        # sd(rowMeans(RescaledAbilities));mean(rowMeans(RescaledAbilities)) # confirm sanity values of 1,0 
+        # hist(Bayesian_OLSSE_OuterNormed)
+        Bayesian_OLSSE_OuterNormed <- sd( Bayesian_OLSCoef_OuterNormed ) 
+        Bayesian_OLSCoef_OuterNormed <- mean( Bayesian_OLSCoef_OuterNormed )
+        
+        InnerSDs <- apply(ExtractAbil(PosteriorDraws$ability), 2, sd)
+        RescaledAbilities <- ( apply(ExtractAbil(PosteriorDraws$ability), 2, function(x_){scale(x_)})  ) 
+        Bayesian_OLSCoef_InnerNormed <- c(as.matrix(np$array(PosteriorDraws$YModel_slope)))/InnerSDs
+        # sd(rowMeans(RescaledAbilities));mean(rowMeans(RescaledAbilities)) # confirm sanity values of 1,0 
+        # hist(Bayesian_OLSSE_OuterNormed)
+        Bayesian_OLSSE_InnerNormed <- sd( Bayesian_OLSCoef_InnerNormed ) 
+        Bayesian_OLSCoef_InnerNormed <- mean( Bayesian_OLSCoef_InnerNormed )
       }
       if(EstimationMethod == "MCMC" & split_ == ""){ # method of compositions 
+        # OuterNormed
         RescaledAbilities  <- (ExtractAbil(PosteriorDraws$ability)-mean(AbilityMean))/sd(AbilityMean)
-        Bayesian_OLSCoef <- apply(RescaledAbilities, 2, function(x_){ coef(lm(Yobs~x_))[2]})
+        Bayesian_OLSCoef_OuterNormed <- apply(RescaledAbilities, 2, function(x_){ coef(lm(Yobs~x_))[2]})
         # sd(rowMeans(RescaledAbilities));mean(rowMeans(RescaledAbilities)) # confirm sanity value of 1, 0
-        # hist(Bayesian_OLSCoef)
-        Bayesian_OLSSE <- sd( Bayesian_OLSCoef )
-        Bayesian_OLSCoef <- mean( Bayesian_OLSCoef )
+        # hist( Bayesian_OLSCoef_OuterNormed )
+        Bayesian_OLSSE_OuterNormed <- sd( Bayesian_OLSCoef_OuterNormed ) 
+        Bayesian_OLSCoef_OuterNormed <- mean( Bayesian_OLSCoef_OuterNormed )
+        
+        # InnerNormed
+        RescaledAbilities  <- ( apply(ExtractAbil(PosteriorDraws$ability), 2, function(x_){scale(x_)})  ) 
+        Bayesian_OLSCoef_InnerNormed <- apply(RescaledAbilities, 2, function(x_){ coef(lm(Yobs~x_))[2]})
+        # sd(rowMeans(RescaledAbilities));mean(rowMeans(RescaledAbilities)) # confirm sanity value of 1, 0
+        # hist( Bayesian_OLSCoef_InnerNormed )
+        Bayesian_OLSSE_InnerNormed <- sd( Bayesian_OLSCoef_InnerNormed ) 
+        Bayesian_OLSCoef_InnerNormed <- mean( Bayesian_OLSCoef_InnerNormed )
       }
       
       # resacle 
@@ -270,52 +286,62 @@ lpme_OneRun <- function(Yobs,
       # plot(x.est_MCMC, x.est_EM); abline(a=0,b=1); cor(x.est_MCMC, x.est_EM)
       
       if(EstimationMethod == "MCMCOverImputation" & split_ == ""){ 
-        # file:///Users/cjerzak/Dropbox/LatentMeasures/literature/CAUGHEY-ps8-solution.html
-        RescaledAbilities  <- (ExtractAbil(PosteriorDraws$ability)-mean(AbilityMean))/sd(AbilityMean)
-        Xobs_mean <- apply(RescaledAbilities, 1, function(x_){ mean(x_) } ) 
-        Xobs_SE <- apply(RescaledAbilities, 1, function(x_){ sd(x_) } ) 
-        
-        dat_ <- cbind(Yobs, x.est_MCMC)
-        
-        # Specify (over-)imputation model
-        # priors: #a numeric matrix with four columns 
-        # (row, column, mean, standard deviation) 
-        # indicating noisy estimates of the values to be imputed.
-        outcome_priors <- cbind(
-          1:nrow(dat_), 1,              
-          Yobs, # mean 
-          1 # sd 
-        )
-        policy_priors <- cbind( 
-          1:nrow(dat_), 2,              
-          Xobs_mean,
-          Xobs_SE
-        )
-        #priors <- rbind(policy_priors, outcome_priors)
-        priors <- policy_priors
-        
-        #a numeric matrix where each row indicates a row and column of x to be overimputed.
-        # overimp <- rbind(cbind(1:nrow(dat_), 1), cbind(1:nrow(dat_), 2))
-        overimp <- cbind(1:nrow(dat_), 2)
-        
-        overimputed_data <- Amelia::amelia( 
-          x = dat_, m = 50L,
-          p2s = 0,
-          priors = priors, 
-          overimp = overimp 
-        )
-        
-        # Perform multiple overimputation
-        overimputed_Yobs <- do.call(cbind,lapply(overimputed_data$imputations,function(l_){l_[,1]}))
-        overimputed_x.est_MCMC <- do.call(cbind,lapply(overimputed_data$imputations,function(l_){l_[,2]}))
-        
-        # cor(cbind(x.est_MCMC, overimputed_x.est_MCMC))
-        # plot(x.est_MCMC,overimputed_x.est_MCMC[,1])
-        
-        # Analyze overimputed datasets
-        overimputed_analysis <- unlist(unlist( lapply(overimputed_data$imputations, function(l_){ coef(lm(l_[,1]~l_[,2]))[2]  }) ))
-        Bayesian_OLSSE <- sd( overimputed_analysis )
-        Bayesian_OLSCoef <- mean( overimputed_analysis )
+        for(outType_ in c("Outer","Inner")){ 
+          # file:///Users/cjerzak/Dropbox/LatentMeasures/literature/CAUGHEY-ps8-solution.html
+          if(outType_ == "Outer"){
+            RescaledAbilities  <- (ExtractAbil(PosteriorDraws$ability)-mean(AbilityMean))/sd(AbilityMean)
+          }
+          if(outType_ == "Inner"){
+            RescaledAbilities  <- ( apply(ExtractAbil(PosteriorDraws$ability), 2, function(x_){scale(x_)})  ) 
+          }
+          Xobs_mean <- apply(RescaledAbilities, 1, function(x_){ mean(x_) } ) 
+          Xobs_SE <- apply(RescaledAbilities, 1, function(x_){ sd(x_) } ) 
+          
+          dat_ <- cbind(Yobs, x.est_MCMC)
+          
+          # Specify (over-)imputation model
+          # priors: #a numeric matrix with four columns 
+          # (row, column, mean, standard deviation) 
+          # indicating noisy estimates of the values to be imputed.
+          outcome_priors <- cbind(
+            1:nrow(dat_), 1,              
+            Yobs, # mean 
+            1 # sd 
+          )
+          policy_priors <- cbind( 
+            1:nrow(dat_), 2,              
+            Xobs_mean,
+            Xobs_SE
+          )
+          #priors <- rbind(policy_priors, outcome_priors)
+          priors <- policy_priors
+          
+          #a numeric matrix where each row indicates a row and column of x to be overimputed.
+          # overimp <- rbind(cbind(1:nrow(dat_), 1), cbind(1:nrow(dat_), 2))
+          overimp <- cbind(1:nrow(dat_), 2)
+          
+          # perform overimputation 
+          overimputed_data <- Amelia::amelia( 
+            x = dat_, m = 50L,
+            p2s = 0,
+            priors = priors, 
+            overimp = overimp 
+          )
+          
+          # Perform multiple overimputation
+          overimputed_Yobs <- do.call(cbind,lapply(overimputed_data$imputations,function(l_){l_[,1]}))
+          overimputed_x.est_MCMC <- do.call(cbind,lapply(overimputed_data$imputations,function(l_){l_[,2]}))
+          
+          # cor(cbind(x.est_MCMC, overimputed_x.est_MCMC))
+          # plot(x.est_MCMC,overimputed_x.est_MCMC[,1])
+          
+          # Analyze overimputed datasets
+          overimputed_analysis <- unlist(unlist( lapply(overimputed_data$imputations, function(l_){ coef(lm(l_[,1]~l_[,2]))[2]  }) ))
+          if(outType_ == "Inner"){ 
+            Bayesian_OLSSE_OuterNormed <- sd( overimputed_analysis_OuterNormed )
+            Bayesian_OLSCoef_OuterNormed <- mean( overimputed_analysis_OuterNormed )
+          }
+        }
       }
     }
       
@@ -390,9 +416,13 @@ lpme_OneRun <- function(Yobs,
         "Corrected_OLSSE_alt" = NA,
         "Corrected_OLSTstat_alt" = NA,
        
-       "Bayesian_OLSCoef" = Bayesian_OLSCoef, 
-       "Bayesian_OLSSE" = Bayesian_OLSSE,
-       "Bayesian_OLSTstat" = Bayesian_OLSCoef/Bayesian_OLSSE,
+       "Bayesian_OLSCoef_OuterNormed" = Bayesian_OLSCoef_OuterNormed, 
+       "Bayesian_OLSSE_OuterNormed" = Bayesian_OLSSE_OuterNormed,
+       "Bayesian_OLSTstat_OuterNormed" = Bayesian_OLSCoef_OuterNormed/Bayesian_OLSSE_OuterNormed,
+       
+       "Bayesian_OLSCoef_InnerNormed" = Bayesian_OLSCoef_InnerNormed, 
+       "Bayesian_OLSSE_InnerNormed" = Bayesian_OLSSE_InnerNormed,
+       "Bayesian_OLSTstat_InnerNormed" = Bayesian_OLSCoef_OuterNormed/Bayesian_OLSSE_InnerNormed,
     
         "mstage1ERV" = mstage1ERV, 
         "mreducedERV" = mreducedERV, 
