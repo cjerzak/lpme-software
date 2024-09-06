@@ -60,6 +60,7 @@ lpme_OneRun <- function(Yobs,
                          Sys.setenv_text = NULL,
                          seed = NULL){
   Bayesian_OLSSE_InnerNormed <- Bayesian_OLSCoef_InnerNormed <- NA; 
+  Bayesian_OLSSE_OuterNormed <- Bayesian_OLSCoef_OuterNormed <- NA;
   starting_seed <- sample(runif(1,1,10000)); if(!is.null(seed)){ set.seed(seed) } 
   items.split1_names <- sample(unique(ObservablesGroupings), 
                                size = floor(length(unique(ObservablesGroupings))/2), replace=F)
@@ -337,9 +338,13 @@ lpme_OneRun <- function(Yobs,
           
           # Analyze overimputed datasets
           overimputed_analysis <- unlist(unlist( lapply(overimputed_data$imputations, function(l_){ coef(lm(l_[,1]~l_[,2]))[2]  }) ))
+          if(outType_ == "Outer"){ 
+            Bayesian_OLSSE_OuterNormed <- sd( overimputed_analysis )
+            Bayesian_OLSCoef_OuterNormed <- mean( overimputed_analysis )
+          }
           if(outType_ == "Inner"){ 
-            Bayesian_OLSSE_OuterNormed <- sd( overimputed_analysis_OuterNormed )
-            Bayesian_OLSCoef_OuterNormed <- mean( overimputed_analysis_OuterNormed )
+            Bayesian_OLSSE_InnerNormed <- sd( overimputed_analysis )
+            Bayesian_OLSCoef_InnerNormed <- mean( overimputed_analysis )
           }
         }
       }
