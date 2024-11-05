@@ -79,7 +79,134 @@ lpme_OneRun <- function(Yobs,
         list( model.matrix(~0+as.factor(zer))[,-1] )}),recursive = F))
     }
     
-    if(grepl(EstimationMethod,pattern = "MCMC")){
+    #### Bayesian Methods ####
+    backend <- ifelse(EstimationMethod == "MCMCFull", yes = "numpyro", no = "pscl")
+    #backend <- "numpyro"
+    if(grepl(EstimationMethod, pattern = "MCMC") & backend == "pscl"){
+      if(EstimationMethod == "MCMC" ){
+        capture.output( pscl_ideal <- pscl::ideal( pscl::rollcall(ObservablesMat_), 
+                            normalize = T, 
+                            store.item = T, 
+                            maxiter = 1000L, 
+                            burnin = 500L,
+                            thin = 1L)  )
+        # mean(pscl_ideal$xbar); sd(pscl_ideal$xbar) # confirm 0 and 1 
+        x.est_MCMC <- x.est_ <- pscl_ideal$xbar; s_past <- 1 # summary(lm(Yobs~x.est_))
+        if( split_ == "" ){
+          RescaledAbilities  <- t(pscl_ideal$x[,,1])
+          #Bayesian_OLSCoef_OuterNormed <- apply(RescaledAbilities, 2, function(x_){ coef(lm(Yobs~x_))[2]}) # simple MOC 
+          Bayesian_OLSCoef_OuterNormed <- apply(RescaledAbilities, 2, function(x_){ 
+            VCovHat <- sandwich::vcovHC( myModel <- lm(Yobs~x_), type = "HC3" ) 
+            coef_ <- mvtnorm::rmvnorm(n = 1, mean = coef(myModel), sigma = VCovHat)[1,2]
+          } ) # complicated MOC 
+          
+          # summary( apply(RescaledAbilities, 2, sd) ) 
+          # sd(rowMeans(RescaledAbilities));mean(rowMeans(RescaledAbilities)) # confirm sanity value of 1, 0
+          # hist( Bayesian_OLSCoef_OuterNormed ); summary( Bayesian_OLSCoef_OuterNormed)
+          Bayesian_OLSSE_OuterNormed <- sd( Bayesian_OLSCoef_OuterNormed ) 
+          Bayesian_OLSCoef_OuterNormed <- mean( Bayesian_OLSCoef_OuterNormed )
+          
+          # InnerNormed
+          RescaledAbilities  <- ( apply(t(pscl_ideal$x[,,1]), 2, function(x_){scale(x_)})  ) 
+          Bayesian_OLSCoef_InnerNormed <- apply(RescaledAbilities, 2, function(x_){ 
+            VCovHat <- sandwich::vcovHC( myModel <- lm(Yobs~x_), type = "HC3" ) 
+            coef_ <- mvtnorm::rmvnorm(n = 1, mean = coef(myModel), sigma = VCovHat)[1,2]
+          } ) # complicated MOC 
+          # apply(RescaledAbilities, 2, sd)
+          # sd(rowMeans(RescaledAbilities));mean(rowMeans(RescaledAbilities)) # confirm sanity value of 1, 0
+          # hist( Bayesian_OLSCoef_InnerNormed ); summary( Bayesian_OLSCoef_InnerNormed )
+          Bayesian_OLSSE_InnerNormed <- sd( Bayesian_OLSCoef_InnerNormed ) 
+          Bayesian_OLSCoef_InnerNormed <- mean( Bayesian_OLSCoef_InnerNormed )
+        }
+      }
+      if(EstimationMethod == "MCMCFull" & split_ == ""){
+        ## ?? 
+      }
+      if(EstimationMethod == "MCMCOverImputation" & split_ == ""){
+        capture.output( pscl_ideal <- pscl::ideal( pscl::rollcall(ObservablesMat_), 
+                                   normalize = T, 
+                                   store.item = T, 
+                                   maxiter = 2000L, 
+                                   burnin = 500L,
+                                   thin = 2L) )
+        # mean(pscl_ideal$xbar); sd(pscl_ideal$xbar) # confirm 0 and 1 
+        x.est_MCMC <- x.est_ <- pscl_ideal$xbar; s_past <- 1 # summary(lm(Yobs~x.est_))
+        if( split_ == "" ){
+            for(outType_ in c("Outer","Inner")){ 
+              # file:///Users/cjerzak/Dropbox/LatentMeasures/literature/CAUGHEY-ps8-solution.html
+              if(outType_ == "Outer"){
+                RescaledAbilities  <- t(pscl_ideal$x[,,1])
+              }
+              if(outType_ == "Inner"){
+                RescaledAbilities  <- t(pscl_ideal$x[,,1])
+                RescaledAbilities  <- ( apply(RescaledAbilities, 2, function(x_){scale(x_)})  ) 
+              }
+              Xobs_mean <- apply(RescaledAbilities, 1, function(x_){ mean(x_) } ) 
+              Xobs_SE <- apply(RescaledAbilities, 1, function(x_){ sd(x_) } ) 
+              
+              dat_ <- cbind(Yobs, x.est_MCMC)
+              
+              # Specify (over-)imputation model
+              # priors: #a numeric matrix with four columns 
+              # (row, column, mean, standard deviation) 
+              # indicating noisy estimates of the values to be imputed.
+              outcome_priors <- cbind(
+                1:nrow(dat_), 1,              
+                Yobs, # mean 
+                1 # sd 
+              )
+              policy_priors <- cbind( 
+                1:nrow(dat_), 2,              
+                Xobs_mean,
+                Xobs_SE
+              )
+              #priors <- rbind(policy_priors, outcome_priors)
+              priors <- policy_priors
+              
+              #a numeric matrix where each row indicates a row and column of x to be overimputed.
+              # overimp <- rbind(cbind(1:nrow(dat_), 1), cbind(1:nrow(dat_), 2))
+              overimp <- cbind(1:nrow(dat_), 2)
+              
+              # perform overimputation 
+              overimputed_data <- Amelia::amelia( 
+                x = dat_, m = (nOverImpute <- 50L),
+                p2s = 0,
+                priors = priors, 
+                overimp = overimp 
+              )
+              
+              # Perform multiple overimputation
+              overimputed_Yobs <- do.call(cbind,lapply(overimputed_data$imputations,function(l_){l_[,1]}))
+              overimputed_x.est_MCMC <- do.call(cbind,lapply(overimputed_data$imputations,function(l_){l_[,2]}))
+              if(outType_ == "Outer"){
+                overimputed_x.est_MCMC  <- (overimputed_x.est_MCMC-mean(rowMeans(overimputed_x.est_MCMC)))/sd(rowMeans(overimputed_x.est_MCMC))
+                #sd(rowMeans(overimputed_x.est_MCMC))
+              }
+              if(outType_ == "Inner"){
+                overimputed_x.est_MCMC  <- ( apply(overimputed_x.est_MCMC, 2, function(x_){scale(x_)})  ) 
+                #apply(overimputed_x.est_MCMC,2,sd)
+              }
+              
+              # cor(cbind(x.est_MCMC, overimputed_x.est_MCMC))
+              # plot(x.est_MCMC,overimputed_x.est_MCMC[,1])
+              
+              # Analyze overimputed datasets
+              overimputed_coefs <- unlist(unlist( sapply(1:nOverImpute, function(s_){
+                coef(lm(overimputed_Yobs[,s_] ~ overimputed_x.est_MCMC[,s_]))[2]
+              })))
+              if(outType_ == "Outer"){ 
+                Bayesian_OLSSE_OuterNormed <- sd( overimputed_coefs )
+                Bayesian_OLSCoef_OuterNormed <- mean( overimputed_coefs )
+              }
+              if(outType_ == "Inner"){ 
+                Bayesian_OLSSE_InnerNormed <- sd( overimputed_coefs )
+                Bayesian_OLSCoef_InnerNormed <- mean( overimputed_coefs )
+              }
+            }
+        }
+      }
+    }
+    if(grepl(EstimationMethod, pattern = "MCMC") & backend == "numpyro"){
       if(split_ == ""){
         # Load required libraries
         library(reticulate)
@@ -101,8 +228,7 @@ lpme_OneRun <- function(Yobs,
         f2i <- function(f_){jnp$array(f_,jnp$int32)}
         f2a <- function(x){jnp$array(x,jnp$float32)}
         ai <- as.integer
-    
-    }  
+    } 
         # Construct for annotating conditionally independent variables.
         # Within a plate context manager, sample sites will be automatically broadcasted
         # to the size of the plate. 
@@ -110,11 +236,11 @@ lpme_OneRun <- function(Yobs,
         # if  subsample_size is specified.
         
         # Set up MCMC
-        nChains <- 2L
+        nChains <- 1L
         numpyro$set_host_device_count(nDevices <- 1L)
         #ChainMethod <- "sequential"
         ChainMethod <- "vectorized"
-        nSamplesWarmup <- (1024L)
+        nSamplesWarmup <- (512L)
         nSamplesMCMC <- (512L)
         nThinBy <- 2L
         N <- ai(nrow(ObservablesMat_))
@@ -179,8 +305,8 @@ lpme_OneRun <- function(Yobs,
             
             # Outcome model likelihood
             ability <- jnp$expand_dims(ability, 1L)
-            Y_mu <- Y_intercept + jnp$multiply(Y_slope, jax$nn$standardize(ability, 0L, epsilon = 0.001))
-            #Y_mu <- Y_intercept + jnp$multiply(Y_slope,  ability)
+            #Y_mu <- Y_intercept + jnp$multiply(Y_slope, jax$nn$standardize(ability, 0L, epsilon = 0.001))
+            Y_mu <- Y_intercept + jnp$multiply(Y_slope,  ability)
             
             if(T == F){ # sanity check prints 
               print("ability");print(ability$shape)
@@ -208,13 +334,19 @@ lpme_OneRun <- function(Yobs,
                   Y = jnp$array(as.matrix(Yobs))$astype( jnp$float32 ), 
                   N = N, K = K) # don't use numpy array for N and K inputs here! 
       PosteriorDraws <- sampler$get_samples(group_by_chain = T)
-      ExtractAbil <- function(abil){ # note: deals with identifiability of scale 
+      ExtractAbil <- function(abil,return_sign = F){ # note: deals with identifiability of scale 
         abil <- do.call(cbind, sapply(0L:(nChains-1L), function(c_){
           abil_c <- as.matrix(np$array(abil)[c_,,])
           abil_c <- t(abil_c)
-          if(cor(rowMeans(abil_c),Yobs)<0){ abil_c <- -1*abil_c }
+          if(cor(rowMeans(abil_c),Yobs) < 0){ abil_c <- -1*abil_c; if(return_sign){ return(list(-1)) } }
+          #if(cor(rowMeans(abil_c),Yobs) < 0){ abil_c <- -1*abil_c; if(return_sign){ return(list(-1)) } }
+          if(return_sign){ return(list(1)) }
           return( list(abil_c) )
         }))
+        
+        abil <- apply(abil,2,function(x){
+                    if(cor(abil[,1],x) < 0){ x <- -1*x } 
+                    return(x) })
         return( abil ) 
       }
       
@@ -233,6 +365,7 @@ lpme_OneRun <- function(Yobs,
       
       if(EstimationMethod == "MCMCFull" & split_ == ""){ # full bayesian model 
         RescaledAbilities <- (ExtractAbil(PosteriorDraws$ability)-mean(AbilityMean))/sd(AbilityMean)
+        #ExtractAbil(PosteriorDraws$ability,return_sign=T)
         # plot(RescaledAbilities[,1],RescaledAbilities[,2])
         #SignSwap <- sign(cor(RescaledAbilities)[1,])
         #RescaledAbilities <- SignSwap
@@ -240,12 +373,14 @@ lpme_OneRun <- function(Yobs,
         Bayesian_OLSCoef_OuterNormed <- c(as.matrix(np$array(PosteriorDraws$YModel_slope)))/sd(AbilityMean) # CONFIRM 
         # sd(rowMeans(RescaledAbilities));mean(rowMeans(RescaledAbilities)) # confirm sanity values of 1,0 
         # hist(Bayesian_OLSCoef_OuterNormed);abline(v=0.4); summary( Bayesian_OLSCoef_OuterNormed )
+        Bayesian_OLSCoef_OuterNormed[Bayesian_OLSCoef_OuterNormed<0] <- -1*Bayesian_OLSCoef_OuterNormed[Bayesian_OLSCoef_OuterNormed<0]
         Bayesian_OLSSE_OuterNormed <- sd( Bayesian_OLSCoef_OuterNormed ) 
         Bayesian_OLSCoef_OuterNormed <- mean( Bayesian_OLSCoef_OuterNormed )
         
         InnerSDs <- apply(ExtractAbil(PosteriorDraws$ability), 2, sd)
         RescaledAbilities <- ( apply(ExtractAbil(PosteriorDraws$ability), 2, function(x_){scale(x_)})  ) 
         Bayesian_OLSCoef_InnerNormed <- c(as.matrix(np$array(PosteriorDraws$YModel_slope)))/InnerSDs
+        Bayesian_OLSCoef_InnerNormed[Bayesian_OLSCoef_InnerNormed<0] <- -1*Bayesian_OLSCoef_InnerNormed[Bayesian_OLSCoef_InnerNormed<0]
         # sd(rowMeans(RescaledAbilities));mean(rowMeans(RescaledAbilities)) # confirm sanity values of 1,0 
         # hist(Bayesian_OLSCoef_InnerNormed); abline(v=0.4,lwd=2); summary( Bayesian_OLSCoef_InnerNormed )
         Bayesian_OLSSE_InnerNormed <- sd( Bayesian_OLSCoef_InnerNormed ) 
@@ -280,9 +415,8 @@ lpme_OneRun <- function(Yobs,
         Bayesian_OLSCoef_InnerNormed <- mean( Bayesian_OLSCoef_InnerNormed )
       }
       
-      # resacle 
+      # rescale 
       x.est_MCMC <- x.est_ <- as.matrix(scale(AbilityMean)); s_past <- 1
-      # summary( lm(Yobs~x.est_MCMC) ) 
       # as.matrix(np$array(PosteriorDraws$ability))[,1:3]
       # plot(DifficultyMean,DiscriminationMean)
       # plot(x.est_MCMC, x.est_EM); abline(a=0,b=1); cor(x.est_MCMC, x.est_EM)
@@ -359,8 +493,13 @@ lpme_OneRun <- function(Yobs,
           }
         }
       }
-    }
       
+      # if forcing positive sign 
+      if(Bayesian_OLSCoef_InnerNormed < 0){ Bayesian_OLSCoef_InnerNormed <- -Bayesian_OLSCoef_InnerNormed }
+      if(Bayesian_OLSCoef_OuterNormed < 0){ Bayesian_OLSCoef_InnerNormed <- -Bayesian_OLSCoef_OuterNormed }
+    }
+    
+    #### EM Methods #### 
     if(EstimationMethod == "emIRT"){ 
       suppressPackageStartupMessages( library(emIRT, quietly = T) ) 
       x_init <- apply( ObservablesMat_, 1, function(x){ mean(f2n(x), na.rm=T)})
@@ -370,7 +509,7 @@ lpme_OneRun <- function(Yobs,
       
       # fixing in case directions of s1 and s2 x starts are flipped
       if(split_ %in% c("1","2")){ if(cor(s_$x, s_past$x) < 0){ s_$x <- -s_$x; s_$beta <- -s_$beta } }
-      tmp_ <- capture.output( lout.sim_ <- binIRT(.rc = rc_, 
+      capture.output( lout.sim_ <- binIRT(.rc = rc_, 
                           .starts = s_, 
                           .priors = makePriors(.N= rc_$n, .J = rc_$m, .D = 1), 
                           .control= list(threads=1, verbose=FALSE, thresh=1e-6,verbose=F),
