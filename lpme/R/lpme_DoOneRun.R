@@ -80,9 +80,9 @@ lpme_OneRun <- function(Yobs,
     }
     
     #### Bayesian Methods ####
-    backend <- ifelse(EstimationMethod == "MCMCFull", yes = "numpyro", no = "pscl")
-    #backend <- "numpyro"
-    if(grepl(EstimationMethod, pattern = "MCMC") & backend == "pscl"){
+    #backend <- ifelse(EstimationMethod == "MCMCFull", yes = "numpyro", no = "pscl")
+    backend <- "numpyro"
+    if( grepl(EstimationMethod, pattern = "MCMC") & backend == "pscl" ){
       if(EstimationMethod == "MCMC" ){
         capture.output( pscl_ideal <- pscl::ideal( pscl::rollcall(ObservablesMat_), 
                             normalize = T, 
@@ -206,7 +206,7 @@ lpme_OneRun <- function(Yobs,
         }
       }
     }
-    if(grepl(EstimationMethod, pattern = "MCMC") & backend == "numpyro"){
+    if( grepl(EstimationMethod, pattern = "MCMC") & backend == "numpyro" ){
       if(split_ == ""){
         # Load required libraries
         library(reticulate)
@@ -256,24 +256,27 @@ lpme_OneRun <- function(Yobs,
           with(numpyro$plate("rows", N), {
             ability <- numpyro$sample("ability", dist$Normal(0, 1))
           })
-          with(numpyro$plate("columns", K), {
-            difficulty <- numpyro$sample("difficulty", dist$Normal(0, 10))
-            #discrimination <- numpyro$sample("discrimination", dist$Normal(0, 10))  
-            #discrimination <- numpyro$sample("discrimination", dist$LogNormal(0, 10)) # if placing mass on positive values
-            #discrimination <- jnp$where(jnp$arange(K) == 0, 1.0, discrimination)  # Fix one discrimination
+          with(numpyro$plate("columns", K), { 
+            difficulty <- numpyro$sample("difficulty", dist$Normal(0, 10)) 
           })
-          with(numpyro$plate("columns", K-1), {
-            discrimination <- numpyro$sample("discrimination", dist$Normal(0, 10))  
-            #discrimination <- numpyro$sample("discrimination", dist$LogNormal(0, 10)) # if placing mass on positive values
-            #discrimination <- jnp$where(jnp$arange(K) == 0, 1.0, discrimination)  # Fix one discrimination
-          })
-          with(numpyro$plate("columns", 1), {
-            discrimination_oriented <- numpyro$sample("discrimination_oriented", 
-                                                      #dist$LogNormal(0,10))
-                                                      dist$HalfNormal(10))
-          })
-          discrimination <- jnp$concatenate(list(discrimination_oriented, 
-                                                 discrimination))
+          
+          # approach 1 - no orientation 
+          if(T == T){ 
+            with(numpyro$plate("columns", K),{ 
+              discrimination <- numpyro$sample("discrimination", dist$Normal(0, 10))   
+            })
+          }
+          
+          # approach 2 - orientation 
+          if(T == F){ 
+            with(numpyro$plate("columns", K-1),{ 
+              discrimination <- numpyro$sample("discrimination", dist$Normal(0, 10))   
+            })
+            with(numpyro$plate("columns", 1), {
+              discrimination_oriented <- numpyro$sample("discrimination_oriented",  dist$HalfNormal(10))
+            })
+            discrimination <- jnp$concatenate(list(discrimination_oriented,  discrimination))
+          }
   
           # likelihood
           logits <- jnp$outer(ability, discrimination) - difficulty
@@ -329,9 +332,14 @@ lpme_OneRun <- function(Yobs,
         num_chains = nChains,
         progress_bar = F # set to TRUE for progress 
       )
+      
+      # run sampler with initialized abilities as COLMEANS of X (ASSUMPTION!)
       sampler$run(jax$random$PRNGKey( ai(runif(1,0,10000)) ), 
                   X = jnp$array(as.matrix(ObservablesMat_))$astype( jnp$int16 ), 
                   Y = jnp$array(as.matrix(Yobs))$astype( jnp$float32 ), 
+                  init_params = list("ability" = jnp$array(rowMeans(ObservablesMat_)),
+                                     "difficulty" = jnp$array(rnorm(K,sd=0.1)),
+                                     "discrimination" = jnp$array(rnorm(K,sd=0.1))),
                   N = N, K = K) # don't use numpy array for N and K inputs here! 
       PosteriorDraws <- sampler$get_samples(group_by_chain = T)
       ExtractAbil <- function(abil,return_sign = F){ # note: deals with identifiability of scale 
