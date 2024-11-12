@@ -253,16 +253,17 @@ lpme_OneRun <- function(Yobs,
                               K # number of items 
                               ){
           # Priors
-          with(numpyro$plate("rows", N), {
+          
+          print2("Defining abilities...");with(numpyro$plate("rows", N), {
             ability <- numpyro$sample("ability", dist$Normal(0, 1))
           })
-          with(numpyro$plate("columns", K), { 
+          print2("Defining difficulties...");with(numpyro$plate("columns", K), { 
             difficulty <- numpyro$sample("difficulty", dist$Normal(0, 10)) 
           })
           
           # approach 1 - no orientation 
           if(T == T){ 
-            with(numpyro$plate("columns", K),{ 
+            print2("Defining discrimination...");with(numpyro$plate("columns", K),{ 
               discrimination <- numpyro$sample("discrimination", dist$Normal(0, 10))   
             })
           }
@@ -281,6 +282,7 @@ lpme_OneRun <- function(Yobs,
           # likelihood
           logits <- jnp$outer(ability, discrimination) - difficulty
           probs <- jax$scipy$stats$norm$cdf( logits ) # probit link 
+          #probs <- jax$nn$sigmoid( logits ) # logit link 
           
           # sanity check prints 
           if(T == F){ 
@@ -291,8 +293,8 @@ lpme_OneRun <- function(Yobs,
             print("logits shape:");print(logits$shape)
           }
           
-          # dist$Bernoulli(prob)
           # contribution of the factors/observed traits to the model 
+          print2("Defining likelihood...");
           numpyro$sample("Xlik", dist$Bernoulli(probs = probs), obs=X)
           
           if(EstimationMethod == "MCMCFull"){
@@ -320,6 +322,7 @@ lpme_OneRun <- function(Yobs,
             }
             numpyro$sample("Ylik", dist$Normal(Y_mu, Y_sigma), obs=Y) # Y_mu has to have same shape as Y
           }
+          print2("Done with IRTModel() call...");
       }
         
       # setup & run MCMC 
@@ -335,7 +338,8 @@ lpme_OneRun <- function(Yobs,
       
       # run sampler with initialized abilities as COLMEANS of X (ASSUMPTION!)
       sampler$run(jax$random$PRNGKey( ai(runif(1,0,10000)) ), 
-                  X = jnp$array(as.matrix(ObservablesMat_))$astype( jnp$int16 ), 
+                  #X = jnp$array(as.matrix(ObservablesMat_))$astype( jnp$int16 ), # causes error with new version of numpyro (expects floats not ints)
+                  X = jnp$array(as.matrix(ObservablesMat_))$astype( jnp$float32 ),  
                   Y = jnp$array(as.matrix(Yobs))$astype( jnp$float32 ), 
                   init_params = list("ability" = jnp$array(rowMeans(ObservablesMat_)),
                                      "difficulty" = jnp$array(rnorm(K,sd=0.1)),
