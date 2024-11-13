@@ -240,31 +240,30 @@ lpme_OneRun <- function(Yobs,
         numpyro$set_host_device_count(nDevices <- 1L)
         #ChainMethod <- "sequential"
         ChainMethod <- "vectorized"
-        nSamplesWarmup <- (512L)
+        nSamplesWarmup <- (256L)
         nSamplesMCMC <- (512L)
-        nThinBy <- 2L
+        nThinBy <- 1L
         N <- ai(nrow(ObservablesMat_))
         K <- ai(ncol(ObservablesMat_))
         
         # Define the two-parameter IRT model
-        IRTModel <- function(X, # binary indicators 
+        IRTModel <- (function(X, # binary indicators 
                               Y, # outcome (used if EstimationMethod <- "MCMCFull")
                               N, # number of observations  
                               K # number of items 
                               ){
           # Priors
-          
-          print2("Defining abilities...");with(numpyro$plate("rows", N), {
+          with(numpyro$plate("rows", N), {
             ability <- numpyro$sample("ability", dist$Normal(0, 1))
           })
-          print2("Defining difficulties...");with(numpyro$plate("columns", K), { 
-            difficulty <- numpyro$sample("difficulty", dist$Normal(0, 10)) 
+          with(numpyro$plate("columns", K), { 
+            difficulty <- numpyro$sample("difficulty", dist$Normal(0, 1)) 
           })
           
           # approach 1 - no orientation 
           if(T == T){ 
             print2("Defining discrimination...");with(numpyro$plate("columns", K),{ 
-              discrimination <- numpyro$sample("discrimination", dist$Normal(0, 10))   
+              discrimination <- numpyro$sample("discrimination", dist$Normal(0, 1))   
             })
           }
           
@@ -279,10 +278,14 @@ lpme_OneRun <- function(Yobs,
             discrimination <- jnp$concatenate(list(discrimination_oriented,  discrimination))
           }
   
-          # likelihood
-          logits <- jnp$outer(ability, discrimination) - difficulty
-          probs <- jax$scipy$stats$norm$cdf( logits ) # probit link 
-          #probs <- jax$nn$sigmoid( logits ) # logit link 
+          # logits 
+          #logits <- jnp$outer(ability, discrimination) - difficulty
+          logits <- (jnp$expand_dims(ability,1L) - jnp$expand_dims(difficulty,0L)) * 
+                      jnp$expand_dims(discrimination,0L)
+          
+          # link 
+          #probs <- jax$scipy$stats$norm$cdf( logits ) # probit link (slower) 
+          probs <- jax$nn$sigmoid( logits ) # logit link (faster)
           
           # sanity check prints 
           if(T == F){ 
@@ -294,7 +297,7 @@ lpme_OneRun <- function(Yobs,
           }
           
           # contribution of the factors/observed traits to the model 
-          print2("Defining likelihood...");
+          #print2("Defining likelihood...");
           numpyro$sample("Xlik", dist$Bernoulli(probs = probs), obs=X)
           
           if(EstimationMethod == "MCMCFull"){
@@ -322,8 +325,8 @@ lpme_OneRun <- function(Yobs,
             }
             numpyro$sample("Ylik", dist$Normal(Y_mu, Y_sigma), obs=Y) # Y_mu has to have same shape as Y
           }
-          print2("Done with IRTModel() call...");
-      }
+          #print2("Done with IRTModel() call...");
+      })
         
       # setup & run MCMC 
       sampler <- numpyro$infer$MCMC(
@@ -337,15 +340,18 @@ lpme_OneRun <- function(Yobs,
       )
       
       # run sampler with initialized abilities as COLMEANS of X (ASSUMPTION!)
-      sampler$run(jax$random$PRNGKey( ai(runif(1,0,10000)) ), 
+      dtype_ <- jnp$float32
+      system.time( sampler$run(jax$random$PRNGKey( ai(runif(1,0,10000)) ), 
                   #X = jnp$array(as.matrix(ObservablesMat_))$astype( jnp$int16 ), # causes error with new version of numpyro (expects floats not ints)
-                  X = jnp$array(as.matrix(ObservablesMat_))$astype( jnp$float32 ),  
-                  Y = jnp$array(as.matrix(Yobs))$astype( jnp$float32 ), 
-                  init_params = list("ability" = jnp$array(rowMeans(ObservablesMat_)),
-                                     "difficulty" = jnp$array(rnorm(K,sd=0.1)),
-                                     "discrimination" = jnp$array(rnorm(K,sd=0.1))),
+                  X = jnp$array(as.matrix(ObservablesMat_))$astype( dtype_ ),  
+                  Y = jnp$array(as.matrix(Yobs))$astype( dtype_ ), 
+                  init_params = list("ability" = jnp$array(rowMeans(ObservablesMat_))$astype(dtype_),
+                                     "difficulty" = jnp$array(rnorm(K,sd=0.1))$astype(dtype_),
+                                     "discrimination" = jnp$array(rnorm(K,sd=0.1))$astype(dtype_) ),
                   N = N, K = K) # don't use numpy array for N and K inputs here! 
+      )
       PosteriorDraws <- sampler$get_samples(group_by_chain = T)
+      # plot(as.array(np$array(PosteriorDraws$discrimination[0,,]))[,1])
       ExtractAbil <- function(abil,return_sign = F){ # note: deals with identifiability of scale 
         abil <- do.call(cbind, sapply(0L:(nChains-1L), function(c_){
           abil_c <- as.matrix(np$array(abil)[c_,,])
