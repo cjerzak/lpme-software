@@ -262,7 +262,7 @@ lpme_OneRun <- function(Yobs,
           
           # approach 1 - no orientation 
           if(T == T){ 
-            print2("Defining discrimination...");with(numpyro$plate("columns", K),{ 
+            with(numpyro$plate("columns", K),{ 
               discrimination <- numpyro$sample("discrimination", dist$Normal(0, 1))   
             })
           }
@@ -279,13 +279,12 @@ lpme_OneRun <- function(Yobs,
           }
   
           # logits 
-          #logits <- jnp$outer(ability, discrimination) - difficulty
-          logits <- (jnp$expand_dims(ability,1L) - jnp$expand_dims(difficulty,0L)) * 
+          Xprobs <- (jnp$expand_dims(ability,1L) - jnp$expand_dims(difficulty,0L)) * 
                       jnp$expand_dims(discrimination,0L)
           
           # link 
-          #probs <- jax$scipy$stats$norm$cdf( logits ) # probit link (slower) 
-          probs <- jax$nn$sigmoid( logits ) # logit link (faster)
+          #Xprobs <- jax$scipy$stats$norm$cdf( Xprobs ) # probit link (slower) 
+          #Xprobs <- jax$nn$sigmoid( Xprobs ) # logit link (faster)
           
           # sanity check prints 
           if(T == F){ 
@@ -297,8 +296,8 @@ lpme_OneRun <- function(Yobs,
           }
           
           # contribution of the factors/observed traits to the model 
-          #print2("Defining likelihood...");
-          numpyro$sample("Xlik", dist$Bernoulli(probs = probs), obs=X)
+          #numpyro$sample("Xlik", dist$Bernoulli(probs = Xprobs), obs=X)
+          numpyro$sample("Xlik", dist$Bernoulli(logits = Xprobs), obs=X)
           
           if(EstimationMethod == "MCMCFull"){
             # Outcome intercept prior
@@ -325,7 +324,6 @@ lpme_OneRun <- function(Yobs,
             }
             numpyro$sample("Ylik", dist$Normal(Y_mu, Y_sigma), obs=Y) # Y_mu has to have same shape as Y
           }
-          #print2("Done with IRTModel() call...");
       })
         
       # setup & run MCMC 
@@ -340,14 +338,14 @@ lpme_OneRun <- function(Yobs,
       )
       
       # run sampler with initialized abilities as COLMEANS of X (ASSUMPTION!)
-      dtype_ <- jnp$float32
+      ddtype_ <- jnp$float32
+      pdtype_ <- jnp$float32
       system.time( sampler$run(jax$random$PRNGKey( ai(runif(1,0,10000)) ), 
-                  #X = jnp$array(as.matrix(ObservablesMat_))$astype( jnp$int16 ), # causes error with new version of numpyro (expects floats not ints)
-                  X = jnp$array(as.matrix(ObservablesMat_))$astype( dtype_ ),  
-                  Y = jnp$array(as.matrix(Yobs))$astype( dtype_ ), 
-                  init_params = list("ability" = jnp$array(rowMeans(ObservablesMat_))$astype(dtype_),
-                                     "difficulty" = jnp$array(rnorm(K,sd=0.1))$astype(dtype_),
-                                     "discrimination" = jnp$array(rnorm(K,sd=0.1))$astype(dtype_) ),
+                  X = jnp$array(as.matrix(ObservablesMat_))$astype( ddtype_ ),  # jnp$int16 here causes error with new version of numpyro (expects floats not ints)
+                  Y = jnp$array(as.matrix(Yobs))$astype( ddtype_ ), 
+                  init_params = list("ability" = jnp$array(rowMeans(ObservablesMat_))$astype(pdtype_),
+                                     "difficulty" = jnp$array(rnorm(K,sd=1/sqrt(K)))$astype(pdtype_),
+                                     "discrimination" = jnp$array(rnorm(K,sd=1/sqrt(K)))$astype(pdtype_) ),
                   N = N, K = K) # don't use numpy array for N and K inputs here! 
       )
       PosteriorDraws <- sampler$get_samples(group_by_chain = T)
