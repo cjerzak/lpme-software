@@ -59,6 +59,7 @@ lpme_OneRun <- function(Yobs,
                          conda_env = NULL, 
                          Sys.setenv_text = NULL,
                          seed = NULL){
+  t0 <- Sys.time()
   Bayesian_OLSSE_InnerNormed <- Bayesian_OLSCoef_InnerNormed <- NA; 
   Bayesian_OLSSE_OuterNormed <- Bayesian_OLSCoef_OuterNormed <- NA;
   starting_seed <- sample(runif(1,1,10000)); if(!is.null(seed)){ set.seed(seed) } 
@@ -214,7 +215,6 @@ lpme_OneRun <- function(Yobs,
         
         # set environmental variables 
         if( !is.null(Sys.setenv_text) ){ 
-          #eval(parse(text = Sys.setenv_text), envir = .GlobalEnv)
           eval(parse(text = Sys.setenv_text) )
         }
   
@@ -240,30 +240,32 @@ lpme_OneRun <- function(Yobs,
         numpyro$set_host_device_count(nDevices <- 1L)
         #ChainMethod <- "sequential"
         ChainMethod <- "vectorized"
-        nSamplesWarmup <- (256L)
-        nSamplesMCMC <- (512L)
+        nSamplesWarmup <- (1000L)
+        nSamplesMCMC <- (1000L)
         nThinBy <- 1L
         N <- ai(nrow(ObservablesMat_))
         K <- ai(ncol(ObservablesMat_))
         
         # Define the two-parameter IRT model
         IRTModel <- (function(X, # binary indicators 
-                              Y, # outcome (used if EstimationMethod <- "MCMCFull")
-                              N, # number of observations  
-                              K # number of items 
+                              Y # outcome (used if EstimationMethod <- "MCMCFull")
+                              #N, # number of observations  
+                              #K # number of items 
                               ){
           # Priors
-          with(numpyro$plate("rows", N), {
+          #with(numpyro$plate("rows", N), { # fails with jit compilation
+          with(numpyro$plate("rows", X$shape[[1]]), {
             ability <- numpyro$sample("ability", dist$Normal(0, 1))
           })
-          with(numpyro$plate("columns", K), { 
+          #with(numpyro$plate("columns", K), { 
+          with(numpyro$plate("columns", X$shape[[2]]), {  # D
             difficulty <- numpyro$sample("difficulty", dist$Normal(0, 1)) 
           })
           
           # approach 1 - no orientation 
           if(T == T){ 
-            with(numpyro$plate("columns", K),{ 
-              discrimination <- numpyro$sample("discrimination", dist$Normal(0, 1))   
+            with(numpyro$plate("columns", X$shape[[2]]), { 
+              discrimination <- numpyro$sample("discrimination", dist$Normal(0, 1))
             })
           }
           
@@ -282,9 +284,10 @@ lpme_OneRun <- function(Yobs,
           Xprobs <- (jnp$expand_dims(ability,1L) - jnp$expand_dims(difficulty,0L)) * 
                       jnp$expand_dims(discrimination,0L)
           
-          # link 
-          #Xprobs <- jax$scipy$stats$norm$cdf( Xprobs ) # probit link (slower) 
-          #Xprobs <- jax$nn$sigmoid( Xprobs ) # logit link (faster)
+          # contribution of the factors/observed traits to the model 
+          numpyro$sample("Xlik", dist$Bernoulli(probs = jax$scipy$stats$norm$cdf( Xprobs ) ), obs=X) # probit link (may be slower) 
+          #numpyro$sample("Xlik", dist$Bernoulli(probs = jax$nn$sigmoid( Xprobs ) ), obs=X)  # logit link (may be faster)
+          #numpyro$sample("Xlik", dist$Bernoulli(logits = Xprobs), obs=X) # may be faster
           
           # sanity check prints 
           if(T == F){ 
@@ -294,10 +297,6 @@ lpme_OneRun <- function(Yobs,
             print("X shape:");print(X$shape)
             print("logits shape:");print(logits$shape)
           }
-          
-          # contribution of the factors/observed traits to the model 
-          #numpyro$sample("Xlik", dist$Bernoulli(probs = Xprobs), obs=X)
-          numpyro$sample("Xlik", dist$Bernoulli(logits = Xprobs), obs=X)
           
           if(EstimationMethod == "MCMCFull"){
             # Outcome intercept prior
@@ -328,34 +327,37 @@ lpme_OneRun <- function(Yobs,
         
       # setup & run MCMC 
       sampler <- numpyro$infer$MCMC(
-        numpyro$infer$NUTS( IRTModel ),
+        numpyro$infer$NUTS( (IRTModel) ),
         num_warmup = nSamplesWarmup,
         num_samples = nSamplesMCMC,
         thinning = nThinBy, # Positive integer that controls the fraction of post-warmup samples that are retained. For example if thinning is 2 then every other sample is retained. Defaults to 1, i.e. no thinning.
-        chain_method = ChainMethod, # ‘parallel’ (default), ‘sequential’, ‘vectorized’. 
+        chain_method = ChainMethod, # 'parallel' (default), 'sequential', 'vectorized'. 
         num_chains = nChains,
+        jit_model_args = T, 
         progress_bar = F # set to TRUE for progress 
       )
       
       # run sampler with initialized abilities as COLMEANS of X (ASSUMPTION!)
-      ddtype_ <- jnp$float32
-      pdtype_ <- jnp$float32
-      system.time( sampler$run(jax$random$PRNGKey( ai(runif(1,0,10000)) ), 
+      jax$config$update("jax_enable_x64", TRUE)
+      ddtype_ <- jnp$float64
+      pdtype_ <- jnp$float64
+      # update init_params for full mcmc case
+      t0_ <- Sys.time()
+      sampler$run(jax$random$PRNGKey( ai(runif(1,0,10000)) ), 
                   X = jnp$array(as.matrix(ObservablesMat_))$astype( ddtype_ ),  # jnp$int16 here causes error with new version of numpyro (expects floats not ints)
                   Y = jnp$array(as.matrix(Yobs))$astype( ddtype_ ), 
-                  init_params = list("ability" = jnp$array(rowMeans(ObservablesMat_))$astype(pdtype_),
-                                     "difficulty" = jnp$array(rnorm(K,sd=1/sqrt(K)))$astype(pdtype_),
-                                     "discrimination" = jnp$array(rnorm(K,sd=1/sqrt(K)))$astype(pdtype_) ),
-                  N = N, K = K) # don't use numpy array for N and K inputs here! 
-      )
+                  init_params = list(
+                    "ability" = jnp$array(rowMeans(ObservablesMat_))$astype(pdtype_),
+                    "difficulty" = jnp$array(rnorm(K,mean=0,sd=1/sqrt(K)))$astype(pdtype_),
+                    "discrimination" = jnp$array( (rnorm(K,mean=1,sd=1/sqrt(K))))$astype(pdtype_) 
+                  ) ) 
+      print2(sprintf("MCMC Runtime: %.3f min", tdiff_ <- as.numeric(difftime(Sys.time(), t0_, units = "secs"))/60))
       PosteriorDraws <- sampler$get_samples(group_by_chain = T)
-      # plot(as.array(np$array(PosteriorDraws$discrimination[0,,]))[,1])
       ExtractAbil <- function(abil,return_sign = F){ # note: deals with identifiability of scale 
         abil <- do.call(cbind, sapply(0L:(nChains-1L), function(c_){
           abil_c <- as.matrix(np$array(abil)[c_,,])
           abil_c <- t(abil_c)
           if(cor(rowMeans(abil_c),Yobs) < 0){ abil_c <- -1*abil_c; if(return_sign){ return(list(-1)) } }
-          #if(cor(rowMeans(abil_c),Yobs) < 0){ abil_c <- -1*abil_c; if(return_sign){ return(list(-1)) } }
           if(return_sign){ return(list(1)) }
           return( list(abil_c) )
         }))
@@ -378,6 +380,15 @@ lpme_OneRun <- function(Yobs,
       AbilityMean <- rowMeans(  ExtractAbil(PosteriorDraws$ability) )
       DifficultyMean <- as.matrix(np$array(jnp$mean(PosteriorDraws$difficulty,0L:1L))) #  colMeans( as.matrix(np$array(PosteriorDraws$difficulty)) )
       DiscriminationMean <- as.matrix(np$array(jnp$mean(PosteriorDraws$discrimination,0L:1L))) # colMeans( as.matrix(np$array(PosteriorDraws$discrimination)) )
+      
+      # tdiff_
+      # plot(scale(x.true[i_sampled]),scale(AbilityMean))
+      # cor(x.true[i_sampled],AbilityMean)
+      browser() 
+      plot(as.matrix(np$array(PosteriorDraws$ability))[1,,5])
+      print2(sprintf("N-eff mean ratio: %.3f",
+        mean(numpyro$diagnostics$effective_sample_size(PosteriorDraws$ability)/nSamplesMCMC )
+        ) )
       
       if(EstimationMethod == "MCMCFull" & split_ == ""){ # full bayesian model 
         RescaledAbilities <- (ExtractAbil(PosteriorDraws$ability)-mean(AbilityMean))/sd(AbilityMean)
@@ -557,7 +568,14 @@ lpme_OneRun <- function(Yobs,
   Corrected_OLSCoef1 <- coef(lm(Yobs ~ x.est1))[2] * (CorrectionFactor <- 1/sqrt( max(c(ep_, cor(x.est1, x.est2) ))))
   Corrected_OLSCoef2 <- coef(lm(Yobs ~ x.est2))[2] * CorrectionFactor
   Corrected_OLSCoef <- (Corrected_OLSCoef1 + Corrected_OLSCoef2)/2
-  # 0.3923193 
+  t_OneRun <- as.numeric(difftime(Sys.time(), t0, units = "secs"))
+  
+  # t_OneRun / 60
+  # Corrected_OLSCoef; Corrected_IVRegCoef
+  # plot(scale(x.true[i_sampled]),scale(AbilityMean))
+  # cor(x.true[i_sampled],AbilityMean)
+  
+  # 0.3922564; 0.3922564; 0.4012785
   
   # ERV analysis 
   mstage1 <- lm(x.est2 ~ x.est1)
