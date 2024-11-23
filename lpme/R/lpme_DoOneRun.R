@@ -381,14 +381,11 @@ lpme_OneRun <- function(Yobs,
       DifficultyMean <- as.matrix(np$array(jnp$mean(PosteriorDraws$difficulty,0L:1L))) #  colMeans( as.matrix(np$array(PosteriorDraws$difficulty)) )
       DiscriminationMean <- as.matrix(np$array(jnp$mean(PosteriorDraws$discrimination,0L:1L))) # colMeans( as.matrix(np$array(PosteriorDraws$discrimination)) )
       
-      # tdiff_
       # plot(scale(x.true[i_sampled]),scale(AbilityMean))
       # cor(x.true[i_sampled],AbilityMean)
-      browser() 
-      plot(as.matrix(np$array(PosteriorDraws$ability))[1,,5])
+      # plot(as.array(np$array(PosteriorDraws$ability))[1,721,])
       print2(sprintf("N-eff mean ratio: %.3f",
-        mean(numpyro$diagnostics$effective_sample_size(PosteriorDraws$ability)/nSamplesMCMC )
-        ) )
+        mean(numpyro$diagnostics$effective_sample_size(PosteriorDraws$ability)/nSamplesMCMC ) ) )
       
       if(EstimationMethod == "MCMCFull" & split_ == ""){ # full bayesian model 
         RescaledAbilities <- (ExtractAbil(PosteriorDraws$ability)-mean(AbilityMean))/sd(AbilityMean)
