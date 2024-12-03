@@ -540,7 +540,7 @@ lpme_OneRun <- function(Yobs,
                           .anchor_subject = which.max(x_init))) # set direction
       x.est_EM <- x.est_ <- scale(lout.sim_$means$x); s_past <- s_
     }
-    if(cor(x.est_, Yobs, use="p") < 0){ x.est_ <- -x.est_ }
+    if(cor(x.est_, Yobs, use="p") < 0){ x.est_ <- -x.est_ } # xxx
     eval(parse(text = sprintf("x.est%s <- x.est_", split_)))
   }
   if(!is.null(seed)){ set.seed(starting_seed) } 
@@ -552,7 +552,7 @@ lpme_OneRun <- function(Yobs,
   IVStage1 <- lm(x.est2 ~ x.est1)
   
   # cor epsilon
-  ep_ <- 0.01
+  ep_ <- 0.001
   
   # corrected IV
   IVStage2_a <- AER::ivreg(Yobs ~ x.est2 | x.est1)
