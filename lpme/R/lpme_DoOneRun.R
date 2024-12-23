@@ -58,6 +58,7 @@ lpme_OneRun <- function(Yobs,
                          EstimationMethod = "emIRT", 
                          conda_env = NULL, 
                          Sys.setenv_text = NULL,
+                         ordinal = F, 
                          seed = NULL){
   t0 <- Sys.time()
   Bayesian_OLSSE_InnerNormed <- Bayesian_OLSCoef_InnerNormed <- NA; 
@@ -526,28 +527,58 @@ lpme_OneRun <- function(Yobs,
     
     #### EM Methods #### 
     if(EstimationMethod == "emIRT"){ 
-      suppressPackageStartupMessages( library(emIRT, quietly = T) ) 
       x_init <- apply( ObservablesMat_, 1, function(x){ mean(f2n(x), na.rm=T)})
-      rc_ <- convertRC( rollcall(ObservablesMat_) )
-      
-      # informative initialization 
-      s_ <- list("alpha" = matrix(rnorm(ncol(ObservablesMat_), sd = .1)),"beta" = matrix(rnorm(ncol(ObservablesMat_), sd = 1)), "x" = matrix(x_init))
-      
-      # non-informative initialization (higher variance, leads to poor orientation)
-      #s_ <- getStarts(.N= rc_$n, .J = rc_$m, .D = 1)
-      
-      # plot( rowMeans(ObservablesMat_), x_init ) 
-      # plot( rowMeans(ObservablesMat_),  s_$x )
-      
-      # fixing in case directions of s1 and s2 x starts are flipped
-      if(split_ %in% c("1","2")){ if(cor(s_$x, s_past$x) < 0){ s_$x <- -s_$x; s_$beta <- -s_$beta } }
-      capture.output( lout.sim_ <- binIRT(.rc = rc_, 
-                          .starts = s_, 
-                          .priors = makePriors(.N= rc_$n, .J = rc_$m, .D = 1), 
-                          .control= list(threads=1, verbose=FALSE, thresh=1e-6,verbose=F),
-                          .anchor_subject = which.max(x_init)
-                          ) ) 
-      x.est_EM <- x.est_ <- scale(lout.sim_$means$x); s_past <- s_
+
+      if(ordinal) {
+        s_ <- list(
+          "beta" = matrix(rnorm(ncol(ObservablesMat_), sd = 0.1), ncol = 1),
+          "x"    = matrix(x_init, ncol = 1),
+          "tau"  = matrix(rep(-0.5, ncol(ObservablesMat_)), ncol = 1),
+          "DD"   = matrix(rep(0.5,  ncol(ObservablesMat_)), ncol = 1)
+        )
+        
+        # Optionally fix sign if you are continuing from a previous solution:
+        if(split_ %in% c("1","2")) {
+          if(cor(s_$x, s_past$x) < 0){
+            s_$x    <- -s_$x
+            s_$beta <- -s_$beta
+          }
+        }
+        
+        if(any(ObservablesMat_) %in% c("1","2","3")){
+          ObservablesMat__ <- apply(as.matrix(ObservablesMat_),2,f2n)
+          ObservablesMat__ <- apply(ObservablesMat__,2,function(x){ as.numeric(gtools::quantcut(x, q = 3)) })
+          ObservablesMat__[is.na(ObservablesMat__)] <- 0
+        }
+        capture.output(
+          lout.sim_ <- emIRT::ordIRT(
+            .rc      = apply(as.matrix(ObservablesMat_),2,f2n),
+            .starts  = s_,
+            .priors  = makePriors(.N = rc_$n, .J = rc_$m, .D = 1), 
+            .control = list(threads = 1, verbose = FALSE, thresh = 1e-6)
+          )
+        )
+        
+        # Scale the final ideal points and store
+        x.est_EM <- x.est_ <- scale(lout.sim_$means$x)
+        s_past   <- s_
+      }
+    
+      if( !ordinal ){ 
+        # informative initialization 
+        rc_ <- emIRT::convertRC( emIRT::rollcall(ObservablesMat_) )
+        s_ <- list("alpha" = matrix(rnorm(ncol(ObservablesMat_), sd = .1)),"beta" = matrix(rnorm(ncol(ObservablesMat_), sd = 1)), "x" = matrix(x_init))
+        
+        # fixing in case directions of s1 and s2 x starts are flipped
+        if(split_ %in% c("1","2")){ if(cor(s_$x, s_past$x) < 0){ s_$x <- -s_$x; s_$beta <- -s_$beta } }
+        capture.output( lout.sim_ <- emIRT::binIRT(.rc = rc_, 
+                            .starts = s_, 
+                            .priors = emIRT::makePriors(.N= rc_$n, .J = rc_$m, .D = 1), 
+                            .control= list(threads=1, verbose=FALSE, thresh=1e-6,verbose=F),
+                            .anchor_subject = which.max(x_init)
+                            ) ) 
+        x.est_EM <- x.est_ <- scale(lout.sim_$means$x); s_past <- s_
+      }
     }
     # if(cor(x.est_, Yobs, use="p") < 0){ x.est_ <- -x.est_ } # further force orientation using side information 
     eval(parse(text = sprintf("x.est%s <- x.est_", split_)))
@@ -563,7 +594,7 @@ lpme_OneRun <- function(Yobs,
   # corrected IV
   IVStage2_a <- AER::ivreg(Yobs ~ x.est2 | x.est1)
   IVStage2_b <- AER::ivreg(Yobs ~ x.est1 | x.est2)
-  Corrected_IVRegCoef_a <- (coef(IVStage2_a)[2] * sqrt( max(c((ep_ <- 0.001), cor(x.est1, x.est2) ))) )
+  Corrected_IVRegCoef_a <- (coef(IVStage2_a)[2] * sqrt( max(c((ep_ <- 0.01), cor(x.est1, x.est2) ))) )
   Corrected_IVRegCoef_b <- (coef(IVStage2_b)[2] * sqrt( max(c(ep_, cor(x.est1, x.est2) ))) )
   Corrected_IVRegCoef <- ( Corrected_IVRegCoef_a + Corrected_IVRegCoef_b )/2
   
