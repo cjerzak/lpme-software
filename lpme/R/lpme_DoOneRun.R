@@ -351,7 +351,7 @@ lpme_onerun <- function(Yobs,
                     "difficulty" = jnp$array(rnorm(K,mean=0,sd=1/sqrt(K)))$astype(pdtype_),
                     "discrimination" = jnp$array( (rnorm(K,mean=1,sd=1/sqrt(K))))$astype(pdtype_) 
                   ) ) 
-      print2(sprintf("MCMC Runtime: %.3f min", tdiff_ <- as.numeric(difftime(Sys.time(), t0_, units = "secs"))/60))
+      message((sprintf("MCMC Runtime: %.3f min", tdiff_ <- as.numeric(difftime(Sys.time(), t0_, units = "secs"))/60))
       PosteriorDraws <- sampler$get_samples(group_by_chain = T)
       ExtractAbil <- function(abil,return_sign = F){ # note: deals with identifiability of scale 
         abil <- do.call(cbind, sapply(0L:(nChains-1L), function(c_){
@@ -385,7 +385,7 @@ lpme_onerun <- function(Yobs,
       # plot(scale(x.true[i_sampled]),scale(AbilityMean))
       # cor(x.true[i_sampled],AbilityMean)
       # plot(as.array(np$array(PosteriorDraws$ability))[1,721,])
-      print2(sprintf("N-eff mean ratio: %.3f",
+      message((sprintf("N-eff mean ratio: %.3f",
         mean(numpyro$diagnostics$effective_sample_size(PosteriorDraws$ability)/nSamplesMCMC ) ) )
       
       if(EstimationMethod == "MCMCFull" & split_ == ""){ # full bayesian model 

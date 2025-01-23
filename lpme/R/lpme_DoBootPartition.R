@@ -74,7 +74,7 @@ lpme <- function(Yobs,
         boot_indices <- unlist(tapply(1:length(bootBasis), as.character(bootBasis), c)[boot_indices])
     }
     for(parti_ in 1L:nPartition){
-      print2(sprintf("{booti_ %s of %s} -- {parti_ %s of %s}", booti_, nBoot, parti_, nPartition))
+      message(sprintf("{booti_ %s of %s} -- {parti_ %s of %s}", booti_, nBoot, parti_, nPartition))
       LatentRunResults_ <- lpme_onerun(
                    Yobs[boot_indices],
                    ObservablesMat[boot_indices,], 
