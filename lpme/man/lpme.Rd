@@ -13,7 +13,10 @@ lpme(
   nPartition = 10L,
   bootBasis = 1:length(Yobs),
   ReturnIntermediaries = T,
-  seed = runif(1, 1, 10000)
+  EstimationMethod = "emIRT",
+  conda_env = NULL,
+  Sys.setenv_text = NULL,
+  ordinal = F
 )
 }
 \arguments{
@@ -32,8 +35,6 @@ lpme(
 \item{bootBasis}{Vector of indices or grouping variable for stratified bootstrap. Default is 1:length(Yobs).}
 
 \item{ReturnIntermediaries}{Logical. If TRUE, returns intermediate results. Default is TRUE.}
-
-\item{seed}{Random seed for reproducibility. Default is a random integer between 1 and 10000.}
 }
 \value{
 A list containing various estimates and statistics:

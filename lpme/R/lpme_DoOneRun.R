@@ -1,5 +1,4 @@
-#!/usr/bin/env Rscript
-#' lpme_OneRun
+#' lpme_onerun
 #'
 #' Implements analysis for latent variable models with measurement error correction
 #'
@@ -7,7 +6,7 @@
 #' @param ObservablesMat A matrix of observable indicators used to estimate the latent variable
 #' @param ObservablesGroupings A vector specifying groupings for the observable indicators. Default is column names of ObservablesMat.
 #' @param MakeObservablesGroupings Logical. If TRUE, creates dummy variables for each level of the observable indicators. Default is FALSE.
-#' @param seed Random seed for reproducibility. Default is a random integer between 1 and 10000.
+#' @param seed Random seed for reproducibility. Default is a random integer between 1 and 10000 (used internally)
 #'
 #' @return A list containing various estimates and statistics:
 #' \itemize{
@@ -41,7 +40,7 @@
 #' ObservablesMat <- as.data.frame( matrix(sample(c(0,1), 1000*10, replace = T), ncol = 10) )
 #' 
 #' # Run the analysis
-#' results <- lpme_OneRun(Yobs, ObservablesMat)
+#' results <- lpme_onerun(Yobs, ObservablesMat)
 #' 
 #' # View the corrected OLS coefficient
 #' print(results$Corrected_OLSCoef)
@@ -51,7 +50,7 @@
 #' @importFrom AER ivreg
 #' @importFrom MCMCpack rollcall
 
-lpme_OneRun <- function(Yobs,
+lpme_onerun <- function(Yobs,
                          ObservablesMat, 
                          ObservablesGroupings = colnames(ObservablesMat),
                          MakeObservablesGroupings = F, 
@@ -61,6 +60,7 @@ lpme_OneRun <- function(Yobs,
                          ordinal = F, 
                          seed = NULL){
   t0 <- Sys.time()
+  INIT_SCALER <- 1/10
   Bayesian_OLSSE_InnerNormed <- Bayesian_OLSCoef_InnerNormed <- NA; 
   Bayesian_OLSSE_OuterNormed <- Bayesian_OLSCoef_OuterNormed <- NA;
   starting_seed <- sample(runif(1,1,10000)); if(!is.null(seed)){ set.seed(seed) } 
@@ -81,7 +81,6 @@ lpme_OneRun <- function(Yobs,
         list( model.matrix(~0+as.factor(zer))[,-1] )}),recursive = F))
     }
     
-    #### Bayesian Methods ####
     #backend <- ifelse(EstimationMethod == "MCMCFull", yes = "numpyro", no = "pscl")
     backend <- "numpyro"
     if( grepl(EstimationMethod, pattern = "MCMC") & backend == "pscl" ){
@@ -339,8 +338,8 @@ lpme_OneRun <- function(Yobs,
       )
       
       # run sampler with initialized abilities as COLMEANS of X (ASSUMPTION!)
-      pdtype_ <- ddtype_ <- jnp$float64; jax$config$update("jax_enable_x64", TRUE)
-      # pdtype_ <- ddtype_ <- jnp$float32; jax$config$update("jax_enable_x64", FALSE)
+      #pdtype_ <- ddtype_ <- jnp$float64; jax$config$update("jax_enable_x64", TRUE)
+      pdtype_ <- ddtype_ <- jnp$float32; jax$config$update("jax_enable_x64", FALSE)
 
       # update init_params for full mcmc case
       t0_ <- Sys.time()
@@ -348,7 +347,7 @@ lpme_OneRun <- function(Yobs,
                   X = jnp$array(as.matrix(ObservablesMat_))$astype( ddtype_ ),  # jnp$int16 here causes error with new version of numpyro (expects floats not ints)
                   Y = jnp$array(as.matrix(Yobs))$astype( ddtype_ ), 
                   init_params = list(
-                    "ability" = jnp$array(x_init<-rowMeans(ObservablesMat_))$astype(pdtype_),
+                    "ability" = jnp$array(x_init<- scale(rowMeans(ObservablesMat_))*INIT_SCALER )$astype(pdtype_),
                     "difficulty" = jnp$array(rnorm(K,mean=0,sd=1/sqrt(K)))$astype(pdtype_),
                     "discrimination" = jnp$array( (rnorm(K,mean=1,sd=1/sqrt(K))))$astype(pdtype_) 
                   ) ) 
@@ -524,63 +523,58 @@ lpme_OneRun <- function(Yobs,
       if(Bayesian_OLSCoef_InnerNormed < 0){ Bayesian_OLSCoef_InnerNormed <- -Bayesian_OLSCoef_InnerNormed }
       if(Bayesian_OLSCoef_OuterNormed < 0){ Bayesian_OLSCoef_InnerNormed <- -Bayesian_OLSCoef_OuterNormed }
     }
-    
-    #### EM Methods #### 
     if(EstimationMethod == "emIRT"){ 
-      x_init <- apply( ObservablesMat_, 1, function(x){ mean(f2n(x), na.rm=T)})
+      x_init <- scale(apply( ObservablesMat_, 1, 
+                             function(x){ mean(f2n(x), na.rm=T)})) * INIT_SCALER
 
-      if(ordinal) {
-        s_ <- list(
-          "beta" = matrix(rnorm(ncol(ObservablesMat_), sd = 0.1), ncol = 1),
-          "x"    = matrix(x_init, ncol = 1),
-          "tau"  = matrix(rep(-0.5, ncol(ObservablesMat_)), ncol = 1),
-          "DD"   = matrix(rep(0.5,  ncol(ObservablesMat_)), ncol = 1)
-        )
-        
-        # Optionally fix sign if you are continuing from a previous solution:
-        if(split_ %in% c("1","2")) {
-          if(cor(s_$x, s_past$x) < 0){
-            s_$x    <- -s_$x
-            s_$beta <- -s_$beta
-          }
-        }
-        
-        if(any(ObservablesMat_) %in% c("1","2","3")){
-          ObservablesMat__ <- apply(as.matrix(ObservablesMat_),2,f2n)
+      if(ordinal){
+        ObservablesMat__ <- apply(as.matrix(ObservablesMat_),2,f2n)
+        if( !all(c(ObservablesMat__) %in% 1:3) ){
           ObservablesMat__ <- apply(ObservablesMat__,2,function(x){ as.numeric(gtools::quantcut(x, q = 3)) })
-          ObservablesMat__[is.na(ObservablesMat__)] <- 0
         }
+        ObservablesMat__[is.na(ObservablesMat__)] <- 0
         capture.output(
-          lout.sim_ <- emIRT::ordIRT(
-            .rc      = apply(as.matrix(ObservablesMat_),2,f2n),
-            .starts  = s_,
-            .priors  = makePriors(.N = rc_$n, .J = rc_$m, .D = 1), 
-            .control = list(threads = 1, verbose = FALSE, thresh = 1e-6)
-          )
+          lout.sim_ <- try(emIRT::ordIRT(
+            .rc      = ObservablesMat__,
+            .starts  = list(
+                            "beta" = matrix(rnorm(ncol(ObservablesMat__), sd = 0.1/sqrt(ncol(ObservablesMat__))), ncol = 1),
+                            "x"    = matrix(x_init, ncol = 1),
+                            "tau"  = matrix(rnorm(ncol(ObservablesMat__), mean = -0.5, sd = 0.1/sqrt(ncol(ObservablesMat__))), ncol = 1),
+                            "DD"   = matrix(abs(rnorm(ncol(ObservablesMat__), mean = 0.5, sd = 0.1/sqrt(ncol(ObservablesMat__)))), ncol = 1)
+                          ),
+            .priors  = emIRT::makePriors(.N = nrow(ObservablesMat__), .J = ncol(ObservablesMat__), .D = 1), 
+            .control = list(threads = 1, verbose = TRUE, thresh = 1e-6)
+          ),T)
         )
+        if("try-error" %in% class(lout.sim_)){browser()}
         
         # Scale the final ideal points and store
-        x.est_EM <- x.est_ <- scale(lout.sim_$means$x)
-        s_past   <- s_
+        x.est_ <- scale(lout.sim_$means$x)
+        if(x.est_[which.max(x_init)] < 0){ x.est_ <- -1*x.est_ }  # anchor
+        x.est_EM <- x.est_
       }
     
       if( !ordinal ){ 
         # informative initialization 
-        rc_ <- emIRT::convertRC( emIRT::rollcall(ObservablesMat_) )
-        s_ <- list("alpha" = matrix(rnorm(ncol(ObservablesMat_), sd = .1)),"beta" = matrix(rnorm(ncol(ObservablesMat_), sd = 1)), "x" = matrix(x_init))
-        
-        # fixing in case directions of s1 and s2 x starts are flipped
-        if(split_ %in% c("1","2")){ if(cor(s_$x, s_past$x) < 0){ s_$x <- -s_$x; s_$beta <- -s_$beta } }
+        rc_ <- emIRT::convertRC( pscl::rollcall(ObservablesMat_) )
         capture.output( lout.sim_ <- emIRT::binIRT(.rc = rc_, 
-                            .starts = s_, 
+                            .starts = list("alpha" = matrix(rnorm(ncol(ObservablesMat_), sd = .1)),
+                                           "beta" = matrix(rnorm(ncol(ObservablesMat_), sd = 1)),
+                                           "x" = matrix(x_init)), 
                             .priors = emIRT::makePriors(.N= rc_$n, .J = rc_$m, .D = 1), 
                             .control= list(threads=1, verbose=FALSE, thresh=1e-6,verbose=F),
                             .anchor_subject = which.max(x_init)
                             ) ) 
-        x.est_EM <- x.est_ <- scale(lout.sim_$means$x); s_past <- s_
+        x.est_EM <- x.est_ <- scale(lout.sim_$means$x); 
       }
     }
-    # if(cor(x.est_, Yobs, use="p") < 0){ x.est_ <- -x.est_ } # further force orientation using side information 
+    
+    if(split_ %in% c("1","2")){
+      if(cor(x.est_, x_est_past) < 0){
+        x.est_  <- -1*x.est_
+      }
+    }
+    x_est_past <- x.est_
     eval(parse(text = sprintf("x.est%s <- x.est_", split_)))
   }
   if(!is.null(seed)){ set.seed(starting_seed) } 

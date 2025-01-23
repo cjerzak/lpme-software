@@ -1,4 +1,3 @@
-#!/usr/bin/env Rscript
 #' lpme
 #'
 #' Implements bootstrapped analysis for latent variable models with measurement error correction
@@ -11,7 +10,6 @@
 #' @param nPartition Integer. Number of partitions for each bootstrap iteration. Default is 10.
 #' @param bootBasis Vector of indices or grouping variable for stratified bootstrap. Default is 1:length(Yobs).
 #' @param ReturnIntermediaries Logical. If TRUE, returns intermediate results. Default is TRUE.
-#' @param seed Random seed for reproducibility. Default is a random integer between 1 and 10000.
 #'
 #' @return A list containing various estimates and statistics:
 #' \itemize{
@@ -57,7 +55,7 @@
 #'
 #' @export
 #' @importFrom stats sd median tapply
-#' @importFrom lpme lpme_OneRun
+#' @importFrom lpme lpme_onerun
 
 lpme <- function(Yobs,
                       ObservablesMat, 
@@ -69,9 +67,7 @@ lpme <- function(Yobs,
                       EstimationMethod = "emIRT", 
                       conda_env = NULL, 
                       Sys.setenv_text = NULL, 
-                      ordinal = F, 
-                      seed = NULL){ 
-  if(!is.null(seed)){ set.seed(seed) } 
+                      ordinal = F){ 
   for(booti_ in 1L:(nBoot+1L)){
     boot_indices <- 1:length(Yobs); if(booti_ > 1L){
         boot_indices <- sample(unique(as.character(bootBasis)),length(unique(bootBasis)), replace = T)
@@ -79,7 +75,7 @@ lpme <- function(Yobs,
     }
     for(parti_ in 1L:nPartition){
       print2(sprintf("{booti_ %s of %s} -- {parti_ %s of %s}", booti_, nBoot, parti_, nPartition))
-      LatentRunResults_ <- lpme::lpme_OneRun(
+      LatentRunResults_ <- lpme_onerun(
                    Yobs[boot_indices],
                    ObservablesMat[boot_indices,], 
                    ObservablesGroupings = colnames(ObservablesMat),
@@ -89,8 +85,7 @@ lpme <- function(Yobs,
                    Sys.setenv_text = Sys.setenv_text, 
                    ordinal = ordinal, 
                    seed = NULL)
-                   #seed = (seed+parti_)) # if fixing the partitions across bootstrap iterations 
-      
+
       # save indices indices 
       LatentRunResults_$PartitionIndex <- parti_; LatentRunResults_$BootIndex <- booti_
       
