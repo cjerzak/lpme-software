@@ -29,8 +29,8 @@
   )
   
   # Compare estimates
-  summary(results)
   print(results)
+  summary(results)
   
   # Visualization
   plot(results)

@@ -16,8 +16,8 @@ summary.lpme_onerun <- function(object, ...) {
 print.lpme_onerun <- function(x, ...) {
   cat("Single-Run LPME Results\n")
   cat("-----------------------\n")
-  cat(sprintf("OLS Coefficient: %.3f (SE: %.3f)\n", x$ols_coef, x$ols_se))
-  cat(sprintf("IV Coefficient: %.3f (SE: %.3f)\n", x$iv_coef, x$iv_se))
+  cat(sprintf("Uncorrected Coefficient (OLS): %.3f (SE: %.3f)\n", x$ols_coef, x$ols_se))
+  cat(sprintf("Corrected Coefficient: %.3f (SE: %.3f)\n", x$ols_coef, x$ols_se))
   cat("Use summary() for detailed results.\n")
 }
 
@@ -59,7 +59,7 @@ summary.lpme <- function(object, ...) {
 print.lpme <- function(x, ...) {
   cat("Latent Profile Measurement Error (LPME) Model Results\n")
   cat("----------------------------------------------------\n")
-  cat(sprintf("Baseline Coefficient: %.3f (SE: %.3f)\n", x$ols_coef, x$ols_se))
+  cat(sprintf("Uncorrected Coefficient (OLS): %.3f (SE: %.3f)\n", x$ols_coef, x$ols_se))
   cat(sprintf("Corrected Coefficient: %.3f (SE: %.3f)\n", x$corrected_iv_reg_coef, x$corrected_iv_reg_se))
   cat(sprintf("Bayesian OLS (Outer): %.3f (SE: %.3f)\n", x$bayesian_ols_reg_coef_outer_normed, 
               x$bayesian_ols_reg_se_outer_normed))

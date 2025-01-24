@@ -10,7 +10,7 @@
 
   # remove old PDF
   try(file.remove(sprintf("./%s.pdf",package_name)),T)
-
+ 
   # create new PDF
   system(sprintf("R CMD Rd2pdf %s",package_path))
 

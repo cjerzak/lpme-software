@@ -62,8 +62,8 @@ results <- lpme(
 
 Compare naive and corrected estimates:
 ```{r, eval=TRUE}
-summary(results)
 print(results)
+summary(results)
 ```
 
 You can visualize the relationship between split-half estimates:
