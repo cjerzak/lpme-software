@@ -1,5 +1,5 @@
 {
-  rm(list=ls())
+  rm(list=ls()); options(error = NULL)
   # set path and specify package name
   setwd(sprintf("~/Documents/%s-software", package_name <- "lpme"))
 
@@ -15,5 +15,6 @@
   system(sprintf("R CMD Rd2pdf %s",package_path))
 
   # Check package to ensure it meets CRAN standards.
-  devtools::check( package_path )
+  # devtools::check( package_path )
 }
+

@@ -2,30 +2,30 @@
 #'
 #' Implements analysis for latent variable models with measurement error correction
 #'
-#' @param Yobs A vector of observed outcome variables
-#' @param ObservablesMat A matrix of observable indicators used to estimate the latent variable
-#' @param ObservablesGroupings A vector specifying groupings for the observable indicators. Default is column names of ObservablesMat.
-#' @param MakeObservablesGroupings Logical. If TRUE, creates dummy variables for each level of the observable indicators. Default is FALSE.
+#' @param Y A vector of observed outcome variables
+#' @param observables A matrix of observable indicators used to estimate the latent variable
+#' @param observables_groupings A vector specifying groupings for the observable indicators. Default is column names of observables.
+#' @param make_observables_groupings Logical. If TRUE, creates dummy variables for each level of the observable indicators. Default is FALSE.
 #' @param seed Random seed for reproducibility. Default is a random integer between 1 and 10000 (used internally)
 #'
 #' @return A list containing various estimates and statistics:
 #' \itemize{
-#'   \item OLSCoef: Coefficient from naive OLS regression
-#'   \item OLSSE: Standard error of naive OLS coefficient
-#'   \item OLSTstat: T-statistic of naive OLS coefficient
-#'   \item Corrected_OLSCoef: OLS coefficient corrected for measurement error
-#'   \item Corrected_OLSSE: Standard error of corrected OLS coefficient (currently NA)
-#'   \item Corrected_OLSTstat: T-statistic of corrected OLS coefficient (currently NA)
-#'   \item Corrected_OLSCoef_alt: Alternative corrected OLS coefficient
-#'   \item IVRegCoef: Coefficient from instrumental variable regression
-#'   \item IVRegSE: Standard error of IV regression coefficient
-#'   \item IVRegTstat: T-statistic of IV regression coefficient
-#'   \item x.est1: First set of latent variable estimates
-#'   \item x.est2: Second set of latent variable estimates
-#'   \item Corrected_IVRegCoef: IV regression coefficient corrected for measurement error
-#'   \item Corrected_IVRegSE: Standard error of corrected IV coefficient (currently NA)
-#'   \item Corrected_IVRegTstat: T-statistic of corrected IV coefficient
-#'   \item VarEst_split: Estimated variance of the measurement error
+#'   \item \code{ols_coef}: Coefficient from naive OLS regression
+#'   \item \code{ols_se}: Standard error of naive OLS coefficient
+#'   \item \code{ols_tstat}: T-statistic of naive OLS coefficient
+#'   \item \code{corrected_ols_coef}: OLS coefficient corrected for measurement error
+#'   \item \code{corrected_ols_se}: Standard error of corrected OLS coefficient (currently NA)
+#'   \item \code{corrected_ols_tstat}: T-statistic of corrected OLS coefficient (currently NA)
+#'   \item \code{corrected_ols_coef_alt}: Alternative corrected OLS coefficient (currently NA)
+#'   \item \code{iv_coef}: Coefficient from instrumental variable regression
+#'   \item \code{iv_se}: Standard error of IV regression coefficient
+#'   \item \code{iv_tstat}: T-statistic of IV regression coefficient
+#'   \item \code{corrected_iv_coef}: IV regression coefficient corrected for measurement error
+#'   \item \code{corrected_iv_se}: Standard error of corrected IV coefficient
+#'   \item \code{corrected_iv_tstat}: T-statistic of corrected IV coefficient
+#'   \item \code{var_est_split}: Estimated variance of the measurement error
+#'   \item \code{x_est1}: First set of latent variable estimates
+#'   \item \code{x_est2}: Second set of latent variable estimates
 #' }
 #'
 #' @details 
@@ -36,11 +36,11 @@
 #' @examples
 #' # Generate some example data
 #' set.seed(123)
-#' Yobs <- rnorm(100)
-#' ObservablesMat <- as.data.frame( matrix(sample(c(0,1), 1000*10, replace = T), ncol = 10) )
+#' Y <- rnorm(100)
+#' observables <- as.data.frame( matrix(sample(c(0,1), 1000*10, replace = T), ncol = 10) )
 #' 
 #' # Run the analysis
-#' results <- lpme_onerun(Yobs, ObservablesMat)
+#' results <- lpme_onerun(Y, observables)
 #' 
 #' # View the corrected OLS coefficient
 #' print(results$Corrected_OLSCoef)
@@ -48,56 +48,55 @@
 #' @export
 #' @importFrom stats lm cor var rnorm
 #' @importFrom AER ivreg
-#' @importFrom MCMCpack rollcall
+#' @importFrom pscl rollcall
 
-lpme_onerun <- function(Yobs,
-                         ObservablesMat, 
-                         ObservablesGroupings = colnames(ObservablesMat),
-                         MakeObservablesGroupings = F, 
-                         EstimationMethod = "emIRT", 
+lpme_onerun <- function(Y,
+                         observables, 
+                         observables_groupings = colnames(observables),
+                         make_observables_groupings = F, 
+                         estimation_method = "emIRT", 
                          conda_env = NULL, 
-                         Sys.setenv_text = NULL,
                          ordinal = F, 
                          seed = NULL){
   t0 <- Sys.time()
   INIT_SCALER <- 1/10
   Bayesian_OLSSE_InnerNormed <- Bayesian_OLSCoef_InnerNormed <- NA; 
   Bayesian_OLSSE_OuterNormed <- Bayesian_OLSCoef_OuterNormed <- NA;
-  starting_seed <- sample(runif(1,1,10000)); if(!is.null(seed)){ set.seed(seed) } 
-  items.split1_names <- sample(unique(ObservablesGroupings), 
-                               size = floor(length(unique(ObservablesGroupings))/2), replace=F)
-  items.split2_names <- unique(ObservablesGroupings)[! (ObservablesGroupings %in% items.split1_names)]
+  if(!is.null(seed)){ set.seed(seed) } 
+  items.split1_names <- sample(unique(observables_groupings), 
+                               size = floor(length(unique(observables_groupings))/2), replace=F)
+  items.split2_names <- unique(observables_groupings)[! (observables_groupings %in% items.split1_names)]
   for(split_ in c("", "1", "2")){
-    if(split_ == ""){ items.split_ <- 1:length(ObservablesGroupings) }
-    if(split_ == "1"){ items.split_ <- (1:length(ObservablesGroupings))[ObservablesGroupings %in% items.split1_names] }
-    if(split_ == "2"){ items.split_ <- (1:length(ObservablesGroupings))[ObservablesGroupings %in% items.split2_names] }
+    if(split_ == ""){ items.split_ <- 1:length(observables_groupings) }
+    if(split_ == "1"){ items.split_ <- (1:length(observables_groupings))[observables_groupings %in% items.split1_names] }
+    if(split_ == "2"){ items.split_ <- (1:length(observables_groupings))[observables_groupings %in% items.split2_names] }
     
     # estimating ideal points
-    if(MakeObservablesGroupings == F){
-      ObservablesMat_ <- ObservablesMat[,items.split_]
+    if(make_observables_groupings == F){
+      observables_ <- observables[,items.split_]
     }
-    if(MakeObservablesGroupings == T){
-      ObservablesMat_ <- do.call(cbind,unlist(apply(ObservablesMat[,items.split_],2,function(zer){
+    if(make_observables_groupings == T){
+      observables_ <- do.call(cbind,unlist(apply(observables[,items.split_],2,function(zer){
         list( model.matrix(~0+as.factor(zer))[,-1] )}),recursive = F))
     }
     
-    #backend <- ifelse(EstimationMethod == "MCMCFull", yes = "numpyro", no = "pscl")
+    #backend <- ifelse(estimation_method == "MCMCFull", yes = "numpyro", no = "pscl")
     backend <- "numpyro"
-    if( grepl(EstimationMethod, pattern = "MCMC") & backend == "pscl" ){
-      if(EstimationMethod == "MCMC" ){
-        capture.output( pscl_ideal <- pscl::ideal( pscl::rollcall(ObservablesMat_), 
+    if( grepl(estimation_method, pattern = "MCMC") & backend == "pscl" ){
+      if(estimation_method == "MCMC" ){
+        capture.output( pscl_ideal <- pscl::ideal( pscl::rollcall(observables_), 
                             normalize = T, 
                             store.item = T, 
                             maxiter = 1000L, 
                             burnin = 500L,
                             thin = 1L)  )
         # mean(pscl_ideal$xbar); sd(pscl_ideal$xbar) # confirm 0 and 1 
-        x.est_MCMC <- x.est_ <- pscl_ideal$xbar; s_past <- 1 # summary(lm(Yobs~x.est_))
+        x.est_MCMC <- x.est_ <- pscl_ideal$xbar; s_past <- 1 # summary(lm(Y~x.est_))
         if( split_ == "" ){
           RescaledAbilities  <- t(pscl_ideal$x[,,1])
-          #Bayesian_OLSCoef_OuterNormed <- apply(RescaledAbilities, 2, function(x_){ coef(lm(Yobs~x_))[2]}) # simple MOC 
+          #Bayesian_OLSCoef_OuterNormed <- apply(RescaledAbilities, 2, function(x_){ coef(lm(Y~x_))[2]}) # simple MOC 
           Bayesian_OLSCoef_OuterNormed <- apply(RescaledAbilities, 2, function(x_){ 
-            VCovHat <- sandwich::vcovHC( myModel <- lm(Yobs~x_), type = "HC3" ) 
+            VCovHat <- sandwich::vcovHC( myModel <- lm(Y~x_), type = "HC3" ) 
             coef_ <- mvtnorm::rmvnorm(n = 1, mean = coef(myModel), sigma = VCovHat)[1,2]
           } ) # complicated MOC 
           
@@ -110,7 +109,7 @@ lpme_onerun <- function(Yobs,
           # InnerNormed
           RescaledAbilities  <- ( apply(t(pscl_ideal$x[,,1]), 2, function(x_){scale(x_)})  ) 
           Bayesian_OLSCoef_InnerNormed <- apply(RescaledAbilities, 2, function(x_){ 
-            VCovHat <- sandwich::vcovHC( myModel <- lm(Yobs~x_), type = "HC3" ) 
+            VCovHat <- sandwich::vcovHC( myModel <- lm(Y~x_), type = "HC3" ) 
             coef_ <- mvtnorm::rmvnorm(n = 1, mean = coef(myModel), sigma = VCovHat)[1,2]
           } ) # complicated MOC 
           # apply(RescaledAbilities, 2, sd)
@@ -120,18 +119,18 @@ lpme_onerun <- function(Yobs,
           Bayesian_OLSCoef_InnerNormed <- mean( Bayesian_OLSCoef_InnerNormed )
         }
       }
-      if(EstimationMethod == "MCMCFull" & split_ == ""){
+      if(estimation_method == "MCMCFull" & split_ == ""){
         ## ?? 
       }
-      if(EstimationMethod == "MCMCOverImputation" & split_ == ""){
-        capture.output( pscl_ideal <- pscl::ideal( pscl::rollcall(ObservablesMat_), 
+      if(estimation_method == "MCMCOverImputation" & split_ == ""){
+        capture.output( pscl_ideal <- pscl::ideal( pscl::rollcall(observables_), 
                                    normalize = T, 
                                    store.item = T, 
                                    maxiter = 2000L, 
                                    burnin = 500L,
                                    thin = 2L) )
         # mean(pscl_ideal$xbar); sd(pscl_ideal$xbar) # confirm 0 and 1 
-        x.est_MCMC <- x.est_ <- pscl_ideal$xbar; s_past <- 1 # summary(lm(Yobs~x.est_))
+        x.est_MCMC <- x.est_ <- pscl_ideal$xbar; s_past <- 1 # summary(lm(Y~x.est_))
         if( split_ == "" ){
             for(outType_ in c("Outer","Inner")){ 
               # file:///Users/cjerzak/Dropbox/LatentMeasures/literature/CAUGHEY-ps8-solution.html
@@ -145,7 +144,7 @@ lpme_onerun <- function(Yobs,
               Xobs_mean <- apply(RescaledAbilities, 1, function(x_){ mean(x_) } ) 
               Xobs_SE <- apply(RescaledAbilities, 1, function(x_){ sd(x_) } ) 
               
-              dat_ <- cbind(Yobs, x.est_MCMC)
+              dat_ <- cbind(Y, x.est_MCMC)
               
               # Specify (over-)imputation model
               # priors: #a numeric matrix with four columns 
@@ -153,7 +152,7 @@ lpme_onerun <- function(Yobs,
               # indicating noisy estimates of the values to be imputed.
               outcome_priors <- cbind(
                 1:nrow(dat_), 1,              
-                Yobs, # mean 
+                Y, # mean 
                 1 # sd 
               )
               policy_priors <- cbind( 
@@ -177,7 +176,7 @@ lpme_onerun <- function(Yobs,
               )
               
               # Perform multiple overimputation
-              overimputed_Yobs <- do.call(cbind,lapply(overimputed_data$imputations,function(l_){l_[,1]}))
+              overimputed_Y <- do.call(cbind,lapply(overimputed_data$imputations,function(l_){l_[,1]}))
               overimputed_x.est_MCMC <- do.call(cbind,lapply(overimputed_data$imputations,function(l_){l_[,2]}))
               if(outType_ == "Outer"){
                 overimputed_x.est_MCMC  <- (overimputed_x.est_MCMC-mean(rowMeans(overimputed_x.est_MCMC)))/sd(rowMeans(overimputed_x.est_MCMC))
@@ -193,7 +192,7 @@ lpme_onerun <- function(Yobs,
               
               # Analyze overimputed datasets
               overimputed_coefs <- unlist(unlist( sapply(1:nOverImpute, function(s_){
-                coef(lm(overimputed_Yobs[,s_] ~ overimputed_x.est_MCMC[,s_]))[2]
+                coef(lm(overimputed_Y[,s_] ~ overimputed_x.est_MCMC[,s_]))[2]
               })))
               if(outType_ == "Outer"){ 
                 Bayesian_OLSSE_OuterNormed <- sd( overimputed_coefs )
@@ -207,28 +206,13 @@ lpme_onerun <- function(Yobs,
         }
       }
     }
-    if( grepl(EstimationMethod, pattern = "MCMC") & backend == "numpyro" ){
-      if(split_ == ""){
-        # Load required libraries
-        library(reticulate)
-        reticulate::use_condaenv( conda_env )
-        
-        # set environmental variables 
-        if( !is.null(Sys.setenv_text) ){ 
-          eval(parse(text = Sys.setenv_text) )
+    if( grepl(estimation_method, pattern = "MCMC") & backend == "numpyro" ){
+        if(split_ == ""){
+          if(!"jax" %in% ls(envir = lpme_env)){
+            initialize_jax(conda_env, conda_env_required)
+          }
         }
-  
-        # Import necessary Python modules
-        np <- import("numpy", convert = F)
-        jax <- import("jax")
-        jnp <- import("jax.numpy")
-        random <- import("jax.random")
-        numpyro <- import("numpyro")
-        dist <- import("numpyro.distributions")
-        f2i <- function(f_){jnp$array(f_,jnp$int32)}
-        f2a <- function(x){jnp$array(x,jnp$float32)}
-        ai <- as.integer
-    } 
+        
         # Construct for annotating conditionally independent variables.
         # Within a plate context manager, sample sites will be automatically broadcasted
         # to the size of the plate. 
@@ -243,12 +227,12 @@ lpme_onerun <- function(Yobs,
         nSamplesWarmup <- (1000L)
         nSamplesMCMC <- (1000L)
         nThinBy <- 1L
-        N <- ai(nrow(ObservablesMat_))
-        K <- ai(ncol(ObservablesMat_))
+        N <- ai(nrow(observables_))
+        K <- ai(ncol(observables_))
         
         # Define the two-parameter IRT model
         IRTModel <- (function(X, # binary indicators 
-                              Y # outcome (used if EstimationMethod <- "MCMCFull")
+                              Y # outcome (used if estimation_method <- "MCMCFull")
                               #N, # number of observations  
                               #K # number of items 
                               ){
@@ -298,7 +282,7 @@ lpme_onerun <- function(Yobs,
             print("logits shape:");print(logits$shape)
           }
           
-          if(EstimationMethod == "MCMCFull"){
+          if(estimation_method == "MCMCFull"){
             # Outcome intercept prior
             Y_intercept <- numpyro$sample("YModel_intercept", dist$Normal(0, 1))
             
@@ -344,20 +328,22 @@ lpme_onerun <- function(Yobs,
       # update init_params for full mcmc case
       t0_ <- Sys.time()
       sampler$run(jax$random$PRNGKey( ai(runif(1,0,10000)) ), 
-                  X = jnp$array(as.matrix(ObservablesMat_))$astype( ddtype_ ),  # jnp$int16 here causes error with new version of numpyro (expects floats not ints)
-                  Y = jnp$array(as.matrix(Yobs))$astype( ddtype_ ), 
+                  X = jnp$array(as.matrix(observables_))$astype( ddtype_ ),  # jnp$int16 here causes error with new version of numpyro (expects floats not ints)
+                  Y = jnp$array(as.matrix(Y))$astype( ddtype_ ), 
                   init_params = list(
-                    "ability" = jnp$array(x_init<- scale(rowMeans(ObservablesMat_))*INIT_SCALER )$astype(pdtype_),
+                    "ability" = jnp$array(x_init<- scale(rowMeans(observables_))*INIT_SCALER )$astype(pdtype_),
                     "difficulty" = jnp$array(rnorm(K,mean=0,sd=1/sqrt(K)))$astype(pdtype_),
                     "discrimination" = jnp$array( (rnorm(K,mean=1,sd=1/sqrt(K))))$astype(pdtype_) 
                   ) ) 
-      message((sprintf("MCMC Runtime: %.3f min", tdiff_ <- as.numeric(difftime(Sys.time(), t0_, units = "secs"))/60))
+      message(sprintf("MCMC Runtime: %.3f min", 
+                       tdiff_ <- as.numeric(difftime(Sys.time(), 
+                                                     t0_, units = "secs"))/60))
       PosteriorDraws <- sampler$get_samples(group_by_chain = T)
       ExtractAbil <- function(abil,return_sign = F){ # note: deals with identifiability of scale 
         abil <- do.call(cbind, sapply(0L:(nChains-1L), function(c_){
           abil_c <- as.matrix(np$array(abil)[c_,,])
           abil_c <- t(abil_c)
-          # if(cor(rowMeans(abil_c),Yobs) < 0){ abil_c <- -1*abil_c; if(return_sign){ return(list(-1)) } }
+          # if(cor(rowMeans(abil_c),Y) < 0){ abil_c <- -1*abil_c; if(return_sign){ return(list(-1)) } }
           # if(return_sign){ return(list(1)) }
           return( list(abil_c) )
         }))
@@ -371,8 +357,8 @@ lpme_onerun <- function(Yobs,
 
       # hist( apply(ExtractAbil(PosteriorDraws$ability), 2, sd) ) 
       # hist(AbilityMean)
-      # summary( lm(Yobs~AbilityMean) )
-      # summary( lm(Yobs~scale(AbilityMean) ) )
+      # summary( lm(Y~AbilityMean) )
+      # summary( lm(Y~scale(AbilityMean) ) )
       # plot( as.matrix( np$array( PosteriorDraws$discrimination_oriented ) )[1,,1])
       # plot( as.matrix( np$array( PosteriorDraws$discrimination ) )[1,,1])
       # plot( as.matrix( np$array( PosteriorDraws$discrimination ) )[1,,2])
@@ -385,10 +371,10 @@ lpme_onerun <- function(Yobs,
       # plot(scale(x.true[i_sampled]),scale(AbilityMean))
       # cor(x.true[i_sampled],AbilityMean)
       # plot(as.array(np$array(PosteriorDraws$ability))[1,721,])
-      message((sprintf("N-eff mean ratio: %.3f",
+      message(sprintf("N-eff mean ratio: %.3f",
         mean(numpyro$diagnostics$effective_sample_size(PosteriorDraws$ability)/nSamplesMCMC ) ) )
       
-      if(EstimationMethod == "MCMCFull" & split_ == ""){ # full bayesian model 
+      if(estimation_method == "MCMCFull" & split_ == ""){ # full bayesian model 
         RescaledAbilities <- (ExtractAbil(PosteriorDraws$ability)-mean(AbilityMean))/sd(AbilityMean)
         #ExtractAbil(PosteriorDraws$ability,return_sign=T)
         # plot(RescaledAbilities[,1],RescaledAbilities[,2])
@@ -411,12 +397,12 @@ lpme_onerun <- function(Yobs,
         Bayesian_OLSSE_InnerNormed <- sd( Bayesian_OLSCoef_InnerNormed ) 
         Bayesian_OLSCoef_InnerNormed <- mean( Bayesian_OLSCoef_InnerNormed )
       }
-      if(EstimationMethod == "MCMC" & split_ == ""){ # method of compositions 
+      if(estimation_method == "MCMC" & split_ == ""){ # method of compositions 
         # OuterNormed - this is what ideal does 
         RescaledAbilities  <- (ExtractAbil(PosteriorDraws$ability)-mean(AbilityMean))/sd(AbilityMean)
-        #Bayesian_OLSCoef_OuterNormed <- apply(RescaledAbilities, 2, function(x_){ coef(lm(Yobs~x_))[2]}) # simple MOC 
+        #Bayesian_OLSCoef_OuterNormed <- apply(RescaledAbilities, 2, function(x_){ coef(lm(Y~x_))[2]}) # simple MOC 
         Bayesian_OLSCoef_OuterNormed <- apply(RescaledAbilities, 2, function(x_){ 
-          VCovHat <- sandwich::vcovHC( myModel <- lm(Yobs~x_), type = "HC3" ) 
+          VCovHat <- sandwich::vcovHC( myModel <- lm(Y~x_), type = "HC3" ) 
           coef_ <- mvtnorm::rmvnorm(n = 1, mean = coef(myModel), sigma = VCovHat)[1,2]
           } ) # complicated MOC 
         
@@ -428,9 +414,9 @@ lpme_onerun <- function(Yobs,
         
         # InnerNormed
         RescaledAbilities  <- ( apply(ExtractAbil(PosteriorDraws$ability), 2, function(x_){scale(x_)})  ) 
-        #Bayesian_OLSCoef_InnerNormed <- apply(RescaledAbilities, 2, function(x_){ coef(lm(Yobs~x_))[2]}) # simple MOC 
+        #Bayesian_OLSCoef_InnerNormed <- apply(RescaledAbilities, 2, function(x_){ coef(lm(Y~x_))[2]}) # simple MOC 
         Bayesian_OLSCoef_InnerNormed <- apply(RescaledAbilities, 2, function(x_){ 
-          VCovHat <- sandwich::vcovHC( myModel <- lm(Yobs~x_), type = "HC3" ) 
+          VCovHat <- sandwich::vcovHC( myModel <- lm(Y~x_), type = "HC3" ) 
           coef_ <- mvtnorm::rmvnorm(n = 1, mean = coef(myModel), sigma = VCovHat)[1,2]
         } ) # complicated MOC 
         # apply(RescaledAbilities, 2, sd)
@@ -446,7 +432,7 @@ lpme_onerun <- function(Yobs,
       # plot(DifficultyMean,DiscriminationMean)
       # plot(x.est_MCMC, x.est_EM); abline(a=0,b=1); cor(x.est_MCMC, x.est_EM)
       
-      if(EstimationMethod == "MCMCOverImputation" & split_ == ""){ 
+      if(estimation_method == "MCMCOverImputation" & split_ == ""){ 
         for(outType_ in c("Outer","Inner")){ 
           # file:///Users/cjerzak/Dropbox/LatentMeasures/literature/CAUGHEY-ps8-solution.html
           if(outType_ == "Outer"){
@@ -458,7 +444,7 @@ lpme_onerun <- function(Yobs,
           Xobs_mean <- apply(RescaledAbilities, 1, function(x_){ mean(x_) } ) 
           Xobs_SE <- apply(RescaledAbilities, 1, function(x_){ sd(x_) } ) 
           
-          dat_ <- cbind(Yobs, x.est_MCMC)
+          dat_ <- cbind(Y, x.est_MCMC)
           
           # Specify (over-)imputation model
           # priors: #a numeric matrix with four columns 
@@ -466,7 +452,7 @@ lpme_onerun <- function(Yobs,
           # indicating noisy estimates of the values to be imputed.
           outcome_priors <- cbind(
             1:nrow(dat_), 1,              
-            Yobs, # mean 
+            Y, # mean 
             1 # sd 
           )
           policy_priors <- cbind( 
@@ -490,7 +476,7 @@ lpme_onerun <- function(Yobs,
           )
           
           # Perform multiple overimputation
-          overimputed_Yobs <- do.call(cbind,lapply(overimputed_data$imputations,function(l_){l_[,1]}))
+          overimputed_Y <- do.call(cbind,lapply(overimputed_data$imputations,function(l_){l_[,1]}))
           overimputed_x.est_MCMC <- do.call(cbind,lapply(overimputed_data$imputations,function(l_){l_[,2]}))
           if(outType_ == "Outer"){
             overimputed_x.est_MCMC  <- (overimputed_x.est_MCMC-mean(rowMeans(overimputed_x.est_MCMC)))/sd(rowMeans(overimputed_x.est_MCMC))
@@ -506,7 +492,7 @@ lpme_onerun <- function(Yobs,
           
           # Analyze overimputed datasets
           overimputed_coefs <- unlist(unlist( sapply(1:nOverImpute, function(s_){
-            coef(lm(overimputed_Yobs[,s_] ~ overimputed_x.est_MCMC[,s_]))[2]
+            coef(lm(overimputed_Y[,s_] ~ overimputed_x.est_MCMC[,s_]))[2]
           })))
           if(outType_ == "Outer"){ 
             Bayesian_OLSSE_OuterNormed <- sd( overimputed_coefs )
@@ -518,35 +504,31 @@ lpme_onerun <- function(Yobs,
           }
         }
       }
-      
-      # if forcing positive sign 
-      if(Bayesian_OLSCoef_InnerNormed < 0){ Bayesian_OLSCoef_InnerNormed <- -Bayesian_OLSCoef_InnerNormed }
-      if(Bayesian_OLSCoef_OuterNormed < 0){ Bayesian_OLSCoef_InnerNormed <- -Bayesian_OLSCoef_OuterNormed }
     }
-    if(EstimationMethod == "emIRT"){ 
-      x_init <- scale(apply( ObservablesMat_, 1, 
+    if(estimation_method == "emIRT"){ 
+      x_init <- scale(apply( observables_, 1, 
                              function(x){ mean(f2n(x), na.rm=T)})) * INIT_SCALER
 
       if(ordinal){
-        ObservablesMat__ <- apply(as.matrix(ObservablesMat_),2,f2n)
-        if( !all(c(ObservablesMat__) %in% 1:3) ){
-          ObservablesMat__ <- apply(ObservablesMat__,2,function(x){ as.numeric(gtools::quantcut(x, q = 3)) })
+        observables__ <- apply(as.matrix(observables_),2,f2n)
+        if( !all(c(observables__) %in% 1:3) ){
+          observables__ <- apply(observables__,2,function(x){ as.numeric(gtools::quantcut(x, q = 3)) })
         }
-        ObservablesMat__[is.na(ObservablesMat__)] <- 0
+        observables__[is.na(observables__)] <- 0
         capture.output(
           lout.sim_ <- try(emIRT::ordIRT(
-            .rc      = ObservablesMat__,
+            .rc      = observables__,
             .starts  = list(
-                            "beta" = matrix(rnorm(ncol(ObservablesMat__), sd = 0.1/sqrt(ncol(ObservablesMat__))), ncol = 1),
+                            "beta" = matrix(rnorm(ncol(observables__), sd = 0.1/sqrt(ncol(observables__))), ncol = 1),
                             "x"    = matrix(x_init, ncol = 1),
-                            "tau"  = matrix(rnorm(ncol(ObservablesMat__), mean = -0.5, sd = 0.1/sqrt(ncol(ObservablesMat__))), ncol = 1),
-                            "DD"   = matrix(abs(rnorm(ncol(ObservablesMat__), mean = 0.5, sd = 0.1/sqrt(ncol(ObservablesMat__)))), ncol = 1)
+                            "tau"  = matrix(rnorm(ncol(observables__), mean = -0.5, sd = 0.1/sqrt(ncol(observables__))), ncol = 1),
+                            "DD"   = matrix(abs(rnorm(ncol(observables__), mean = 0.5, sd = 0.1/sqrt(ncol(observables__)))), ncol = 1)
                           ),
-            .priors  = emIRT::makePriors(.N = nrow(ObservablesMat__), .J = ncol(ObservablesMat__), .D = 1), 
+            .priors  = emIRT::makePriors(.N = nrow(observables__), .J = ncol(observables__), .D = 1), 
             .control = list(threads = 1, verbose = TRUE, thresh = 1e-6)
           ),T)
         )
-        if("try-error" %in% class(lout.sim_)){browser()}
+        if("try-error" %in% class(lout.sim_)){ stop(lout.sim_) } 
         
         # Scale the final ideal points and store
         x.est_ <- scale(lout.sim_$means$x)
@@ -556,10 +538,10 @@ lpme_onerun <- function(Yobs,
     
       if( !ordinal ){ 
         # informative initialization 
-        rc_ <- emIRT::convertRC( pscl::rollcall(ObservablesMat_) )
+        rc_ <- emIRT::convertRC( pscl::rollcall(observables_) )
         capture.output( lout.sim_ <- emIRT::binIRT(.rc = rc_, 
-                            .starts = list("alpha" = matrix(rnorm(ncol(ObservablesMat_), sd = .1)),
-                                           "beta" = matrix(rnorm(ncol(ObservablesMat_), sd = 1)),
+                            .starts = list("alpha" = matrix(rnorm(ncol(observables_), sd = .1)),
+                                           "beta" = matrix(rnorm(ncol(observables_), sd = 1)),
                                            "x" = matrix(x_init)), 
                             .priors = emIRT::makePriors(.N= rc_$n, .J = rc_$m, .D = 1), 
                             .control= list(threads=1, verbose=FALSE, thresh=1e-6,verbose=F),
@@ -577,24 +559,23 @@ lpme_onerun <- function(Yobs,
     x_est_past <- x.est_
     eval(parse(text = sprintf("x.est%s <- x.est_", split_)))
   }
-  if(!is.null(seed)){ set.seed(starting_seed) } 
 
   # simple linear reg 
-  theOLS <- lm(Yobs ~ x.est)
+  theOLS <- lm(Y ~ x.est)
   
   # stage 1 results
   IVStage1 <- lm(x.est2 ~ x.est1)
   
   # corrected IV
-  IVStage2_a <- AER::ivreg(Yobs ~ x.est2 | x.est1)
-  IVStage2_b <- AER::ivreg(Yobs ~ x.est1 | x.est2)
+  IVStage2_a <- AER::ivreg(Y ~ x.est2 | x.est1)
+  IVStage2_b <- AER::ivreg(Y ~ x.est1 | x.est2)
   Corrected_IVRegCoef_a <- (coef(IVStage2_a)[2] * sqrt( max(c((ep_ <- 0.01), cor(x.est1, x.est2) ))) )
   Corrected_IVRegCoef_b <- (coef(IVStage2_b)[2] * sqrt( max(c(ep_, cor(x.est1, x.est2) ))) )
   Corrected_IVRegCoef <- ( Corrected_IVRegCoef_a + Corrected_IVRegCoef_b )/2
   
   # corrected OLS 
-  Corrected_OLSCoef1 <- coef(lm(Yobs ~ x.est1))[2] * (CorrectionFactor <- 1/sqrt( max(c(ep_, cor(x.est1, x.est2) ))))
-  Corrected_OLSCoef2 <- coef(lm(Yobs ~ x.est2))[2] * CorrectionFactor
+  Corrected_OLSCoef1 <- coef(lm(Y ~ x.est1))[2] * (CorrectionFactor <- 1/sqrt( max(c(ep_, cor(x.est1, x.est2) ))))
+  Corrected_OLSCoef2 <- coef(lm(Y ~ x.est2))[2] * CorrectionFactor
   Corrected_OLSCoef <- (Corrected_OLSCoef1 + Corrected_OLSCoef2)/2
   t_OneRun <- as.numeric(difftime(Sys.time(), t0, units = "secs"))
   
@@ -607,45 +588,47 @@ lpme_onerun <- function(Yobs,
   
   # ERV analysis 
   mstage1 <- lm(x.est2 ~ x.est1)
-  mreduced <- lm(Yobs ~ x.est1)
+  mreduced <- lm(Y ~ x.est1)
   mstage1ERV <- sensemakr::extreme_robustness_value( mstage1 )[[2]]
   mreducedERV <- sensemakr::extreme_robustness_value( mreduced )[[2]]
   
   # save results 
-  ret_ <- list("OLSCoef" = coef(summary(theOLS))[2,1],
-       "OLSSE" = coef(summary(theOLS))[2,2],
-       "OLSTstat" = coef(summary(theOLS))[2,3],
-       
-       "IVRegCoef" = coef(summary(IVStage2_a))[2,1], 
-       "IVRegSE" = coef(summary(IVStage2_a))[2,2],
-       "IVRegTstat" = coef(summary(IVStage2_a))[2,3],
-       
-       "Corrected_IVRegCoef" = Corrected_IVRegCoef,
-       "Corrected_IVRegSE" = NA,
-       "Corrected_IVRegTstat" =  Corrected_IVRegCoef / coef(summary(IVStage2_a))[2,2],
-       "VarEst_split" = var(x.est1 - x.est2) / 2 ,
-  
-        "Corrected_OLSCoef" = Corrected_OLSCoef, 
-        "Corrected_OLSSE" = NA,
-        "Corrected_OLSTstat" = NA,
-        
-        "Corrected_OLSCoef_alt" = NA, 
-        "Corrected_OLSSE_alt" = NA,
-        "Corrected_OLSTstat_alt" = NA,
-       
-       "Bayesian_OLSCoef_OuterNormed" = Bayesian_OLSCoef_OuterNormed, 
-       "Bayesian_OLSSE_OuterNormed" = Bayesian_OLSSE_OuterNormed,
-       "Bayesian_OLSTstat_OuterNormed" = Bayesian_OLSCoef_OuterNormed/Bayesian_OLSSE_OuterNormed,
-       
-       "Bayesian_OLSCoef_InnerNormed" = Bayesian_OLSCoef_InnerNormed, 
-       "Bayesian_OLSSE_InnerNormed" = Bayesian_OLSSE_InnerNormed,
-       "Bayesian_OLSTstat_InnerNormed" = Bayesian_OLSCoef_OuterNormed/Bayesian_OLSSE_InnerNormed,
+  results <- list(
+    "ols_coef" = coef(summary(theOLS))[2, 1],
+    "ols_se" = coef(summary(theOLS))[2, 2],
+    "ols_tstat" = coef(summary(theOLS))[2, 3],
     
-        "mstage1ERV" = mstage1ERV, 
-        "mreducedERV" = mreducedERV, 
-  
-        "x.est1" = x.est1,
-        "x.est2" = x.est2)
-
-    return( ret_ ) 
+    "iv_coef" = coef(summary(IVStage2_a))[2, 1], 
+    "iv_se" = coef(summary(IVStage2_a))[2, 2],
+    "iv_tstat" = coef(summary(IVStage2_a))[2, 3],
+    
+    "corrected_iv_coef" = Corrected_IVRegCoef,
+    "corrected_iv_se" = NA,
+    "corrected_iv_tstat" = Corrected_IVRegCoef / coef(summary(IVStage2_a))[2, 2],
+    "var_est_split" = var(x.est1 - x.est2) / 2,  # var_est_split
+    
+    "corrected_ols_coef" = Corrected_OLSCoef, 
+    "corrected_ols_se" = NA,
+    "corrected_ols_tstat" = NA,
+    
+    "corrected_ols_coef_alt" = NA, 
+    "corrected_ols_se_alt" = NA,
+    "corrected_ols_tstat_alt" = NA,
+    
+    "bayesian_ols_coef_outer_normed" = Bayesian_OLSCoef_OuterNormed, 
+    "bayesian_ols_se_outer_normed" = Bayesian_OLSSE_OuterNormed,
+    "bayesian_ols_tstat_outer_normed" = Bayesian_OLSCoef_OuterNormed / Bayesian_OLSSE_OuterNormed,
+    
+    "bayesian_ols_coef_inner_normed" = Bayesian_OLSCoef_InnerNormed, 
+    "bayesian_ols_se_inner_normed" = Bayesian_OLSSE_InnerNormed,
+    "bayesian_ols_tstat_inner_normed" = Bayesian_OLSCoef_InnerNormed / Bayesian_OLSSE_InnerNormed,
+    
+    "m_stage_1_erv" = mstage1ERV, 
+    "m_reduced_erv" = mreducedERV, 
+    
+    "x_est1" = x.est1,
+    "x_est2" = x.est2
+  )
+    class(results) <- "lpme_onerun"
+    return( results ) 
 }

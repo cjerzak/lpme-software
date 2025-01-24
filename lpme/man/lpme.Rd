@@ -5,59 +5,68 @@
 \title{lpme}
 \usage{
 lpme(
-  Yobs,
-  ObservablesMat,
-  ObservablesGroupings = colnames(ObservablesMat),
-  MakeObservablesGroupings = F,
-  nBoot = 32L,
-  nPartition = 10L,
-  bootBasis = 1:length(Yobs),
-  ReturnIntermediaries = T,
-  EstimationMethod = "emIRT",
+  Y,
+  observables,
+  observables_groupings = colnames(observables),
+  make_observables_groupings = FALSE,
+  n_boot = 32L,
+  n_partition = 10L,
+  boot_basis = 1:length(Y),
+  return_intermediaries = TRUE,
+  estimation_method = "emIRT",
   conda_env = NULL,
-  Sys.setenv_text = NULL,
-  ordinal = F
+  ordinal = FALSE
 )
 }
 \arguments{
-\item{Yobs}{A vector of observed outcome variables}
+\item{Y}{A vector of observed outcome variables}
 
-\item{ObservablesMat}{A matrix of observable indicators used to estimate the latent variable}
+\item{observables}{A matrix of observable indicators used to estimate the latent variable}
 
-\item{ObservablesGroupings}{A vector specifying groupings for the observable indicators. Default is column names of ObservablesMat.}
+\item{observables_groupings}{A vector specifying groupings for the observable indicators. Default is column names of observables.}
 
-\item{MakeObservablesGroupings}{Logical. If TRUE, creates dummy variables for each level of the observable indicators. Default is FALSE.}
+\item{make_observables_groupings}{Logical. If TRUE, creates dummy variables for each level of the observable indicators. Default is FALSE.}
 
-\item{nBoot}{Integer. Number of bootstrap iterations. Default is 32.}
+\item{n_boot}{Integer. Number of bootstrap iterations. Default is 32.}
 
-\item{nPartition}{Integer. Number of partitions for each bootstrap iteration. Default is 10.}
+\item{n_partition}{Integer. Number of partitions for each bootstrap iteration. Default is 10.}
 
-\item{bootBasis}{Vector of indices or grouping variable for stratified bootstrap. Default is 1:length(Yobs).}
+\item{boot_basis}{Vector of indices or grouping variable for stratified bootstrap. Default is 1:length(Y).}
 
-\item{ReturnIntermediaries}{Logical. If TRUE, returns intermediate results. Default is TRUE.}
+\item{return_intermediaries}{Logical. If TRUE, returns intermediate results. Default is TRUE.}
 }
 \value{
-A list containing various estimates and statistics:
+A list containing various estimates and statistics (in snake_case):
 \itemize{
-  \item OLSCoef: Coefficient from naive OLS regression
-  \item OLSSE: Bootstrap standard error of naive OLS coefficient
-  \item OLSTstat: T-statistic of naive OLS coefficient
-  \item Corrected_OLSCoef: OLS coefficient corrected for measurement error
-  \item Corrected_OLSSE: Bootstrap standard error of corrected OLS coefficient
-  \item Corrected_OLSTstat: T-statistic of corrected OLS coefficient
-  \item Corrected_OLSCoef_alt: Alternative corrected OLS coefficient
-  \item Corrected_OLSSE_alt: Bootstrap standard error of alternative corrected OLS coefficient
-  \item Corrected_OLSTstat_alt: T-statistic of alternative corrected OLS coefficient
-  \item IVRegCoef: Coefficient from instrumental variable regression
-  \item IVRegSE: Bootstrap standard error of IV regression coefficient
-  \item IVRegTstat: T-statistic of IV regression coefficient
-  \item Corrected_IVRegCoef: IV regression coefficient corrected for measurement error
-  \item Corrected_IVRegSE: Bootstrap standard error of corrected IV coefficient
-  \item Corrected_IVRegTstat: T-statistic of corrected IV coefficient
-  \item x.est1: First set of latent variable estimates
-  \item x.est2: Second set of latent variable estimates
-  \item VarEst_split: Estimated variance of the measurement error
-  \item VarEst_split_se: Bootstrap standard error of the estimated variance of the measurement error
+  \item \code{ols_coef}: Coefficient from naive OLS regression.
+  \item \code{ols_se}: Standard error of naive OLS coefficient.
+  \item \code{ols_tstat}: T-statistic of naive OLS coefficient.
+  \item \code{iv_coef}: Coefficient from instrumental variable (IV) regression.
+  \item \code{iv_se}: Standard error of IV regression coefficient.
+  \item \code{iv_tstat}: T-statistic of IV regression coefficient.
+  \item \code{corrected_iv_coef}: IV regression coefficient corrected for measurement error.
+  \item \code{corrected_iv_se}: Standard error of the corrected IV coefficient (currently \code{NA}).
+  \item \code{corrected_iv_tstat}: T-statistic of the corrected IV coefficient.
+  \item \code{var_est}: Estimated variance of the measurement error (split-half variance).
+  \item \code{corrected_ols_coef}: OLS coefficient corrected for measurement error.
+  \item \code{corrected_ols_se}: Standard error of the corrected OLS coefficient (currently \code{NA}).
+  \item \code{corrected_ols_tstat}: T-statistic of the corrected OLS coefficient (currently \code{NA}).
+  \item \code{corrected_ols_coef_alt}: Alternative corrected OLS coefficient (if applicable).
+  \item \code{corrected_ols_se_alt}: Standard error for the alternative corrected OLS coefficient (if applicable).
+  \item \code{corrected_ols_tstat_alt}: T-statistic for the alternative corrected OLS coefficient (if applicable).
+  \item \code{bayesian_ols_coef_outer_normed}: Posterior mean of the OLS coefficient under MCMC, 
+    after normalizing by the overall sample standard deviation.
+  \item \code{bayesian_ols_se_outer_normed}: Posterior standard error corresponding to \code{bayesian_ols_coef_outer_normed}.
+  \item \code{bayesian_ols_tstat_outer_normed}: T-statistic for \code{bayesian_ols_coef_outer_normed}.
+  \item \code{bayesian_ols_coef_inner_normed}: Posterior mean of the OLS coefficient under MCMC, 
+    after normalizing each posterior draw individually.
+  \item \code{bayesian_ols_se_inner_normed}: Posterior standard error corresponding to \code{bayesian_ols_coef_inner_normed}.
+  \item \code{bayesian_ols_tstat_inner_normed}: T-statistic for \code{bayesian_ols_coef_inner_normed}.
+  \item \code{m_stage_1_erv}: Extreme robustness value (ERV) for the first-stage regression 
+    (\code{x_est2} on \code{x_est1}), if computed.
+  \item \code{m_reduced_erv}: ERV for the reduced model (\code{Y} on \code{x_est1}), if computed.
+  \item \code{x_est1}: First set of latent variable estimates.
+  \item \code{x_est2}: Second set of latent variable estimates.
 }
 }
 \description{
@@ -73,13 +82,13 @@ and bootstrap standard errors.
 \examples{
 # Generate some example data
 set.seed(123)
-Yobs <- rnorm(1000)
-ObservablesMat <- as.data.frame( matrix(sample(c(0,1), 1000*10, replace = T), ncol = 10) )
+Y <- rnorm(1000)
+observables <- as.data.frame( matrix(sample(c(0,1), 1000*10, replace = T), ncol = 10) )
 
 # Run the bootstrapped analysis
-results <- lpme(Yobs, ObservablesMat, nBoot = 100, nPartition = 5)
+results <- lpme(Y, observables, n_boot = 100, n_partition = 5)
 
 # View the corrected IV coefficient and its standard error
-print(c(results$Corrected_IVRegCoef, results$Corrected_IVRegSE))
+print(c(results$corrected_iv_reg_coef, results$corrected_iv_reg_se))
 
 }

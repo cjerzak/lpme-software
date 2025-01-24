@@ -5,47 +5,46 @@
 \title{lpme_onerun}
 \usage{
 lpme_onerun(
-  Yobs,
-  ObservablesMat,
-  ObservablesGroupings = colnames(ObservablesMat),
-  MakeObservablesGroupings = F,
-  EstimationMethod = "emIRT",
+  Y,
+  observables,
+  observables_groupings = colnames(observables),
+  make_observables_groupings = F,
+  estimation_method = "emIRT",
   conda_env = NULL,
-  Sys.setenv_text = NULL,
   ordinal = F,
   seed = NULL
 )
 }
 \arguments{
-\item{Yobs}{A vector of observed outcome variables}
+\item{Y}{A vector of observed outcome variables}
 
-\item{ObservablesMat}{A matrix of observable indicators used to estimate the latent variable}
+\item{observables}{A matrix of observable indicators used to estimate the latent variable}
 
-\item{ObservablesGroupings}{A vector specifying groupings for the observable indicators. Default is column names of ObservablesMat.}
+\item{observables_groupings}{A vector specifying groupings for the observable indicators. Default is column names of observables.}
 
-\item{MakeObservablesGroupings}{Logical. If TRUE, creates dummy variables for each level of the observable indicators. Default is FALSE.}
+\item{make_observables_groupings}{Logical. If TRUE, creates dummy variables for each level of the observable indicators. Default is FALSE.}
 
 \item{seed}{Random seed for reproducibility. Default is a random integer between 1 and 10000 (used internally)}
 }
 \value{
 A list containing various estimates and statistics:
 \itemize{
-  \item OLSCoef: Coefficient from naive OLS regression
-  \item OLSSE: Standard error of naive OLS coefficient
-  \item OLSTstat: T-statistic of naive OLS coefficient
-  \item Corrected_OLSCoef: OLS coefficient corrected for measurement error
-  \item Corrected_OLSSE: Standard error of corrected OLS coefficient (currently NA)
-  \item Corrected_OLSTstat: T-statistic of corrected OLS coefficient (currently NA)
-  \item Corrected_OLSCoef_alt: Alternative corrected OLS coefficient
-  \item IVRegCoef: Coefficient from instrumental variable regression
-  \item IVRegSE: Standard error of IV regression coefficient
-  \item IVRegTstat: T-statistic of IV regression coefficient
-  \item x.est1: First set of latent variable estimates
-  \item x.est2: Second set of latent variable estimates
-  \item Corrected_IVRegCoef: IV regression coefficient corrected for measurement error
-  \item Corrected_IVRegSE: Standard error of corrected IV coefficient (currently NA)
-  \item Corrected_IVRegTstat: T-statistic of corrected IV coefficient
-  \item VarEst_split: Estimated variance of the measurement error
+  \item \code{ols_coef}: Coefficient from naive OLS regression
+  \item \code{ols_se}: Standard error of naive OLS coefficient
+  \item \code{ols_tstat}: T-statistic of naive OLS coefficient
+  \item \code{corrected_ols_coef}: OLS coefficient corrected for measurement error
+  \item \code{corrected_ols_se}: Standard error of corrected OLS coefficient (currently NA)
+  \item \code{corrected_ols_tstat}: T-statistic of corrected OLS coefficient (currently NA)
+  \item \code{corrected_ols_coef_alt}: Alternative corrected OLS coefficient (currently NA)
+  \item \code{iv_coef}: Coefficient from instrumental variable regression
+  \item \code{iv_se}: Standard error of IV regression coefficient
+  \item \code{iv_tstat}: T-statistic of IV regression coefficient
+  \item \code{corrected_iv_coef}: IV regression coefficient corrected for measurement error
+  \item \code{corrected_iv_se}: Standard error of corrected IV coefficient
+  \item \code{corrected_iv_tstat}: T-statistic of corrected IV coefficient
+  \item \code{var_est_split}: Estimated variance of the measurement error
+  \item \code{x_est1}: First set of latent variable estimates
+  \item \code{x_est2}: Second set of latent variable estimates
 }
 }
 \description{
@@ -59,11 +58,11 @@ and then applies various correction methods including OLS correction and instrum
 \examples{
 # Generate some example data
 set.seed(123)
-Yobs <- rnorm(100)
-ObservablesMat <- as.data.frame( matrix(sample(c(0,1), 1000*10, replace = T), ncol = 10) )
+Y <- rnorm(100)
+observables <- as.data.frame( matrix(sample(c(0,1), 1000*10, replace = T), ncol = 10) )
 
 # Run the analysis
-results <- lpme_onerun(Yobs, ObservablesMat)
+results <- lpme_onerun(Y, observables)
 
 # View the corrected OLS coefficient
 print(results$Corrected_OLSCoef)
