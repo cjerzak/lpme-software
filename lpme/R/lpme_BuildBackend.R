@@ -29,11 +29,8 @@ build_backend <- function(conda_env = "lpme", conda = "auto"){
   
   # Define packages to install 
   Packages2Install <- c("jax", 
-                        "jax.numpy",
                         "numpy",
-                        "jax.random", 
-                        "numpyro",
-                        "numpyro.distributions")
+                        "numpyro")
   
   # Install packages 
   reticulate::py_install(Packages2Install, conda = conda, pip = TRUE, envname = conda_env)

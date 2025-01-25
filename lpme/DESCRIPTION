@@ -7,7 +7,7 @@ Authors@R: c(
   )
 Description: An R package for analyzing latent variable models with measurement error correction, including Item Response Theory (IRT) models. It provides tools for implementing various correction methods such as Bayesian MCMC, overimputation, bootstrapping for robust standard errors, OLS, and IV-based approaches. The package supports flexible specification of observable indicators and groupings, making it suitable for latent variable analyses in social sciences and other fields.
 Depends: R (>= 3.3.3)
-License: CC BY-NC-ND 4.0
+License: GLP3
 Encoding: UTF-8
 LazyData: false
 Maintainer: Connor Jerzak <connor.jerzak@gmail.com>

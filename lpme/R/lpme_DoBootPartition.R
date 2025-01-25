@@ -9,7 +9,20 @@
 #' @param n_boot Integer. Number of bootstrap iterations. Default is 32.
 #' @param n_partition Integer. Number of partitions for each bootstrap iteration. Default is 10.
 #' @param boot_basis Vector of indices or grouping variable for stratified bootstrap. Default is 1:length(Y).
+#' @param ordinal Logical indicating whether the observable indicators are ordinal (TRUE) or binary (FALSE).
 #' @param return_intermediaries Logical. If TRUE, returns intermediate results. Default is TRUE.
+#' @param estimation_method Character specifying the estimation approach. Options include:
+#' \itemize{
+#' \item "emIRT" (default): Uses expectation-maximization via \code{emIRT} package. Supports both binary (via \code{emIRT::binIRT}) and ordinal (via \code{emIRT::ordIRT}) indicators.
+#' \item "MCMC": Markov Chain Monte Carlo estimation using either \code{pscl::ideal} (R backend) or \code{numpyro} (Python backend)
+#' \item "MCMCFull": Full Bayesian model that simultaneously estimates latent variables and outcome relationship using \code{numpyro}
+#' \item "MCMCOverImputation": Two-stage MCMC approach with measurement error correction via over-imputation
+#' }
+#' @param conda_env A character string specifying the name of the conda environment to use 
+#'   via \code{reticulate}. Default is \code{"lpme"}.
+#' @param conda_env_required A logical indicating whether the specified conda environment 
+#'   must be strictly used. If \code{TRUE}, an error is thrown if the environment is not found. 
+#'   Default is \code{TRUE}.
 #'
 #' @return A list containing various estimates and statistics (in snake_case):
 #' \itemize{
@@ -55,7 +68,7 @@
 #' # Generate some example data
 #' set.seed(123)
 #' Y <- rnorm(1000)
-#' observables <- as.data.frame( matrix(sample(c(0,1), 1000*10, replace = T), ncol = 10) )
+#' observables <- as.data.frame( matrix(sample(c(0,1), 1000*10, replace = TRUE), ncol = 10) )
 #' 
 #' # Run the bootstrapped analysis
 #' results <- lpme(Y, observables, n_boot = 100, n_partition = 5)
@@ -76,8 +89,10 @@ lpme <- function(Y,
                  boot_basis = 1:length(Y),
                  return_intermediaries = TRUE, 
                  estimation_method = "emIRT", 
-                 conda_env = NULL, 
-                 ordinal = FALSE){ 
+                 ordinal = FALSE, 
+                 conda_env = "lpme", 
+                 conda_env_required = TRUE
+                 ){ 
   
   for(booti_ in seq_len(n_boot + 1L)){
     # if not the first iteration, sample bootstrap indices
@@ -110,9 +125,10 @@ lpme <- function(Y,
         observables_groupings = observables_groupings,
         make_observables_groupings = make_observables_groupings, 
         estimation_method = estimation_method, 
-        conda_env = conda_env,
         ordinal = ordinal, 
-        seed = NULL
+        seed = NULL,
+        conda_env = conda_env,
+        conda_env_required = conda_env_required
       )
       
       # Tag each result with partition / bootstrap indices

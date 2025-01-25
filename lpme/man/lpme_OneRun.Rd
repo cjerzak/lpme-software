@@ -8,10 +8,11 @@ lpme_onerun(
   Y,
   observables,
   observables_groupings = colnames(observables),
-  make_observables_groupings = F,
+  make_observables_groupings = FALSE,
   estimation_method = "emIRT",
-  conda_env = NULL,
-  ordinal = F,
+  ordinal = FALSE,
+  conda_env = "lpme",
+  conda_env_required = TRUE,
   seed = NULL
 )
 }
@@ -23,6 +24,23 @@ lpme_onerun(
 \item{observables_groupings}{A vector specifying groupings for the observable indicators. Default is column names of observables.}
 
 \item{make_observables_groupings}{Logical. If TRUE, creates dummy variables for each level of the observable indicators. Default is FALSE.}
+
+\item{estimation_method}{Character specifying the estimation approach. Options include:
+\itemize{
+\item "emIRT" (default): Uses expectation-maximization via \code{emIRT} package. Supports both binary (via \code{emIRT::binIRT}) and ordinal (via \code{emIRT::ordIRT}) indicators.
+\item "MCMC": Basic Markov Chain Monte Carlo estimation using either \code{pscl::ideal} (R backend) or \code{numpyro} (Python backend)
+\item "MCMCFull": Full Bayesian model that simultaneously estimates latent variables and outcome relationship using \code{numpyro}
+\item "MCMCOverImputation": Two-stage MCMC approach with measurement error correction via over-imputation
+}}
+
+\item{ordinal}{Logical indicating whether the observable indicators are ordinal (TRUE) or binary (FALSE).}
+
+\item{conda_env}{A character string specifying the name of the conda environment to use 
+via \code{reticulate}. Default is \code{"lpme"}.}
+
+\item{conda_env_required}{A logical indicating whether the specified conda environment 
+must be strictly used. If \code{TRUE}, an error is thrown if the environment is not found. 
+Default is \code{TRUE}.}
 
 \item{seed}{Random seed for reproducibility. Default is a random integer between 1 and 10000 (used internally)}
 }
@@ -59,7 +77,7 @@ and then applies various correction methods including OLS correction and instrum
 # Generate some example data
 set.seed(123)
 Y <- rnorm(100)
-observables <- as.data.frame( matrix(sample(c(0,1), 1000*10, replace = T), ncol = 10) )
+observables <- as.data.frame( matrix(sample(c(0,1), 1000*10, replacement = TRUE), ncol = 10) )
 
 # Run the analysis
 results <- lpme_onerun(Y, observables)

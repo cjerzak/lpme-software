@@ -14,8 +14,9 @@ lpme(
   boot_basis = 1:length(Y),
   return_intermediaries = TRUE,
   estimation_method = "emIRT",
-  conda_env = NULL,
-  ordinal = FALSE
+  ordinal = FALSE,
+  conda_env = "lpme",
+  conda_env_required = TRUE
 )
 }
 \arguments{
@@ -34,6 +35,23 @@ lpme(
 \item{boot_basis}{Vector of indices or grouping variable for stratified bootstrap. Default is 1:length(Y).}
 
 \item{return_intermediaries}{Logical. If TRUE, returns intermediate results. Default is TRUE.}
+
+\item{estimation_method}{Character specifying the estimation approach. Options include:
+\itemize{
+\item "emIRT" (default): Uses expectation-maximization via \code{emIRT} package. Supports both binary (via \code{emIRT::binIRT}) and ordinal (via \code{emIRT::ordIRT}) indicators.
+\item "MCMC": Markov Chain Monte Carlo estimation using either \code{pscl::ideal} (R backend) or \code{numpyro} (Python backend)
+\item "MCMCFull": Full Bayesian model that simultaneously estimates latent variables and outcome relationship using \code{numpyro}
+\item "MCMCOverImputation": Two-stage MCMC approach with measurement error correction via over-imputation
+}}
+
+\item{ordinal}{Logical indicating whether the observable indicators are ordinal (TRUE) or binary (FALSE).}
+
+\item{conda_env}{A character string specifying the name of the conda environment to use 
+via \code{reticulate}. Default is \code{"lpme"}.}
+
+\item{conda_env_required}{A logical indicating whether the specified conda environment 
+must be strictly used. If \code{TRUE}, an error is thrown if the environment is not found. 
+Default is \code{TRUE}.}
 }
 \value{
 A list containing various estimates and statistics (in snake_case):
@@ -83,7 +101,7 @@ and bootstrap standard errors.
 # Generate some example data
 set.seed(123)
 Y <- rnorm(1000)
-observables <- as.data.frame( matrix(sample(c(0,1), 1000*10, replace = T), ncol = 10) )
+observables <- as.data.frame( matrix(sample(c(0,1), 1000*10, replace = TRUE), ncol = 10) )
 
 # Run the bootstrapped analysis
 results <- lpme(Y, observables, n_boot = 100, n_partition = 5)

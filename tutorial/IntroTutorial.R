@@ -4,7 +4,7 @@
   # devtools::install_github("cjerzak/lpme-software/lpme")
   
   set.seed(123); options( error = NULL )
-  n <- 1000  # Number of observations
+  n <- 500  # Number of observations
   d <- 10    # Number of observable indicators
   
   # Generate latent variable and observed outcomes
@@ -36,12 +36,13 @@
   plot(results)
   
   # Bayesian MCMC example (commented out)
-  if(FALSE){ 
-    mcmc_results <- lpme(
+  # lpme::build_backend() # build backend if needed
+  mcmc_results <- lpme(
       Y = Yobs,
       observables = as.data.frame(ObservablesMat),
+      n_boot = 0L, 
+      n_partition = 3L, 
       estimation_method = "MCMC",
       conda_env = "lpme"  # Specify your conda environment
     )
-  }
 }

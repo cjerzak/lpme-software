@@ -6,6 +6,19 @@
 #' @param observables A matrix of observable indicators used to estimate the latent variable
 #' @param observables_groupings A vector specifying groupings for the observable indicators. Default is column names of observables.
 #' @param make_observables_groupings Logical. If TRUE, creates dummy variables for each level of the observable indicators. Default is FALSE.
+#' @param estimation_method Character specifying the estimation approach. Options include:
+#' \itemize{
+#' \item "emIRT" (default): Uses expectation-maximization via \code{emIRT} package. Supports both binary (via \code{emIRT::binIRT}) and ordinal (via \code{emIRT::ordIRT}) indicators.
+#' \item "MCMC": Basic Markov Chain Monte Carlo estimation using either \code{pscl::ideal} (R backend) or \code{numpyro} (Python backend)
+#' \item "MCMCFull": Full Bayesian model that simultaneously estimates latent variables and outcome relationship using \code{numpyro}
+#' \item "MCMCOverImputation": Two-stage MCMC approach with measurement error correction via over-imputation
+#' }
+#' @param conda_env A character string specifying the name of the conda environment to use 
+#'   via \code{reticulate}. Default is \code{"lpme"}.
+#' @param conda_env_required A logical indicating whether the specified conda environment 
+#'   must be strictly used. If \code{TRUE}, an error is thrown if the environment is not found. 
+#'   Default is \code{TRUE}.
+#' @param ordinal Logical indicating whether the observable indicators are ordinal (TRUE) or binary (FALSE).
 #' @param seed Random seed for reproducibility. Default is a random integer between 1 and 10000 (used internally)
 #'
 #' @return A list containing various estimates and statistics:
@@ -37,7 +50,7 @@
 #' # Generate some example data
 #' set.seed(123)
 #' Y <- rnorm(100)
-#' observables <- as.data.frame( matrix(sample(c(0,1), 1000*10, replace = T), ncol = 10) )
+#' observables <- as.data.frame( matrix(sample(c(0,1), 1000*10, replacement = TRUE), ncol = 10) )
 #' 
 #' # Run the analysis
 #' results <- lpme_onerun(Y, observables)
@@ -49,14 +62,18 @@
 #' @importFrom stats lm cor var rnorm
 #' @importFrom AER ivreg
 #' @importFrom pscl rollcall
+#' @importFrom sandwich vcovHC
+#' @importFrom mvtnorm rmvnorm
+#' @importFrom Amelia amelia
 
-lpme_onerun <- function(Y,
+lpme_onerun <- function( Y,
                          observables, 
                          observables_groupings = colnames(observables),
-                         make_observables_groupings = F, 
+                         make_observables_groupings = FALSE, 
                          estimation_method = "emIRT", 
-                         conda_env = NULL, 
-                         ordinal = F, 
+                         ordinal = FALSE, 
+                         conda_env = "lpme", 
+                         conda_env_required = TRUE, 
                          seed = NULL){
   t0 <- Sys.time()
   INIT_SCALER <- 1/10
@@ -64,7 +81,7 @@ lpme_onerun <- function(Y,
   Bayesian_OLSSE_OuterNormed <- Bayesian_OLSCoef_OuterNormed <- NA;
   if(!is.null(seed)){ set.seed(seed) } 
   items.split1_names <- sample(unique(observables_groupings), 
-                               size = floor(length(unique(observables_groupings))/2), replace=F)
+                               size = floor(length(unique(observables_groupings))/2), replace=FALSE)
   items.split2_names <- unique(observables_groupings)[! (observables_groupings %in% items.split1_names)]
   for(split_ in c("", "1", "2")){
     if(split_ == ""){ items.split_ <- 1:length(observables_groupings) }
@@ -72,12 +89,12 @@ lpme_onerun <- function(Y,
     if(split_ == "2"){ items.split_ <- (1:length(observables_groupings))[observables_groupings %in% items.split2_names] }
     
     # estimating ideal points
-    if(make_observables_groupings == F){
+    if(make_observables_groupings == FALSE){
       observables_ <- observables[,items.split_]
     }
-    if(make_observables_groupings == T){
+    if(make_observables_groupings == TRUE){
       observables_ <- do.call(cbind,unlist(apply(observables[,items.split_],2,function(zer){
-        list( model.matrix(~0+as.factor(zer))[,-1] )}),recursive = F))
+        list( model.matrix(~0+as.factor(zer))[,-1] )}),recursive = FALSE))
     }
     
     #backend <- ifelse(estimation_method == "MCMCFull", yes = "numpyro", no = "pscl")
@@ -85,8 +102,8 @@ lpme_onerun <- function(Y,
     if( grepl(estimation_method, pattern = "MCMC") & backend == "pscl" ){
       if(estimation_method == "MCMC" ){
         capture.output( pscl_ideal <- pscl::ideal( pscl::rollcall(observables_), 
-                            normalize = T, 
-                            store.item = T, 
+                            normalize = TRUE, 
+                            store.item = TRUE, 
                             maxiter = 1000L, 
                             burnin = 500L,
                             thin = 1L)  )
@@ -124,8 +141,8 @@ lpme_onerun <- function(Y,
       }
       if(estimation_method == "MCMCOverImputation" & split_ == ""){
         capture.output( pscl_ideal <- pscl::ideal( pscl::rollcall(observables_), 
-                                   normalize = T, 
-                                   store.item = T, 
+                                   normalize = TRUE, 
+                                   store.item = TRUE, 
                                    maxiter = 2000L, 
                                    burnin = 500L,
                                    thin = 2L) )
@@ -221,7 +238,7 @@ lpme_onerun <- function(Y,
         
         # Set up MCMC
         nChains <- 1L
-        numpyro$set_host_device_count(nDevices <- 1L)
+        lpme_env$numpyro$set_host_device_count(nDevices <- 1L)
         #ChainMethod <- "sequential"
         ChainMethod <- "vectorized"
         nSamplesWarmup <- (1000L)
@@ -237,44 +254,44 @@ lpme_onerun <- function(Y,
                               #K # number of items 
                               ){
           # Priors
-          #with(numpyro$plate("rows", N), { # fails with jit compilation
-          with(numpyro$plate("rows", X$shape[[1]]), {
-            ability <- numpyro$sample("ability", dist$Normal(0, 1))
+          #with(lpme_env$numpyro$plate("rows", N), { # fails with jit compilation
+          with(lpme_env$numpyro$plate("rows", X$shape[[1]]), {
+            ability <- lpme_env$numpyro$sample("ability", lpme_env$dist$Normal(0, 1))
           })
-          #with(numpyro$plate("columns", K), { 
-          with(numpyro$plate("columns", X$shape[[2]]), {  # D
-            difficulty <- numpyro$sample("difficulty", dist$Normal(0, 1)) 
+          #with(lpme_env$numpyro$plate("columns", K), { 
+          with(lpme_env$numpyro$plate("columns", X$shape[[2]]), {  # D
+            difficulty <- lpme_env$numpyro$sample("difficulty", lpme_env$dist$Normal(0, 1)) 
           })
           
           # approach 1 - no orientation 
-          if(T == T){ 
-            with(numpyro$plate("columns", X$shape[[2]]), { 
-              discrimination <- numpyro$sample("discrimination", dist$Normal(0, 1))
+          if(TRUE == TRUE){ 
+            with(lpme_env$numpyro$plate("columns", X$shape[[2]]), { 
+              discrimination <- lpme_env$numpyro$sample("discrimination", lpme_env$dist$Normal(0, 1))
             })
           }
           
           # approach 2 - orientation 
-          if(T == F){ 
-            with(numpyro$plate("columns", K-1),{ 
-              discrimination <- numpyro$sample("discrimination", dist$Normal(0, 10))   
+          if(TRUE == FALSE){ 
+            with(lpme_env$numpyro$plate("columns", K-1),{ 
+              discrimination <- lpme_env$numpyro$sample("discrimination", lpme_env$dist$Normal(0, 10))   
             })
-            with(numpyro$plate("columns", 1), {
-              discrimination_oriented <- numpyro$sample("discrimination_oriented",  dist$HalfNormal(10))
+            with(lpme_env$numpyro$plate("columns", 1), {
+              discrimination_oriented <- lpme_env$numpyro$sample("discrimination_oriented",  lpme_env$dist$HalfNormal(10))
             })
-            discrimination <- jnp$concatenate(list(discrimination_oriented,  discrimination))
+            discrimination <- lpme_env$jnp$concatenate(list(discrimination_oriented,  discrimination))
           }
   
           # logits 
-          Xprobs <- (jnp$expand_dims(ability,1L) - jnp$expand_dims(difficulty,0L)) * 
-                      jnp$expand_dims(discrimination,0L)
+          Xprobs <- (lpme_env$jnp$expand_dims(ability,1L) - lpme_env$jnp$expand_dims(difficulty,0L)) * 
+                      lpme_env$jnp$expand_dims(discrimination,0L)
           
           # contribution of the factors/observed traits to the model 
-          numpyro$sample("Xlik", dist$Bernoulli(probs = jax$scipy$stats$norm$cdf( Xprobs ) ), obs=X) # probit link (may be slower) 
-          #numpyro$sample("Xlik", dist$Bernoulli(probs = jax$nn$sigmoid( Xprobs ) ), obs=X)  # logit link (may be faster)
-          #numpyro$sample("Xlik", dist$Bernoulli(logits = Xprobs), obs=X) # may be faster
+          lpme_env$numpyro$sample("Xlik", lpme_env$dist$Bernoulli(probs = lpme_env$jax$scipy$stats$norm$cdf( Xprobs ) ), obs=X) # probit link (may be slower) 
+          #lpme_env$numpyro$sample("Xlik", lpme_env$dist$Bernoulli(probs = lpme_env$jax$nn$sigmoid( Xprobs ) ), obs=X)  # logit link (may be faster)
+          #lpme_env$numpyro$sample("Xlik", lpme_env$dist$Bernoulli(logits = Xprobs), obs=X) # may be faster
           
           # sanity check prints 
-          if(T == F){ 
+          if(TRUE == FALSE){ 
             print("ability shape:"); print(ability$shape)
             print("discrimination shape:"); print(discrimination$shape)
             print("difficulty shape:");print(difficulty$shape)
@@ -284,62 +301,62 @@ lpme_onerun <- function(Y,
           
           if(estimation_method == "MCMCFull"){
             # Outcome intercept prior
-            Y_intercept <- numpyro$sample("YModel_intercept", dist$Normal(0, 1))
+            Y_intercept <- lpme_env$numpyro$sample("YModel_intercept", lpme_env$dist$Normal(0, 1))
             
             # Outcome slope prior
-            Y_slope <- numpyro$sample("YModel_slope", dist$Normal(0, 1))
+            Y_slope <- lpme_env$numpyro$sample("YModel_slope", lpme_env$dist$Normal(0, 1))
             
             # Outcome sigma prior
-            #Y_sigma <- numpyro$sample("YModel_sigma", dist$LogNormal(0, 2))
-            Y_sigma <- numpyro$sample("YModel_sigma", dist$HalfNormal(1))
+            #Y_sigma <- lpme_env$numpyro$sample("YModel_sigma", lpme_env$dist$LogNormal(0, 2))
+            Y_sigma <- lpme_env$numpyro$sample("YModel_sigma", lpme_env$dist$HalfNormal(1))
             
             # Outcome model likelihood
-            ability <- jnp$expand_dims(ability, 1L)
-            #Y_mu <- Y_intercept + jnp$multiply(Y_slope, jax$nn$standardize(ability, 0L, epsilon = 0.001))
-            Y_mu <- Y_intercept + jnp$multiply(Y_slope,  ability)
+            ability <- lpme_env$jnp$expand_dims(ability, 1L)
+            #Y_mu <- Y_intercept + lpme_env$jnp$multiply(Y_slope, lpme_env$jax$nn$standardize(ability, 0L, epsilon = 0.001))
+            Y_mu <- Y_intercept + lpme_env$jnp$multiply(Y_slope,  ability)
             
-            if(T == F){ # sanity check prints 
+            if(TRUE == FALSE){ # sanity check prints 
               print("ability");print(ability$shape)
               print("Y_mu"); print(Y_mu$shape)
               print("Y"); print(Y$shape)
               print("Y_slope"); print(Y_slope$shape)
               print("Y_sigma"); print(Y_sigma$shape)
             }
-            numpyro$sample("Ylik", dist$Normal(Y_mu, Y_sigma), obs=Y) # Y_mu has to have same shape as Y
+            lpme_env$numpyro$sample("Ylik", lpme_env$dist$Normal(Y_mu, Y_sigma), obs=Y) # Y_mu has to have same shape as Y
           }
       })
         
       # setup & run MCMC 
-      sampler <- numpyro$infer$MCMC(
-        numpyro$infer$NUTS( (IRTModel) ),
+      sampler <- lpme_env$numpyro$infer$MCMC(
+        lpme_env$numpyro$infer$NUTS( (IRTModel) ),
         num_warmup = nSamplesWarmup,
         num_samples = nSamplesMCMC,
         thinning = nThinBy, # Positive integer that controls the fraction of post-warmup samples that are retained. For example if thinning is 2 then every other sample is retained. Defaults to 1, i.e. no thinning.
         chain_method = ChainMethod, # 'parallel' (default), 'sequential', 'vectorized'. 
         num_chains = nChains,
-        jit_model_args = T, 
-        progress_bar = F # set to TRUE for progress 
+        jit_model_args = TRUE, 
+        progress_bar = FALSE # set to TRUE for progress 
       )
       
       # run sampler with initialized abilities as COLMEANS of X (ASSUMPTION!)
-      #pdtype_ <- ddtype_ <- jnp$float64; jax$config$update("jax_enable_x64", TRUE)
-      pdtype_ <- ddtype_ <- jnp$float32; jax$config$update("jax_enable_x64", FALSE)
+      #pdtype_ <- ddtype_ <- lpme_env$jnp$float64; lpme_env$jax$config$update("jax_enable_x64", TRUE)
+      pdtype_ <- ddtype_ <- lpme_env$jnp$float32; lpme_env$jax$config$update("jax_enable_x64", FALSE)
 
       # update init_params for full mcmc case
       t0_ <- Sys.time()
-      sampler$run(jax$random$PRNGKey( ai(runif(1,0,10000)) ), 
-                  X = jnp$array(as.matrix(observables_))$astype( ddtype_ ),  # jnp$int16 here causes error with new version of numpyro (expects floats not ints)
-                  Y = jnp$array(as.matrix(Y))$astype( ddtype_ ), 
+      sampler$run(lpme_env$jax$random$PRNGKey( ai(runif(1,0,10000)) ), 
+                  X = lpme_env$jnp$array(as.matrix(observables_))$astype( ddtype_ ),  # lpme_env$jnp$int16 here causes error with new version of numpyro (expects floats not ints)
+                  Y = lpme_env$jnp$array(as.matrix(Y))$astype( ddtype_ ), 
                   init_params = list(
-                    "ability" = jnp$array(x_init<- scale(rowMeans(observables_))*INIT_SCALER )$astype(pdtype_),
-                    "difficulty" = jnp$array(rnorm(K,mean=0,sd=1/sqrt(K)))$astype(pdtype_),
-                    "discrimination" = jnp$array( (rnorm(K,mean=1,sd=1/sqrt(K))))$astype(pdtype_) 
+                    "ability" = lpme_env$jnp$array(x_init<- scale(rowMeans(observables_))*INIT_SCALER )$astype(pdtype_),
+                    "difficulty" = lpme_env$jnp$array(rnorm(K,mean=0,sd=1/sqrt(K)))$astype(pdtype_),
+                    "discrimination" = lpme_env$jnp$array( (rnorm(K,mean=1,sd=1/sqrt(K))))$astype(pdtype_) 
                   ) ) 
       message(sprintf("MCMC Runtime: %.3f min", 
                        tdiff_ <- as.numeric(difftime(Sys.time(), 
                                                      t0_, units = "secs"))/60))
-      PosteriorDraws <- sampler$get_samples(group_by_chain = T)
-      ExtractAbil <- function(abil,return_sign = F){ # note: deals with identifiability of scale 
+      PosteriorDraws <- sampler$get_samples(group_by_chain = TRUE)
+      ExtractAbil <- function(abil,return_sign = FALSE){ # note: deals with identifiability of scale 
         abil <- do.call(cbind, sapply(0L:(nChains-1L), function(c_){
           abil_c <- as.matrix(np$array(abil)[c_,,])
           abil_c <- t(abil_c)
@@ -365,18 +382,18 @@ lpme_onerun <- function(Y,
       
       # Calculate posterior means
       AbilityMean <- rowMeans(  ExtractAbil(PosteriorDraws$ability) )
-      DifficultyMean <- as.matrix(np$array(jnp$mean(PosteriorDraws$difficulty,0L:1L))) #  colMeans( as.matrix(np$array(PosteriorDraws$difficulty)) )
-      DiscriminationMean <- as.matrix(np$array(jnp$mean(PosteriorDraws$discrimination,0L:1L))) # colMeans( as.matrix(np$array(PosteriorDraws$discrimination)) )
+      DifficultyMean <- as.matrix(np$array(lpme_env$jnp$mean(PosteriorDraws$difficulty,0L:1L))) #  colMeans( as.matrix(np$array(PosteriorDraws$difficulty)) )
+      DiscriminationMean <- as.matrix(np$array(lpme_env$jnp$mean(PosteriorDraws$discrimination,0L:1L))) # colMeans( as.matrix(np$array(PosteriorDraws$discrimination)) )
       
       # plot(scale(x.true[i_sampled]),scale(AbilityMean))
       # cor(x.true[i_sampled],AbilityMean)
       # plot(as.array(np$array(PosteriorDraws$ability))[1,721,])
       message(sprintf("N-eff mean ratio: %.3f",
-        mean(numpyro$diagnostics$effective_sample_size(PosteriorDraws$ability)/nSamplesMCMC ) ) )
+        mean(lpme_env$numpyro$diagnostics$effective_sample_size(PosteriorDraws$ability)/nSamplesMCMC ) ) )
       
       if(estimation_method == "MCMCFull" & split_ == ""){ # full bayesian model 
         RescaledAbilities <- (ExtractAbil(PosteriorDraws$ability)-mean(AbilityMean))/sd(AbilityMean)
-        #ExtractAbil(PosteriorDraws$ability,return_sign=T)
+        #ExtractAbil(PosteriorDraws$ability,return_sign=TRUE)
         # plot(RescaledAbilities[,1],RescaledAbilities[,2])
         #SignSwap <- sign(cor(RescaledAbilities)[1,])
         #RescaledAbilities <- SignSwap
@@ -507,7 +524,7 @@ lpme_onerun <- function(Y,
     }
     if(estimation_method == "emIRT"){ 
       x_init <- scale(apply( observables_, 1, 
-                             function(x){ mean(f2n(x), na.rm=T)})) * INIT_SCALER
+                             function(x){ mean(f2n(x), na.rm=TRUE)})) * INIT_SCALER
 
       if(ordinal){
         observables__ <- apply(as.matrix(observables_),2,f2n)
@@ -526,7 +543,7 @@ lpme_onerun <- function(Y,
                           ),
             .priors  = emIRT::makePriors(.N = nrow(observables__), .J = ncol(observables__), .D = 1), 
             .control = list(threads = 1, verbose = TRUE, thresh = 1e-6)
-          ),T)
+          ),TRUE)
         )
         if("try-error" %in% class(lout.sim_)){ stop(lout.sim_) } 
         
@@ -544,7 +561,7 @@ lpme_onerun <- function(Y,
                                            "beta" = matrix(rnorm(ncol(observables_), sd = 1)),
                                            "x" = matrix(x_init)), 
                             .priors = emIRT::makePriors(.N= rc_$n, .J = rc_$m, .D = 1), 
-                            .control= list(threads=1, verbose=FALSE, thresh=1e-6,verbose=F),
+                            .control= list(threads=1, verbose=FALSE, thresh=1e-6,verbose=FALSE),
                             .anchor_subject = which.max(x_init)
                             ) ) 
         x.est_EM <- x.est_ <- scale(lout.sim_$means$x); 
