@@ -297,26 +297,24 @@ lpme_onerun <- function( Y,
         K <- ai(ncol(observables_))
         
         # Define the two-parameter IRT model
+        if( FALSE ){ 
         IRTModel <- (function(X, # binary indicators 
                               Y # outcome (used only if estimation_method <- "MCMCFull")
                               ){
           # Priors
-          with(lpme_env$numpyro$plate("abil_rows", X$shape[[1]]), {
+          with(lpme_env$numpyro$plate("rows", X$shape[[1]]), { # N 
             ability <- lpme_env$numpyro$sample("ability", lpme_env$dist$Normal(0, 1))
           })
-          with(lpme_env$numpyro$plate("diff_columns", X$shape[[2]]), {  # D
-            difficulty <- lpme_env$numpyro$sample("difficulty", lpme_env$dist$Normal(0, 1)) 
+          with(lpme_env$numpyro$plate("columns", X$shape[[2]]), {  # D
+            difficulty <- lpme_env$numpyro$sample("difficulty", lpme_env$dist$Normal(0, 4)) 
+            # approach 1 - no discrim orientation 
+            if(TRUE){ 
+              #discrimination <- lpme_env$numpyro$sample("discrimination", lpme_env$dist$Normal(0.5, 1))
+              discrimination <- lpme_env$numpyro$sample("discrimination", lpme_env$dist$HalfNormal(4))
+            }
           })
           
-          # approach 1 - no orientation 
-          if(TRUE){ 
-            with(lpme_env$numpyro$plate("discrim_columns", X$shape[[2]]), { 
-              #discrimination <- lpme_env$numpyro$sample("discrimination", lpme_env$dist$Normal(0.5, 1))
-              discrimination <- lpme_env$numpyro$sample("discrimination", lpme_env$dist$HalfNormal(10))
-            })
-          }
-          
-          # approach 2 - orientation 
+          # approach 2 - discrimorientation 
           if(FALSE){ 
             with(lpme_env$numpyro$plate("diff_columns", K-1),{ 
               discrimination <- lpme_env$numpyro$sample("discrimination", lpme_env$dist$Normal(0, 10))   
@@ -335,8 +333,8 @@ lpme_onerun <- function( Y,
                       lpme_env$jnp$expand_dims(discrimination, 0L)
           
           # contribution of the factors/observed traits to the model 
-          lpme_env$numpyro$sample("Xlik", lpme_env$dist$Bernoulli(probs = lpme_env$jax$scipy$stats$norm$cdf( Xprobs ) ), obs=X) # probit link (may be slower) 
-          #lpme_env$numpyro$sample("Xlik", lpme_env$dist$Bernoulli(logits = Xprobs), obs=X) # may be faster logit link 
+          #Xlik <- lpme_env$numpyro$sample("Xlik", lpme_env$dist$Bernoulli(probs = lpme_env$jax$scipy$stats$norm$cdf( Xprobs ) ), obs=X) # probit link (may be slower) 
+          lpme_env$numpyro$sample("Xlik", lpme_env$dist$Bernoulli(logits = Xprobs), obs=X) # may be faster logit link 
           
           # sanity check prints 
           if(FALSE){ 
@@ -372,6 +370,70 @@ lpme_onerun <- function( Y,
             lpme_env$numpyro$sample("Ylik", lpme_env$dist$Normal(Y_mu, Y_sigma), obs=Y) # Y_mu has to have same shape as Y
           }
       })
+        }
+        # Define the two-parameter IRT model using Matt's trick 
+        if(TRUE){  
+          IRTModel <- (function(X, # binary indicators 
+                                Y  # outcome 
+          ) {
+            
+            # Global hyperpriors for ability
+            mu_ability <- lpme_env$numpyro$sample("mu_ability",
+                                                  lpme_env$dist$Normal(0, 1))
+            sigma_ability <- lpme_env$numpyro$sample("sigma_ability",
+                                                     lpme_env$dist$HalfNormal(1))
+            
+            # Non-centered parameterization for ability
+            with(lpme_env$numpyro$plate("rows", X$shape[[1]]), { # N
+              eps_ability <- lpme_env$numpyro$sample("eps_ability",
+                                                     lpme_env$dist$Normal(0, 1))
+              ability <- lpme_env$numpyro$deterministic("ability", mu_ability + sigma_ability * eps_ability)
+              #ability <- mu_ability + sigma_ability * eps_ability
+              # We do NOT directly sample ability from Normal(0,1) anymore.
+            })
+            
+            # For difficulty, you might keep it simple or also do a non-centered param:
+            mu_difficulty <- lpme_env$numpyro$sample("mu_difficulty",
+                                                     lpme_env$dist$Normal(0, 4))
+            sigma_difficulty <- lpme_env$numpyro$sample("sigma_difficulty",
+                                                        lpme_env$dist$HalfNormal(4))
+            
+            with(lpme_env$numpyro$plate("columns", X$shape[[2]]), {  # D
+              eps_difficulty <- lpme_env$numpyro$sample("eps_difficulty",
+                                                        lpme_env$dist$Normal(0, 1))
+              difficulty <- lpme_env$numpyro$deterministic("difficulty", mu_difficulty + sigma_difficulty * eps_difficulty)
+              #difficulty <- mu_difficulty + sigma_difficulty * eps_difficulty
+              
+              # Discrimination, for example, can stay as is or also be hierarchical
+              discrimination <- lpme_env$numpyro$sample("discrimination",
+                                                        lpme_env$dist$HalfNormal(4))
+            })
+            
+            # Construct logits using the new 'ability' & 'difficulty'
+            Xprobs <- ( lpme_env$jnp$expand_dims(ability, 1L) -
+                          lpme_env$jnp$expand_dims(difficulty, 0L) ) *
+              lpme_env$jnp$expand_dims(discrimination, 0L)
+            
+            # Likelihood for X using a Bernoulli logit
+            lpme_env$numpyro$sample("Xlik", 
+                                    lpme_env$dist$Bernoulli(logits = Xprobs), obs=X)
+            
+            # If you are using the outcome portion in "MCMCFull" mode:
+            if(estimation_method == "MCMCFull"){
+              Y_intercept <- lpme_env$numpyro$sample("YModel_intercept",
+                                                     lpme_env$dist$Normal(0, 1))
+              Y_slope <- lpme_env$numpyro$sample("YModel_slope",
+                                                 lpme_env$dist$Normal(0, 1))
+              Y_sigma <- lpme_env$numpyro$sample("YModel_sigma",
+                                                 lpme_env$dist$HalfNormal(1))
+              
+              Y_mu <- Y_intercept + Y_slope * ability
+              lpme_env$numpyro$sample("Ylik",
+                                      lpme_env$dist$Normal(Y_mu, Y_sigma),
+                                      obs=Y)
+            }
+          })
+        }
         
       # setup & run a MCMC run
       sampler <- lpme_env$numpyro$infer$MCMC(
@@ -407,19 +469,19 @@ lpme_onerun <- function( Y,
       t0_ <- Sys.time(); sampler$run(lpme_env$jax$random$PRNGKey( ai(runif(1,0,10000)) ), 
                   X = lpme_env$jnp$array(as.matrix(observables_))$astype( ddtype_ ),  # note: lpme_env$jnp$int16 here causes error (expects floats not ints)
                   Y = lpme_env$jnp$array(as.matrix(Y))$astype( ddtype_ ), 
-                  init_params = list(
-                    "ability" = ability_init,
-                    "difficulty" = difficulty_init,
-                    "discrimination" =  discrimination_init
-                  ) ) ; t1_ <- Sys.time()
+                  ) ; t1_ <- Sys.time()
+                  #init_params = list(
+                  #  "ability" = ability_init,
+                  #  "difficulty" = difficulty_init,
+                  #  "discrimination" =  discrimination_init
+                  #) ) ; t1_ <- Sys.time()
       message(sprintf("MCMC Runtime: %.3f min",  tdiff_ <- as.numeric(difftime(t1_,  t0_, units = "secs"))/60))
       PosteriorDraws <- sampler$get_samples(group_by_chain = TRUE)
       PosteriorDraws$ability$shape
-      PosteriorDraws$ability[1,,1,1]
+      PosteriorDraws$ability[1,,1]
       ExtractAbil <- function(abil){ 
         abil <- do.call(cbind, sapply(1L:nChains, function(c_){
-          if(nChains == 1){ abil_c <- as.matrix(lpme_env$np$array(abil)[c_,,]) } 
-          if(nChains > 1){ abil_c <- as.matrix(lpme_env$np$array(abil)[c_,,,]) } 
+          abil_c <- as.matrix(lpme_env$np$array(abil)[c_,,])
           return( list( t(abil_c) ) )
         }))
         theAnchor <- which.max(x_init)
@@ -445,7 +507,7 @@ lpme_onerun <- function( Y,
       # plot(scale(x.true[i_sampled]),scale(AbilityMean))
       # cor(x.true[i_sampled],AbilityMean)
       # plot(as.array(lpme_env$np$array(PosteriorDraws$ability))[1,721,])
-      message(sprintf("Mean(N-eff/nMCMC): %.3f ", mean(
+      message(sprintf("Mean(N-eff of nMCMC %%): %.2f%% ", 100*mean(
               lpme_env$numpyro$diagnostics$effective_sample_size(# Computes effective sample size of input x, where the first dimension of x is chain dimension and the second dimension of x is draw dimension.
                 lpme_env$jnp$reshape( PosteriorDraws$ability, list(nChains, ai(nSamplesMCMC/nThinBy), N)), 
                 bias = FALSE  ), na.rm=T)/(ai(nChains*nSamplesMCMC/nThinBy) ) ))

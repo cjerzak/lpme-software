@@ -4,7 +4,7 @@
   # devtools::install_github("cjerzak/lpme-software/lpme")
   
   set.seed(123); options( error = NULL )
-  n <- 500  # Number of observations
+  n <- 5000  # Number of observations
   d <- 8    # Number of observable indicators
   
   # 1) Generate latent ability
@@ -59,5 +59,8 @@
       estimation_method = "MCMC",
       conda_env = "lpme"  # Specify your conda environment
     )
+  mcmc_results$ols_coef
+  mcmc_results$corrected_ols_coef
+  mcmc_results
+  
 }
-
