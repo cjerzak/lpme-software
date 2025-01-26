@@ -5,26 +5,40 @@
   
   set.seed(123); options( error = NULL )
   n <- 500  # Number of observations
-  d <- 10    # Number of observable indicators
+  d <- 8    # Number of observable indicators
   
-  # Generate latent variable and observed outcomes
-  x_true <- rnorm(n)
-  Yobs <- 0.4 * x_true + rnorm(n, sd = 0.35)
+  # 1) Generate latent ability
+  x_true <- rnorm(n)  # 
   
-  # Generate binary indicators of latent variable
-  ObservablesMat <- sapply(1:d, function(j) {
-    p <- pnorm(0.5 * x_true + rnorm(n, sd = 0.5))
-    rbinom(n, 1, p)
+  # 2) Generate item parameters:
+  #    - All discriminations are positive to ensure positive correlations
+  #    - Difficulties are varied
+  discrimination <- runif(d, 0.5, 2)  # a_j
+  difficulty     <- runif(d, -1, 1)   # b_j
+  
+  # 3) For each item j, compute the probability of responding "1" via the 2PL model
+  #      P(X_{ij} = 1) = 1 / [1 + exp(-a_j (theta_i - b_j))]
+  #    We use plogis() which is 1 / (1 + exp(-z)).
+  P <- sapply(1:d, function(j) {
+    plogis(discrimination[j] * (x_true - difficulty[j]))
   })
   
-  library(lpme)
+  # 4) Generate binary responses for each item
+  ObservablesMat <- sapply(1:d, function(j) {
+    rbinom(n, 1, P[, j])
+  })
+  
+  # 5) Generate a continuous outcome correlated with the latent trait
+  Yobs <- 0.4 * x_true + rnorm(n, sd = 0.35)
+  
+  library( lpme )
   
   # Run bootstrapped analysis
   results <- lpme(
     Y = Yobs,
     observables = as.data.frame(ObservablesMat),
-    n_boot = 50,      # Reduced for demonstration
-    n_partition = 5,  # Reduced for demonstration
+    n_boot = 8L,      # Reduced for demonstration
+    n_partition = 5L,  # Reduced for demonstration
     estimation_method = "emIRT"
   )
   
@@ -40,9 +54,10 @@
   mcmc_results <- lpme(
       Y = Yobs,
       observables = as.data.frame(ObservablesMat),
-      n_boot = 0L, 
-      n_partition = 3L, 
+      n_boot = 0L,      # Reduced for demonstration
+      n_partition = 3L, # Reduced for demonstration
       estimation_method = "MCMC",
       conda_env = "lpme"  # Specify your conda environment
     )
 }
+

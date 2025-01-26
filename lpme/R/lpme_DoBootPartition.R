@@ -318,7 +318,7 @@ lpme <- function(Y,
       ))),
       "bayesian_ols_lower_outer_normed" = qf(qLow, tapply(
         LatentRunResults$Intermediary_bayesian_ols_coef_outer_normed[takeforse], 
-        LatentRunResults$Intermediary_BootInde[takeforse], theSumFxn
+        LatentRunResults$Intermediary_BootIndex[takeforse], theSumFxn
       )),
       "bayesian_ols_upper_outer_normed" = qf(qUp, tapply(
         LatentRunResults$Intermediary_bayesian_ols_coef_outer_normed[takeforse], 
@@ -365,7 +365,7 @@ lpme <- function(Y,
       )),
       "m_stage_1_erv_upper" = qf(qUp, tapply(
         LatentRunResults$Intermediary_m_stage_1_erv[takeforse], 
-        LatentRunResults$Intermediary_BootInde[takeforse], theSumFxn
+        LatentRunResults$Intermediary_BootIndex[takeforse], theSumFxn
       )),
       "m_stage_1_erv_tstat" = (m2_ / se2_),
       
