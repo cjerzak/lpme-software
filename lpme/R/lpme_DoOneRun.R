@@ -285,14 +285,14 @@ lpme_onerun <- function( Y,
         
         # Set up MCMC
         nChains <- 2L
-        lpme_env$numpyro$set_host_device_count(nDevices <- 1L)
+        lpme_env$numpyro$set_host_device_count(nDevices <- nChains)
         #ChainMethod <- "sequential"
-        ChainMethod <- "vectorized"
-        #ChainMethod <- "parallel" # causes shape issues downstream
-        #nSamplesWarmup <- (1000L)
-        #nSamplesMCMC <- (1000L)
-        nSamplesWarmup <- nSamplesMCMC <- (100L) # fast run for testing purposes 
-        nThinBy <- 1L
+        #ChainMethod <- "vectorized"
+        ChainMethod <- "parallel"
+        nSamplesWarmup <- (500L)
+        nSamplesMCMC <- (1000L)
+        #nSamplesWarmup <- nSamplesMCMC <- (100L) # fast run for testing purposes 
+        nThinBy <- 2L
         N <- ai(nrow(observables_))
         K <- ai(ncol(observables_))
         
@@ -388,25 +388,28 @@ lpme_onerun <- function( Y,
               eps_ability <- lpme_env$numpyro$sample("eps_ability",
                                                      lpme_env$dist$Normal(0, 1))
               ability <- lpme_env$numpyro$deterministic("ability", mu_ability + sigma_ability * eps_ability)
-              #ability <- mu_ability + sigma_ability * eps_ability
-              # We do NOT directly sample ability from Normal(0,1) anymore.
             })
             
             # For difficulty, you might keep it simple or also do a non-centered param:
             mu_difficulty <- lpme_env$numpyro$sample("mu_difficulty",
-                                                     lpme_env$dist$Normal(0, 4))
+                                                     lpme_env$dist$Normal(0, 3))
             sigma_difficulty <- lpme_env$numpyro$sample("sigma_difficulty",
-                                                        lpme_env$dist$HalfNormal(4))
-            
+                                                        lpme_env$dist$HalfNormal(3))
+            mu_log_discrimination <- lpme_env$numpyro$sample("mu_log_discrimination",
+                                                             lpme_env$dist$Normal(0, 1))
+            sigma_log_discrimination <- lpme_env$numpyro$sample("sigma_log_discrimination",
+                                                                lpme_env$dist$HalfNormal(1))
             with(lpme_env$numpyro$plate("columns", X$shape[[2]]), {  # D
               eps_difficulty <- lpme_env$numpyro$sample("eps_difficulty",
-                                                        lpme_env$dist$Normal(0, 1))
+                                                        lpme_env$dist$Normal(0, 3))
               difficulty <- lpme_env$numpyro$deterministic("difficulty", mu_difficulty + sigma_difficulty * eps_difficulty)
-              #difficulty <- mu_difficulty + sigma_difficulty * eps_difficulty
-              
+
               # Discrimination, for example, can stay as is or also be hierarchical
-              discrimination <- lpme_env$numpyro$sample("discrimination",
-                                                        lpme_env$dist$HalfNormal(4))
+              # discrimination <- lpme_env$numpyro$sample("discrimination", lpme_env$dist$HalfNormal(2))
+              eps_log_disc <- lpme_env$numpyro$sample("eps_log_disc",
+                                                      lpme_env$dist$Normal(0, 1))
+              log_discrimination <-  mu_log_discrimination + sigma_log_discrimination * eps_log_disc
+              discrimination <- lpme_env$numpyro$deterministic("discrimination", lpme_env$jax$nn$softplus(log_discrimination))
             })
             
             # Construct logits using the new 'ability' & 'difficulty'
@@ -449,9 +452,9 @@ lpme_onerun <- function( Y,
       )
       
       # run sampler with initialized abilities as COLMEANS of X (ASSUMPTION!)
-      #pdtype_ <- ddtype_ <- lpme_env$jnp$float64; lpme_env$jax$config$update("jax_enable_x64", TRUE)
-      pdtype_ <- ddtype_ <- lpme_env$jnp$float32; lpme_env$jax$config$update("jax_enable_x64", FALSE)
-      #pdtype_ <- ddtype_ <- lpme_env$jnp$float16; lpme_env$jax$config$update("jax_enable_x64", FALSE)
+      #pdtype_ <- ddtype_ <- lpme_env$jnp$float64; lpme_env$jax$config$update("jax_enable_x64", TRUE) # 45 
+      #pdtype_ <- ddtype_ <- lpme_env$jnp$float32; lpme_env$jax$config$update("jax_enable_x64", FALSE) # 24
+      pdtype_ <- ddtype_ <- lpme_env$jnp$float16; lpme_env$jax$config$update("jax_enable_x64", FALSE) # 41
       
       # set initial parameters 
       UseEMInits <- TRUE
@@ -475,6 +478,7 @@ lpme_onerun <- function( Y,
                   #  "difficulty" = difficulty_init,
                   #  "discrimination" =  discrimination_init
                   #) ) ; t1_ <- Sys.time()
+      message("-------------------------")
       message(sprintf("MCMC Runtime: %.3f min",  tdiff_ <- as.numeric(difftime(t1_,  t0_, units = "secs"))/60))
       PosteriorDraws <- sampler$get_samples(group_by_chain = TRUE)
       PosteriorDraws$ability$shape

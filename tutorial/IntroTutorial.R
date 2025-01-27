@@ -3,9 +3,8 @@
   # Install from GitHub
   # devtools::install_github("cjerzak/lpme-software/lpme")
   
-  set.seed(123); options( error = NULL )
-  n <- 5000  # Number of observations
-  d <- 8    # Number of observable indicators
+  n <- 1000  # Number of observations
+  d <- 6    # Number of observable indicators
   
   # 1) Generate latent ability
   x_true <- rnorm(n)  # 
@@ -37,7 +36,7 @@
   results <- lpme(
     Y = Yobs,
     observables = as.data.frame(ObservablesMat),
-    n_boot = 8L,      # Reduced for demonstration
+    n_boot = 6L,      # Reduced for demonstration
     n_partition = 5L,  # Reduced for demonstration
     estimation_method = "emIRT"
   )
@@ -59,8 +58,15 @@
       estimation_method = "MCMC",
       conda_env = "lpme"  # Specify your conda environment
     )
-  mcmc_results$ols_coef
-  mcmc_results$corrected_ols_coef
-  mcmc_results
+  print(mcmc_results)
+  summary(mcmc_results)
+  
+  # Visualization
+  plot(mcmc_results)
+  
+  # compare 
+  summary(results)
+  summary(mcmc_results)
+  
   
 }
