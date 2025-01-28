@@ -10,6 +10,8 @@ lpme_onerun(
   observables_groupings = colnames(observables),
   make_observables_groupings = FALSE,
   estimation_method = "emIRT",
+  mcmc_control = list(backend = "numpyro", n_samples_warmup = 500L, n_samples_mcmc =
+    1000L, chain_method = "parallel", n_thin_by = 1L, n_chains = 2L),
   ordinal = FALSE,
   conda_env = "lpme",
   conda_env_required = TRUE,
@@ -31,6 +33,42 @@ lpme_onerun(
 \item "MCMC": Basic Markov Chain Monte Carlo estimation using either \code{pscl::ideal} (R backend) or \code{numpyro} (Python backend)
 \item "MCMCFull": Full Bayesian model that simultaneously estimates latent variables and outcome relationship using \code{numpyro}
 \item "MCMCOverImputation": Two-stage MCMC approach with measurement error correction via over-imputation
+}}
+
+\item{mcmc_control}{A list indicating parameter specifications if MCMC used. 
+\itemize{
+  \item{\code{backend}}{
+    Character string indicating the MCMC engine to use. Valid options are:
+    \itemize{
+      \item \code{"numpyro"} (default): Uses the Python \code{numpyro} package via \code{reticulate}.
+      \item \code{"pscl"}: Uses the R-based \code{pscl::ideal} function.
+    }
+  }
+  \item{\code{n_samples_warmup}}{
+    Integer specifying the number of warm-up (a.k.a. burn-in) iterations
+    before samples are collected. Default is \code{500}.
+  }
+  \item{\code{n_samples_mcmc}}{
+    Integer specifying the number of post-warmup MCMC iterations to retain.
+    Default is \code{1000}.
+  }
+  \item{\code{chain_method}}{
+    Character string passed to \code{numpyro} specifying how to run multiple
+    chains. Typical options include:
+    \itemize{
+      \item \code{"parallel"} (default): Runs chains in parallel.
+      \item \code{"sequential"}: Runs chains sequentially.
+      \item \code{"vectorized"}: Vectorized evaluation of multiple chains.
+    }
+  }
+  \item{\code{n_thin_by}}{
+    Integer indicating the thinning factor for MCMC samples (i.e., retaining
+    every \code{n_thin_by}-th sample). Default is \code{1}.
+  }
+  \item{\code{n_chains}}{
+    Integer specifying the number of parallel MCMC chains to run.
+    Default is \code{2}.
+  }
 }}
 
 \item{ordinal}{Logical indicating whether the observable indicators are ordinal (TRUE) or binary (FALSE).}

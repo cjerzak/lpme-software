@@ -1,9 +1,10 @@
 {
   # install.packages("~/Documents/lpme-software/lpme", repos = NULL, type = "source", force = FALSE)
-  # Install from GitHub
+  # Install via GitHub
   # devtools::install_github("cjerzak/lpme-software/lpme")
   
-  n <- 1000  # Number of observations
+  options(error = NULL)
+  n <- 5000  # Number of observations
   d <- 6    # Number of observable indicators
   
   # 1) Generate latent ability
@@ -54,8 +55,15 @@
       Y = Yobs,
       observables = as.data.frame(ObservablesMat),
       n_boot = 0L,      # Reduced for demonstration
-      n_partition = 3L, # Reduced for demonstration
+      n_partition = 2L, # Reduced for demonstration
       estimation_method = "MCMC",
+      mcmc_control = list(
+                backend = "numpyro",  # will override to use NumPyro-based MCMC
+                n_samples_warmup = 500L, n_samples_mcmc = 1000L, subsample_method = "full", 
+                #n_samples_warmup = 500L, n_samples_mcmc = 1000L, subsample_method = "batch", batch_size = 128L, 
+                chain_method = "sequential", 
+                n_thin_by = 1L, 
+                n_chains = 2L), 
       conda_env = "lpme"  # Specify your conda environment
     )
   print(mcmc_results)
