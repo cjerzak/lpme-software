@@ -54,7 +54,7 @@ library(lpme)
 results <- lpme(
   Y = Yobs,
   observables = as.data.frame(ObservablesMat),
-  n_boot = 50,      # Reduced for demonstration
+  n_boot = 10,      # Reduced for demonstration
   n_partition = 5,  # Reduced for demonstration
   estimation_method = "emIRT"
 )

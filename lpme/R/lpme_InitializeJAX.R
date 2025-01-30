@@ -1,6 +1,6 @@
 initialize_jax <- function(conda_env = "lpme", 
                            conda_env_required = TRUE) {
-  library( reticulate )
+
   # Load reticulate (Declared in Imports: in DESCRIPTION)
   reticulate::use_condaenv(condaenv = conda_env, required = conda_env_required)
   

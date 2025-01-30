@@ -18,7 +18,7 @@
 #' \item "MCMCFull": Full Bayesian model that simultaneously estimates latent variables and outcome relationship using \code{numpyro}
 #' \item "MCMCOverImputation": Two-stage MCMC approach with measurement error correction via over-imputation
 #' }
-#'  @param mcmc_control A list indicating parameter specifications if MCMC used. 
+#' @param mcmc_control A list indicating parameter specifications if MCMC used. 
 #' \itemize{
 #'   \item{\code{backend}}{
 #'     Character string indicating the MCMC engine to use. Valid options are:
@@ -106,13 +106,17 @@
 #' observables <- as.data.frame( matrix(sample(c(0,1), 1000*10, replace = TRUE), ncol = 10) )
 #' 
 #' # Run the bootstrapped analysis
-#' results <- lpme(Y, observables, n_boot = 100, n_partition = 5)
+#' results <- lpme(Y = Y, 
+#'                 observables = observables, 
+#'                 n_boot = 10,    # small values for illustration only  
+#'                 n_partition = 5 # small for size 
+#'                 )
 #' 
 #' # View the corrected IV coefficient and its standard error
-#' print(c(results$corrected_iv_coef, results$corrected_iv_se))
+#' print(results)
 #'
 #' @export
-#' @importFrom stats sd median tapply
+#' @importFrom stats sd median 
 #' @importFrom lpme lpme_onerun
 
 lpme <- function(Y,

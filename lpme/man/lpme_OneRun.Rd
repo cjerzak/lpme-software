@@ -115,13 +115,15 @@ and then applies various correction methods including OLS correction and instrum
 \examples{
 # Generate some example data
 set.seed(123)
-Y <- rnorm(100)
-observables <- as.data.frame( matrix(sample(c(0,1), 1000*10, replacement = TRUE), ncol = 10) )
+library( lpme )
+Y <- rnorm(1000)
+observables <- as.data.frame( matrix(sample(c(0,1), 1000*10, replace = TRUE), ncol = 10) )
 
 # Run the analysis
-results <- lpme_onerun(Y, observables)
+results <- lpme_onerun(Y = Y, 
+                       observables = observables)
 
-# View the corrected OLS coefficient
-print(results$Corrected_OLSCoef)
+# View the corrected estimates
+print(results)
 
 }

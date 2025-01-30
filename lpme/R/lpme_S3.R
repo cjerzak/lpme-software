@@ -33,16 +33,16 @@ plot.lpme_onerun <- function(x, ...) {
 #' @export
 summary.lpme <- function(object, ...) {
   coef_df <- data.frame(
-    Estimate = c(object$ols_coef, object$iv_reg_coef, object$corrected_iv_reg_coef,
-                 object$corrected_ols_coef, object$bayesian_ols_reg_coef_outer_normed,
-                 object$bayesian_ols_reg_coef_inner_normed),
-    SE = c(object$ols_se, object$iv_reg_se, object$corrected_iv_reg_se,
-           object$corrected_ols_se, object$bayesian_ols_reg_se_outer_normed,
-           object$bayesian_ols_reg_se_inner_normed),
-    CI_Lower = c(object$ols_lower, object$iv_reg_lower, object$corrected_iv_reg_lower,
+    Estimate = c(object$ols_coef, object$iv_coef, object$corrected_iv_coef,
+                 object$corrected_ols_coef, object$bayesian_ols_coef_outer_normed,
+                 object$bayesian_ols_coef_inner_normed),
+    SE = c(object$ols_se, object$iv_se, object$corrected_iv_se,
+           object$corrected_ols_se, object$bayesian_ols_se_outer_normed,
+           object$bayesian_ols_se_inner_normed),
+    CI_Lower = c(object$ols_lower, object$iv_lower, object$corrected_iv_lower,
                  object$corrected_ols_lower, object$bayesian_ols_lower_outer_normed,
                  object$bayesian_ols_lower_inner_normed),
-    CI_Upper = c(object$ols_upper, object$iv_reg_upper, object$corrected_iv_reg_upper,
+    CI_Upper = c(object$ols_upper, object$iv_upper, object$corrected_iv_upper,
                  object$corrected_ols_upper, object$bayesian_ols_upper_outer_normed,
                  object$bayesian_ols_upper_inner_normed),
     row.names = c("OLS", "IV", "Corrected IV", "Corrected OLS", 
@@ -60,9 +60,9 @@ print.lpme <- function(x, ...) {
   cat("Latent Profile Measurement Error (LPME) Model Results\n")
   cat("----------------------------------------------------\n")
   cat(sprintf("Uncorrected Coefficient (OLS): %.3f (SE: %.3f)\n", x$ols_coef, x$ols_se))
-  cat(sprintf("Corrected Coefficient: %.3f (SE: %.3f)\n", x$corrected_iv_reg_coef, x$corrected_iv_reg_se))
-  cat(sprintf("Bayesian OLS (Outer): %.3f (SE: %.3f)\n", x$bayesian_ols_reg_coef_outer_normed, 
-              x$bayesian_ols_reg_se_outer_normed))
+  cat(sprintf("Corrected Coefficient: %.3f (SE: %.3f)\n", x$corrected_iv_coef, x$corrected_iv_se))
+  cat(sprintf("Bayesian OLS (Outer): %.3f (SE: %.3f)\n", x$bayesian_ols_coef_outer_normed, 
+              x$bayesian_ols_se_outer_normed))
   cat("Use summary() for detailed results.\n")
 }
 
