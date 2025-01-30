@@ -16,7 +16,7 @@ devtools::install_github("cjerzak/lpme/lpme-software")
 ```
 
 # Key Functions<a id="keyfxns"></a>
-## `lpme_OneRun`
+## `lpme_onerun`
 `lpme_OneRun` performs a single run of latent variable analysis with measurement error correction (no bootstrapping; 1 split sample partition): 
 ```
 # Generate data 
@@ -24,7 +24,7 @@ Yobs <- rnorm(1000)
 ObservablesMat <- matrix(sample(c(0,1), 1000*10, replace = T), ncol = 10)
 
 # One run of latent error correction method 
-lpme::lpme_OneRun(Y = Yobs, 
+lpme::lpme_onerun(Y = Yobs, 
                   observables_mat = ObservablesMat)
 ```
 
