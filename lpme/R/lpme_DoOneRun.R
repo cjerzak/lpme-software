@@ -193,6 +193,7 @@ lpme_onerun <- function( Y,
     
     if( grepl(estimation_method, pattern = "MCMC") & mcmc_control$backend == "pscl" ){
       if(estimation_method == "MCMC" ){
+        browser()
         capture.output( pscl_ideal <- pscl::ideal( pscl::rollcall(observables_), 
                             normalize = TRUE, 
                             store.item = TRUE, 
@@ -524,8 +525,8 @@ lpme_onerun <- function( Y,
       )
       
       # run sampler with initialized abilities as COLMEANS of X (ASSUMPTION!)
-      pdtype_ <- ddtype_ <- lpme_env$jnp$float64; lpme_env$jax$config$update("jax_enable_x64", TRUE) 
-      #pdtype_ <- ddtype_ <- lpme_env$jnp$float32; lpme_env$jax$config$update("jax_enable_x64", FALSE) 
+      #pdtype_ <- ddtype_ <- lpme_env$jnp$float64; lpme_env$jax$config$update("jax_enable_x64", TRUE) 
+      pdtype_ <- ddtype_ <- lpme_env$jnp$float32; lpme_env$jax$config$update("jax_enable_x64", FALSE) 
       #pdtype_ <- ddtype_ <- lpme_env$jnp$float16; lpme_env$jax$config$update("jax_enable_x64", FALSE) 
       
       # set initial parameters 

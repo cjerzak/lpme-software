@@ -51,6 +51,7 @@
   
   # Bayesian MCMC example (commented out)
   # lpme::build_backend() # build backend if needed
+  t0 <- Sys.time()
   mcmc_results <- lpme(
       Y = Yobs,
       observables = as.data.frame(ObservablesMat),
@@ -65,7 +66,10 @@
                 n_thin_by = 1L, 
                 n_chains = 2L), 
       conda_env = "lpme"  # Specify your conda environment
+      #conda_env = "jax_gpu"  # Specify your conda environment
     )
+  t1 <- Sys.time()
+  print(sprintf("MCMC runtime of %.4f mins", difftime(t1,t0, units = "mins")))
   print(mcmc_results)
   summary(mcmc_results)
   
