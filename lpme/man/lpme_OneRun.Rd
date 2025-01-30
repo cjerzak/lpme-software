@@ -11,7 +11,8 @@ lpme_onerun(
   make_observables_groupings = FALSE,
   estimation_method = "emIRT",
   mcmc_control = list(backend = "numpyro", n_samples_warmup = 500L, n_samples_mcmc =
-    1000L, chain_method = "parallel", n_thin_by = 1L, n_chains = 2L),
+    1000L, batch_size = 512L, chain_method = "parallel", subsample_method = "full",
+    n_thin_by = 1L, n_chains = 2L),
   ordinal = FALSE,
   conda_env = "lpme",
   conda_env_required = TRUE,

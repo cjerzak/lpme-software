@@ -16,7 +16,8 @@ lpme(
   ordinal = FALSE,
   estimation_method = "emIRT",
   mcmc_control = list(backend = "numpyro", n_samples_warmup = 500L, n_samples_mcmc =
-    1000L, chain_method = "parallel", n_thin_by = 1L, n_chains = 2L),
+    1000L, batch_size = 512L, chain_method = "parallel", subsample_method = "full",
+    n_thin_by = 1L, n_chains = 2L),
   conda_env = "lpme",
   conda_env_required = TRUE
 )
@@ -144,6 +145,6 @@ observables <- as.data.frame( matrix(sample(c(0,1), 1000*10, replace = TRUE), nc
 results <- lpme(Y, observables, n_boot = 100, n_partition = 5)
 
 # View the corrected IV coefficient and its standard error
-print(c(results$corrected_iv_reg_coef, results$corrected_iv_reg_se))
+print(c(results$corrected_iv_coef, results$corrected_iv_se))
 
 }

@@ -109,7 +109,7 @@
 #' results <- lpme(Y, observables, n_boot = 100, n_partition = 5)
 #' 
 #' # View the corrected IV coefficient and its standard error
-#' print(c(results$corrected_iv_reg_coef, results$corrected_iv_reg_se))
+#' print(c(results$corrected_iv_coef, results$corrected_iv_se))
 #'
 #' @export
 #' @importFrom stats sd median tapply
@@ -310,54 +310,54 @@ lpme <- function(Y,
       "corrected_ols_tstat_alt" = (m1b_ / se1b_),
       
       # IV regression
-      "iv_reg_coef" = (m2_ <- tapply(
+      "iv_coef" = (m2_ <- tapply(
         LatentRunResults$Intermediary_iv_coef, 
         LatentRunResults$Intermediary_BootIndex, theSumFxn
       )[1]),
-      "iv_reg_se" = (se2_ <- stats::sd(tapply(
+      "iv_se" = (se2_ <- stats::sd(tapply(
         LatentRunResults$Intermediary_iv_coef[takeforse], 
         LatentRunResults$Intermediary_BootIndex[takeforse], theSumFxn
       ))),
-      "iv_reg_lower" = qf(qLow, tapply(
+      "iv_lower" = qf(qLow, tapply(
         LatentRunResults$Intermediary_iv_coef[takeforse], 
         LatentRunResults$Intermediary_BootIndex[takeforse], theSumFxn
       )),
-      "iv_reg_upper" = qf(qUp, tapply(
+      "iv_upper" = qf(qUp, tapply(
         LatentRunResults$Intermediary_iv_coef[takeforse], 
         LatentRunResults$Intermediary_BootIndex[takeforse], theSumFxn
       )),
-      "iv_reg_tstat" = (m2_ / se2_),
+      "iv_tstat" = (m2_ / se2_),
       
       # Corrected IV
-      "corrected_iv_reg_coef" = (m4_ <- tapply(
+      "corrected_iv_coef" = (m4_ <- tapply(
         LatentRunResults$Intermediary_corrected_iv_coef, 
         LatentRunResults$Intermediary_BootIndex, theSumFxn
       )[1]),
-      "corrected_iv_reg_se" = (se4_ <- stats::sd(tapply(
+      "corrected_iv_se" = (se4_ <- stats::sd(tapply(
         LatentRunResults$Intermediary_corrected_iv_coef[takeforse], 
         LatentRunResults$Intermediary_BootIndex[takeforse], theSumFxn
       ))),
-      "corrected_iv_reg_lower" = qf(qLow, tapply(
+      "corrected_iv_lower" = qf(qLow, tapply(
         LatentRunResults$Intermediary_corrected_iv_coef[takeforse], 
         LatentRunResults$Intermediary_BootIndex[takeforse], theSumFxn
       )),
-      "corrected_iv_reg_upper" = qf(qUp, tapply(
+      "corrected_iv_upper" = qf(qUp, tapply(
         LatentRunResults$Intermediary_corrected_iv_coef[takeforse], 
         LatentRunResults$Intermediary_BootIndex[takeforse], theSumFxn
       )),
-      "corrected_iv_reg_tstat" = (m4_ / se4_),
+      "corrected_iv_tstat" = (m4_ / se4_),
       
       # Bayesian OLS (outer-normed)
-      "bayesian_ols_reg_coef_outer_normed" = (m4_ <- tapply(
+      "bayesian_ols_coef_outer_normed" = (m4_ <- tapply(
         LatentRunResults$Intermediary_bayesian_ols_coef_outer_normed,
         LatentRunResults$Intermediary_BootIndex, theSumFxn
       )[1]),
-      "bayesian_ols_reg_se_outer_normed_parametric" = (se4_b <- tapply(
+      "bayesian_ols_se_outer_normed_parametric" = (se4_b <- tapply(
         LatentRunResults$Intermediary_bayesian_ols_se_outer_normed,
         LatentRunResults$Intermediary_BootIndex,
         function(x) { 1/length(x) * sqrt(sum(x^2)) }
       )[1]),
-      "bayesian_ols_reg_se_outer_normed" = (se4_ <- stats::sd(tapply(
+      "bayesian_ols_se_outer_normed" = (se4_ <- stats::sd(tapply(
         LatentRunResults$Intermediary_bayesian_ols_coef_outer_normed[takeforse], 
         LatentRunResults$Intermediary_BootIndex[takeforse], theSumFxn
       ))),
@@ -372,16 +372,16 @@ lpme <- function(Y,
       "bayesian_ols_tstat_outer_normed" = (m4_ / se4_),
       
       # Bayesian OLS (inner-normed)
-      "bayesian_ols_reg_coef_inner_normed" = (m4_ <- tapply(
+      "bayesian_ols_coef_inner_normed" = (m4_ <- tapply(
         LatentRunResults$Intermediary_bayesian_ols_coef_inner_normed, 
         LatentRunResults$Intermediary_BootIndex, theSumFxn
       )[1]),
-      "bayesian_ols_reg_se_inner_normed_parametric" = (se4_b <- tapply(
+      "bayesian_ols_se_inner_normed_parametric" = (se4_b <- tapply(
         LatentRunResults$Intermediary_bayesian_ols_se_inner_normed[takeforse],
         LatentRunResults$Intermediary_BootIndex[takeforse],
         function(x) { 1/length(x) * sqrt(sum(x^2)) }
       )[1]),
-      "bayesian_ols_reg_se_inner_normed" = (se4_ <- stats::sd(tapply(
+      "bayesian_ols_se_inner_normed" = (se4_ <- stats::sd(tapply(
         LatentRunResults$Intermediary_bayesian_ols_coef_inner_normed[takeforse], 
         LatentRunResults$Intermediary_BootIndex[takeforse], theSumFxn
       ))),
