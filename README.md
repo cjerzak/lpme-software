@@ -31,19 +31,20 @@ lpme::lpme_onerun(Y = Yobs,
 ## `lpme`
 `lpme` implements a bootstrap analysis for latent variable models with measurement error correction. We average over `nPartition` split sample partitions. 
 ```
-# Generate data 
+# Generate data
 Yobs <- rnorm(1000)
 ObservablesMat <- matrix(sample(c(0,1), 1000*10, replace = T), ncol = 10)
 
-# Latent error correction method, with partitioning and bootstrap 
-results  <- lpme::lpme(
-         Y = Yobs, 
-	     observables_mat = ObservablesMat, 
-         n_boot = 32L, 
-		 n_partition = 10L) 
-		 
-#View the corrected IV coefficient and its standard error
-print( results )
+# Latent error correction method, with partitioning and bootstrap
+results <- lpme::lpme(
+    Y = Yobs,
+    observables_mat = ObservablesMat,
+    n_boot = 32L,
+    n_partition = 10L
+)
+
+# View the corrected IV coefficient and its standard error
+print(results)
 ```
 
 # Contributing
