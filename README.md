@@ -3,6 +3,8 @@
 | [**Key Functions**](#keyfxns)
 | [**References**](#references)
 
+[<img src="https://img.shields.io/badge/Demo-View%20Demo-blue" alt="Demo Button">](https://github.com/cjerzak/lpme-software/blob/main/lpme/vignettes/IntroVignette.Rmd)
+
 `lpme` is an R package that provides tools for analyzing latent variable models with measurement error correction, using bootstrapping techniques for inference.
 
 # Package Installation<a id="installation"></a>
