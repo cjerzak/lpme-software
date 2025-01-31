@@ -251,7 +251,7 @@ lpme_onerun <- function( Y,
                                      thin = thin_)
         )
         # mean(pscl_ideal$xbar); sd(pscl_ideal$xbar) # confirm 0 and 1 
-        x.est_MCMC <- x.est_ <- pscl_ideal$xbar; s_past <- 1 # summary(lm(Y~x.est_))
+        x.est_MCMC <- x.est_ <- pscl_ideal$xbar; s_past <- 1 
         if( split_ == "" ){
             for(outType_ in c("Outer","Inner")){ 
               # file:///Users/cjerzak/Dropbox/LatentMeasures/literature/CAUGHEY-ps8-solution.html
@@ -331,11 +331,7 @@ lpme_onerun <- function( Y,
       }
     }
     if( grepl(estimation_method, pattern = "MCMC") & mcmc_control$backend == "numpyro" ){
-        if(split_ == ""){
-          if(!"jax" %in% ls(envir = lpme_env)){
-            initialize_jax(conda_env, conda_env_required)
-          }
-        }
+        if(!"jax" %in% ls(envir = lpme_env)){ initialize_jax(conda_env, conda_env_required) }
         
         # Construct for annotating conditionally independent variables.
         # Within a plate context manager, sample sites will be automatically broadcasted to the size of the plate. 
@@ -348,8 +344,7 @@ lpme_onerun <- function( Y,
         K <- ai(ncol(observables_))
         
         # Define the two-parameter IRT model using Matt's trick + subsampling
-        if( TRUE ){
-          IRTModel_batch <- function(X, Y) {
+        IRTModel_batch <- function(X, Y) {
             # Number of observations (rows) and items (columns)
             N <- X$shape[[1]]
             K <- X$shape[[2]]
@@ -441,7 +436,6 @@ lpme_onerun <- function( Y,
             #scaled_lik() # documentation doesn't seem to scale?
             local_lik_fn()
           }
-        }
         
         # Define the two-parameter IRT model using Matt's trick 
         IRTModel_full <- (function(X, # binary indicators 
@@ -568,7 +562,6 @@ lpme_onerun <- function( Y,
       # PosteriorDraws$ability$shape; PosteriorDraws$ability[1,,1]
       ExtractAbil <- function(abil){ 
         abil <- do.call(cbind, sapply(1L:mcmc_control$n_chains, function(c_){
-          #abil_c <- as.matrix(lpme_env$np$array(abil)[c_,,])
           abil_c <- as.matrix(lpme_env$np$array(abil)[c_,,,])
           return( list( t(abil_c) ) )
         }))
@@ -579,9 +572,6 @@ lpme_onerun <- function( Y,
         return( abil ) 
       }
 
-      # hist( apply(ExtractAbil(PosteriorDraws$ability), 2, sd) ) 
-      # hist(AbilityMean)
-      # summary( lm(Y~AbilityMean) )
       # summary( lm(Y~scale(AbilityMean) ) )
       # plot( as.matrix( lpme_env$np$array( PosteriorDraws$discrimination_oriented ) )[1,,1])
       # plot( as.matrix( lpme_env$np$array( PosteriorDraws$discrimination ) )[1,,1])
@@ -606,7 +596,6 @@ lpme_onerun <- function( Y,
         #ExtractAbil(PosteriorDraws$ability,return_sign=TRUE)
         # plot(RescaledAbilities[,1],RescaledAbilities[,2])
         #SignSwap <- sign(cor(RescaledAbilities)[1,])
-        #RescaledAbilities <- SignSwap
         #AbilityMean <- rowMeans(  ExtractAbil(PosteriorDraws$ability)*SignSwap )
         Bayesian_OLSCoef_OuterNormed <- c(as.matrix(lpme_env$np$array(PosteriorDraws$YModel_slope)))/sd(AbilityMean) # CONFIRM 
         # sd(rowMeans(RescaledAbilities));mean(rowMeans(RescaledAbilities)) # confirm sanity values of 1,0 
