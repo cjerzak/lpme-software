@@ -752,13 +752,6 @@ lpme_onerun <- function( Y,
   Corrected_OLSCoef <- (Corrected_OLSCoef1 + Corrected_OLSCoef2)/2
   t_OneRun <- as.numeric(difftime(Sys.time(), t0, units = "secs"))
   
-  # t_OneRun / 60
-  # Corrected_OLSCoef; Corrected_IVRegCoef
-  # plot(scale(x.true[i_sampled]),scale(AbilityMean))
-  # cor(x.true[i_sampled],AbilityMean)
-  
-  # 0.3922564; 0.3922564; 0.4012785
-  
   # ERV analysis 
   mstage1 <- lm(x.est2 ~ x.est1)
   mreduced <- lm(Y ~ x.est1)

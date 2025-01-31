@@ -4,8 +4,8 @@
   # devtools::install_github("cjerzak/lpme-software/lpme")
   
   options(error = NULL)
-  n <- 5000  # Number of observations
-  d <- 24    # Number of observable indicators
+  n <- 1000  # Number of observations
+  d <- 6    # Number of observable indicators
   
   # 1) Generate latent ability
   x_true <- rnorm(n)  # 
@@ -57,11 +57,13 @@
       observables = as.data.frame(ObservablesMat),
       n_boot = 0L,      # Reduced for demonstration
       n_partition = 2L, # Reduced for demonstration
-      estimation_method = "MCMC",
+      #estimation_method = "MCMC",
+      #estimation_method = "MCMCFull",
+      #estimation_method = "MCMCOverImputation",
       mcmc_control = list(
                 #backend = "numpyro",  
                 backend = "pscl",  
-                n_samples_warmup = 500L, n_samples_mcmc = 1000L, subsample_method = "full", 
+                n_samples_warmup = 1000L, n_samples_mcmc = 1000L, subsample_method = "full", 
                 #n_samples_warmup = 500L, n_samples_mcmc = 1000L, subsample_method = "batch", batch_size = 128L, 
                 chain_method = "sequential", 
                 n_thin_by = 1L, 
