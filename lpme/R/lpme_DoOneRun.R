@@ -290,7 +290,7 @@ lpme_onerun <- function( Y,
               
               # perform overimputation 
               overimputed_data <- Amelia::amelia( 
-                x = dat_, m = (nOverImpute <- 50L),
+                x = dat_, m = (nOverImpute <- 5), # default 
                 p2s = 0,
                 priors = priors, 
                 overimp = overimp 
