@@ -294,8 +294,8 @@ lpme_onerun <- function( Y,
                 m = (nOverImpute <- 5), # default 
                 p2s = 0,
                 priors = priors, 
-                overimp = overimp 
-              )
+                overimp = overimp, 
+                parallel = "no")
               
               # Perform multiple overimputation
               overimputed_Y <- do.call(cbind,lapply(overimputed_data$imputations,function(l_){l_[,1]}))
