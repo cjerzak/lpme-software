@@ -175,7 +175,6 @@ lpme <- function(Y,
         estimation_method = estimation_method, 
         ordinal = ordinal, 
         mcmc_control = mcmc_control, 
-        seed = NULL,
         conda_env = conda_env,
         conda_env_required = conda_env_required
       )

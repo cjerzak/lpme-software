@@ -54,7 +54,6 @@
 #'   must be strictly used. If \code{TRUE}, an error is thrown if the environment is not found. 
 #'   Default is \code{TRUE}.
 #' @param ordinal Logical indicating whether the observable indicators are ordinal (TRUE) or binary (FALSE).
-#' @param seed Random seed for reproducibility. Default is a random integer between 1 and 10000 (used internally)
 #'
 #' @return A list containing various estimates and statistics:
 #' \itemize{
@@ -120,13 +119,11 @@ lpme_onerun <- function( Y,
                            n_chains = 2L), 
                          ordinal = FALSE, 
                          conda_env = "lpme", 
-                         conda_env_required = TRUE, 
-                         seed = NULL){
+                         conda_env_required = TRUE){
   t0 <- Sys.time()
   INIT_SCALER <- 1/10
   Bayesian_OLSSE_InnerNormed <- Bayesian_OLSCoef_InnerNormed <- NA; 
   Bayesian_OLSSE_OuterNormed <- Bayesian_OLSCoef_OuterNormed <- NA;
-  if(!is.null(seed)){ set.seed(seed) } 
   items.split1_names <- sample(unique(observables_groupings), 
                                size = floor(length(unique(observables_groupings))/2), replace=FALSE)
   items.split2_names <- unique(observables_groupings)[! (observables_groupings %in% items.split1_names)]
@@ -193,13 +190,21 @@ lpme_onerun <- function( Y,
     
     if( grepl(estimation_method, pattern = "MCMC") & mcmc_control$backend == "pscl" ){
       if(estimation_method == "MCMC" ){
-        browser()
-        capture.output( pscl_ideal <- pscl::ideal( pscl::rollcall(observables_), 
+        t0_ <- Sys.time()
+        startval_ <- rowMeans( observables_ )
+        maxiter_ <- mcmc_control$n_samples_mcmc + mcmc_control$n_samples_warmup
+        burnin_ <- mcmc_control$n_samples_warmup
+        thin_ <- mcmc_control$n_thin_by
+        capture.output( 
+          pscl_ideal <- pscl::ideal( pscl::rollcall(observables_), 
                             normalize = TRUE, 
                             store.item = TRUE, 
-                            maxiter = 1000L, 
-                            burnin = 500L,
-                            thin = 1L)  )
+                            startvals = list("x" = startval_ ),
+                            maxiter = maxiter_, 
+                            burnin = burnin_,
+                            thin = thin_)
+        )
+        message(sprintf("\n MCMC Runtime: %.3f min",  tdiff_ <- as.numeric(difftime(Sys.time(),  t0_, units = "secs"))/60))
         # mean(pscl_ideal$xbar); sd(pscl_ideal$xbar) # confirm 0 and 1 
         x.est_MCMC <- x.est_ <- pscl_ideal$xbar; s_past <- 1 # summary(lm(Y~x.est_))
         if( split_ == "" ){
@@ -542,7 +547,8 @@ lpme_onerun <- function( Y,
       if(UseEMInits){ discrimination_init <-  lpme_env$jnp$broadcast_to(lpme_env$jnp$array( out_emIRT$means$beta[,2] *INIT_SCALER )$astype(pdtype_),list(mcmc_control$n_chains, K)) }
       
       # run sampler 
-      t0_ <- Sys.time(); sampler$run(lpme_env$jax$random$PRNGKey( ai(runif(1,0,10000)) ), 
+      t0_ <- Sys.time()
+      sampler$run(lpme_env$jax$random$PRNGKey( ai(runif(1,0,10000)) ), 
                   X = lpme_env$jnp$array(as.matrix(observables_))$astype( ddtype_ ),  # note: lpme_env$jnp$int16 here causes error (expects floats not ints)
                   Y = lpme_env$jnp$array(as.matrix(Y))$astype( ddtype_ ))
                   #init_params = list(

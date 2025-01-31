@@ -5,7 +5,7 @@
   
   options(error = NULL)
   n <- 5000  # Number of observations
-  d <- 6    # Number of observable indicators
+  d <- 24    # Number of observable indicators
   
   # 1) Generate latent ability
   x_true <- rnorm(n)  # 
@@ -59,7 +59,8 @@
       n_partition = 2L, # Reduced for demonstration
       estimation_method = "MCMC",
       mcmc_control = list(
-                backend = "numpyro",  # will override to use NumPyro-based MCMC
+                #backend = "numpyro",  
+                backend = "pscl",  
                 n_samples_warmup = 500L, n_samples_mcmc = 1000L, subsample_method = "full", 
                 #n_samples_warmup = 500L, n_samples_mcmc = 1000L, subsample_method = "batch", batch_size = 128L, 
                 chain_method = "sequential", 
