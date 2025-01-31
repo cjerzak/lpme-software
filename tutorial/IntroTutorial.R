@@ -59,7 +59,7 @@
       n_partition = 2L, # Reduced for demonstration
       #estimation_method = "MCMC",
       #estimation_method = "MCMCFull",
-      #estimation_method = "MCMCOverImputation",
+      estimation_method = "MCMCOverImputation",
       mcmc_control = list(
                 #backend = "numpyro",  
                 backend = "pscl",  
@@ -82,6 +82,5 @@
   # compare 
   summary(results)
   summary(mcmc_results)
-  
-  
+
 }

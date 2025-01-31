@@ -142,8 +142,7 @@ lpme_onerun <- function( Y,
     }
     
     # first, do emIRT
-    #if(estimation_method == "emIRT"){
-    if(TRUE){ 
+    if(estimation_method == "emIRT"){
       x_init <- scale(apply( observables_, 1, function(x){ mean(f2n(x), na.rm=TRUE)})) * INIT_SCALER
 
       if(ordinal){
@@ -236,6 +235,7 @@ lpme_onerun <- function( Y,
         }
       }
       if(estimation_method == "MCMCOverImputation" & split_ == ""){
+        t0_ <- Sys.time()
         startval_ <- rowMeans( observables_ )
         maxiter_ <- mcmc_control$n_samples_mcmc + mcmc_control$n_samples_warmup
         burnin_ <- mcmc_control$n_samples_warmup
@@ -290,7 +290,8 @@ lpme_onerun <- function( Y,
               
               # perform overimputation 
               overimputed_data <- Amelia::amelia( 
-                x = dat_, m = (nOverImpute <- 5), # default 
+                x = dat_, 
+                m = (nOverImpute <- 5), # default 
                 p2s = 0,
                 priors = priors, 
                 overimp = overimp 
@@ -307,10 +308,8 @@ lpme_onerun <- function( Y,
                 overimputed_x.est_MCMC  <- ( apply(overimputed_x.est_MCMC, 2, function(x_){scale(x_)})  ) 
                 #apply(overimputed_x.est_MCMC,2,sd)
               }
-              
               # cor(cbind(x.est_MCMC, overimputed_x.est_MCMC))
-              # plot(x.est_MCMC,overimputed_x.est_MCMC[,1])
-              
+
               # Analyze overimputed datasets
               overimputed_coefs <- unlist(unlist( sapply(1:nOverImpute, function(s_){
                 coef(lm(overimputed_Y[,s_] ~ overimputed_x.est_MCMC[,s_]))[2]
@@ -325,6 +324,7 @@ lpme_onerun <- function( Y,
               }
             }
         }
+        message(sprintf("\n Overimputation Runtime: %.3f min",  tdiff_ <- as.numeric(difftime(Sys.time(),  t0_, units = "secs"))/60))
       }
       if(estimation_method == "MCMCFull" & split_ == ""){
         ## ?? 
@@ -696,7 +696,7 @@ lpme_onerun <- function( Y,
           
           # perform overimputation 
           overimputed_data <- Amelia::amelia( 
-            x = dat_, m = (nOverImpute <- 50L),
+            x = dat_, m = (nOverImpute <- 5L),
             p2s = 0,
             priors = priors, 
             overimp = overimp 
