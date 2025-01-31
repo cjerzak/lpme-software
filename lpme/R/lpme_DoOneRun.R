@@ -195,8 +195,9 @@ lpme_onerun <- function( Y,
         maxiter_ <- mcmc_control$n_samples_mcmc + mcmc_control$n_samples_warmup
         burnin_ <- mcmc_control$n_samples_warmup
         thin_ <- mcmc_control$n_thin_by
+        pscl_input_ <- pscl::rollcall(observables_)
         capture.output( 
-          pscl_ideal <- pscl::ideal( pscl::rollcall(observables_), 
+          pscl_ideal <- pscl::ideal( pscl_input_, 
                             normalize = TRUE, 
                             store.item = TRUE, 
                             startvals = list("x" = startval_ ),
@@ -234,16 +235,21 @@ lpme_onerun <- function( Y,
           Bayesian_OLSCoef_InnerNormed <- mean( Bayesian_OLSCoef_InnerNormed )
         }
       }
-      if(estimation_method == "MCMCFull" & split_ == ""){
-        ## ?? 
-      }
       if(estimation_method == "MCMCOverImputation" & split_ == ""){
-        capture.output( pscl_ideal <- pscl::ideal( pscl::rollcall(observables_), 
-                                   normalize = TRUE, 
-                                   store.item = TRUE, 
-                                   maxiter = mcmc_control$n_samples_mcmc, 
-                                   burnin = mcmc_control$n_samples_warmup, 
-                                   thin = mcmc_control$n_thin_by ) )
+        startval_ <- rowMeans( observables_ )
+        maxiter_ <- mcmc_control$n_samples_mcmc + mcmc_control$n_samples_warmup
+        burnin_ <- mcmc_control$n_samples_warmup
+        thin_ <- mcmc_control$n_thin_by
+        pscl_input_ <- pscl::rollcall(observables_)
+        capture.output( 
+          pscl_ideal <- pscl::ideal( pscl_input_, 
+                                     normalize = TRUE, 
+                                     store.item = TRUE, 
+                                     startvals = list("x" = startval_ ),
+                                     maxiter = maxiter_, 
+                                     burnin = burnin_,
+                                     thin = thin_)
+        )
         # mean(pscl_ideal$xbar); sd(pscl_ideal$xbar) # confirm 0 and 1 
         x.est_MCMC <- x.est_ <- pscl_ideal$xbar; s_past <- 1 # summary(lm(Y~x.est_))
         if( split_ == "" ){
@@ -319,6 +325,9 @@ lpme_onerun <- function( Y,
               }
             }
         }
+      }
+      if(estimation_method == "MCMCFull" & split_ == ""){
+        ## ?? 
       }
     }
     if( grepl(estimation_method, pattern = "MCMC") & mcmc_control$backend == "numpyro" ){
