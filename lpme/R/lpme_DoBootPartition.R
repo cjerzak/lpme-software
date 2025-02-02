@@ -163,8 +163,7 @@ lpme <- function(Y,
     }
     
     for(parti_ in seq_len(n_partition)){
-      message(sprintf("{booti_ %s of %s} -- {parti_ %s of %s}", 
-                      booti_, n_boot+1, parti_, n_partition))
+      message(sprintf("{booti_ %s of %s} -- {parti_ %s of %s}", booti_, n_boot+1, parti_, n_partition))
       
       # Run single analysis
       LatentRunResults_ <- lpme_onerun(
