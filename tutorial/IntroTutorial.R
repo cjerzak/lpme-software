@@ -4,7 +4,7 @@
   # devtools::install_github("cjerzak/lpme-software/lpme")
   
   options(error = NULL)
-  n <- 1000  # Number of observations
+  n <- 600  # Number of observations
   d <- 6    # Number of observable indicators
   
   # 1) Generate latent ability
@@ -39,7 +39,7 @@
     observables = as.data.frame(ObservablesMat),
     n_boot = 6L,      # Reduced for demonstration
     n_partition = 5L,  # Reduced for demonstration
-    estimation_method = "emIRT"
+    estimation_method = "em"
   )
   
   # Compare estimates
@@ -49,38 +49,57 @@
   # Visualization
   plot(results)
   
-  # Bayesian MCMC example (commented out)
+  # Try out the Bayesian methods 
   # lpme::build_backend() # build backend if needed
-  t0 <- Sys.time()
   mcmc_results <- lpme(
       Y = Yobs,
       observables = as.data.frame(ObservablesMat),
       n_boot = 0L,      # Reduced for demonstration
       n_partition = 2L, # Reduced for demonstration
-      #estimation_method = "MCMC",
-      #estimation_method = "MCMCFull",
-      estimation_method = "MCMCOverImputation",
+      estimation_method = "mcmc",
       mcmc_control = list(
                 #backend = "numpyro",  
                 backend = "pscl",  
                 n_samples_warmup = 1000L, n_samples_mcmc = 1000L, subsample_method = "full", 
-                #n_samples_warmup = 500L, n_samples_mcmc = 1000L, subsample_method = "batch", batch_size = 128L, 
                 chain_method = "sequential", 
                 n_thin_by = 1L, 
                 n_chains = 2L), 
-      conda_env = "lpme"  # Specify your conda environment
-      #conda_env = "jax_gpu"  # Specify your conda environment
-    )
-  t1 <- Sys.time()
-  print(sprintf("MCMC runtime of %.4f mins", difftime(t1,t0, units = "mins")))
-  print(mcmc_results)
-  summary(mcmc_results)
-  
-  # Visualization
-  plot(mcmc_results)
-  
+      conda_env = "lpme"  # Specify your conda environment, used in this condition, backend="numpryo" 
+  )
+  mcmc_overimputation_results <- lpme(
+    Y = Yobs,
+    observables = as.data.frame(ObservablesMat),
+    n_boot = 0L,      # Reduced for demonstration
+    n_partition = 2L, # Reduced for demonstration
+    estimation_method = "mcmc_overimputation",
+    mcmc_control = list(
+      #backend = "numpyro",  
+      backend = "pscl",  
+      n_samples_warmup = 1000L, n_samples_mcmc = 1000L, subsample_method = "full", 
+      chain_method = "sequential", 
+      n_thin_by = 1L, 
+      n_chains = 2L), 
+    conda_env = "lpme"  # Specify your conda environment, used in this condition, backend="numpryo" 
+  )
+  mcmc_joint_results <- lpme(
+    Y = Yobs,
+    observables = as.data.frame(ObservablesMat),
+    n_boot = 0L,      # Reduced for demonstration
+    n_partition = 1L, # Reduced for demonstration
+    estimation_method = "mcmc_joint",
+    mcmc_control = list(
+      backend = "numpyro",  
+      n_samples_warmup = 1000L, n_samples_mcmc = 1000L, subsample_method = "full", 
+      chain_method = "sequential", 
+      n_thin_by = 1L, 
+      n_chains = 2L), 
+    conda_env = "lpme"  # Specify your conda environment, used in this condition, backend="numpryo" 
+  )
+
   # compare 
   summary(results)
   summary(mcmc_results)
+  summary(mcmc_joint_results)
+  summary(mcmc_overimputation_results)
 
 }

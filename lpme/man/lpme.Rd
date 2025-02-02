@@ -14,7 +14,7 @@ lpme(
   boot_basis = 1:length(Y),
   return_intermediaries = TRUE,
   ordinal = FALSE,
-  estimation_method = "emIRT",
+  estimation_method = "em",
   mcmc_control = list(backend = "numpyro", n_samples_warmup = 500L, n_samples_mcmc =
     1000L, batch_size = 512L, chain_method = "parallel", subsample_method = "full",
     n_thin_by = 1L, n_chains = 2L),
@@ -43,10 +43,10 @@ lpme(
 
 \item{estimation_method}{Character specifying the estimation approach. Options include:
 \itemize{
-\item "emIRT" (default): Uses expectation-maximization via \code{emIRT} package. Supports both binary (via \code{emIRT::binIRT}) and ordinal (via \code{emIRT::ordIRT}) indicators.
-\item "MCMC": Markov Chain Monte Carlo estimation using either \code{pscl::ideal} (R backend) or \code{numpyro} (Python backend)
-\item "MCMCFull": Full Bayesian model that simultaneously estimates latent variables and outcome relationship using \code{numpyro}
-\item "MCMCOverImputation": Two-stage MCMC approach with measurement error correction via over-imputation
+\item "em" (default): Uses expectation-maximization via \code{emIRT} package. Supports both binary (via \code{emIRT::binIRT}) and ordinal (via \code{emIRT::ordIRT}) indicators.
+\item "mcmc": Markov Chain Monte Carlo estimation using either \code{pscl::ideal} (R backend) or \code{numpyro} (Python backend)
+\item "mcmc_joint": Full Bayesian model that simultaneously estimates latent variables and outcome relationship using \code{numpyro}
+\item ""mcmc_overimputation"": Two-stage MCMC approach with measurement error correction via over-imputation
 }}
 
 \item{mcmc_control}{A list indicating parameter specifications if MCMC used. 

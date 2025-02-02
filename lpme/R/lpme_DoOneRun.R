@@ -8,10 +8,10 @@
 #' @param make_observables_groupings Logical. If TRUE, creates dummy variables for each level of the observable indicators. Default is FALSE.
 #' @param estimation_method Character specifying the estimation approach. Options include:
 #' \itemize{
-#' \item "emIRT" (default): Uses expectation-maximization via \code{emIRT} package. Supports both binary (via \code{emIRT::binIRT}) and ordinal (via \code{emIRT::ordIRT}) indicators.
-#' \item "MCMC": Basic Markov Chain Monte Carlo estimation using either \code{pscl::ideal} (R backend) or \code{numpyro} (Python backend)
-#' \item "MCMCFull": Full Bayesian model that simultaneously estimates latent variables and outcome relationship using \code{numpyro}
-#' \item "MCMCOverImputation": Two-stage MCMC approach with measurement error correction via over-imputation
+#' \item "em" (default): Uses expectation-maximization via \code{emIRT} package. Supports both binary (via \code{emIRT::binIRT}) and ordinal (via \code{emIRT::ordIRT}) indicators.
+#' \item "mcmc": Markov Chain Monte Carlo estimation using either \code{pscl::ideal} (R backend) or \code{numpyro} (Python backend)
+#' \item "mcmc_joint": Joint Bayesian model that simultaneously estimates latent variables and outcome relationship using \code{numpyro}
+#' \item "mcmc_overimputation": Two-stage MCMC approach with measurement error correction via over-imputation
 #' }
 #' @param mcmc_control A list indicating parameter specifications if MCMC used. 
 #' \itemize{
@@ -107,7 +107,7 @@ lpme_onerun <- function( Y,
                          observables, 
                          observables_groupings = colnames(observables),
                          make_observables_groupings = FALSE, 
-                         estimation_method = "emIRT", 
+                         estimation_method = "em", 
                          mcmc_control = list(
                            backend = "numpyro",  # will override to use NumPyro-based MCMC
                            n_samples_warmup = 500L,
@@ -124,6 +124,7 @@ lpme_onerun <- function( Y,
   INIT_SCALER <- 1/10
   Bayesian_OLSSE_InnerNormed <- Bayesian_OLSCoef_InnerNormed <- NA; 
   Bayesian_OLSSE_OuterNormed <- Bayesian_OLSCoef_OuterNormed <- NA;
+  FullBayesianSlope_mean <- FullBayesianSlope_std <- NA
   items.split1_names <- sample(unique(observables_groupings), 
                                size = floor(length(unique(observables_groupings))/2), replace=FALSE)
   items.split2_names <- unique(observables_groupings)[! (observables_groupings %in% items.split1_names)]
@@ -142,7 +143,7 @@ lpme_onerun <- function( Y,
     }
     
     # first, do emIRT
-    if(estimation_method == "emIRT"){
+    if(estimation_method == "em"){
       x_init <- scale(apply( observables_, 1, function(x){ mean(f2n(x), na.rm=TRUE)})) * INIT_SCALER
 
       if(ordinal){
@@ -187,8 +188,9 @@ lpme_onerun <- function( Y,
       }
     }
     
-    if( grepl(estimation_method, pattern = "MCMC") & mcmc_control$backend == "pscl" ){
-      if(estimation_method == "MCMC" ){
+    if( grepl(estimation_method, pattern = "mcmc") & mcmc_control$backend == "pscl" ){
+      if(estimation_method == "mcmc_joint"){stop('Must use numpyro with option: estimation_method="mcmc_joint"')}
+      if(estimation_method == "mcmc" ){
         t0_ <- Sys.time()
         startval_ <- rowMeans( observables_ )
         maxiter_ <- mcmc_control$n_samples_mcmc + mcmc_control$n_samples_warmup
@@ -208,22 +210,22 @@ lpme_onerun <- function( Y,
         # mean(pscl_ideal$xbar); sd(pscl_ideal$xbar) # confirm 0 and 1 
         x.est_MCMC <- x.est_ <- pscl_ideal$xbar; s_past <- 1 # summary(lm(Y~x.est_))
         if( split_ == "" ){
-          RescaledAbilities  <- t(pscl_ideal$x[,,1])
-          #Bayesian_OLSCoef_OuterNormed <- apply(RescaledAbilities, 2, function(x_){ coef(lm(Y~x_))[2]}) # simple MOC 
-          Bayesian_OLSCoef_OuterNormed <- apply(RescaledAbilities, 2, function(x_){ 
+          RescaledAbilities_OuterNormed  <- t(pscl_ideal$x[,,1])
+          #Bayesian_OLSCoef_OuterNormed <- apply(RescaledAbilities_OuterNormed, 2, function(x_){ coef(lm(Y~x_))[2]}) # simple MOC 
+          Bayesian_OLSCoef_OuterNormed <- apply(RescaledAbilities_OuterNormed, 2, function(x_){ 
             VCovHat <- sandwich::vcovHC( myModel <- lm(Y~x_), type = "HC3" ) 
             coef_ <- mvtnorm::rmvnorm(n = 1, mean = coef(myModel), sigma = VCovHat)[1,2]
           } ) # complicated MOC 
           
-          # summary( apply(RescaledAbilities, 2, sd) ) 
-          # sd(rowMeans(RescaledAbilities));mean(rowMeans(RescaledAbilities)) # confirm sanity value of 1, 0
+          # summary( apply(RescaledAbilities_outer, 2, sd) ) 
+          # sd(rowMeans(RescaledAbilities_outer));mean(rowMeans(RescaledAbilities_outer)) # confirm sanity value of 1, 0
           # hist( Bayesian_OLSCoef_OuterNormed ); summary( Bayesian_OLSCoef_OuterNormed)
           Bayesian_OLSSE_OuterNormed <- sd( Bayesian_OLSCoef_OuterNormed ) 
           Bayesian_OLSCoef_OuterNormed <- mean( Bayesian_OLSCoef_OuterNormed )
           
           # InnerNormed
-          RescaledAbilities  <- ( apply(t(pscl_ideal$x[,,1]), 2, function(x_){scale(x_)})  ) 
-          Bayesian_OLSCoef_InnerNormed <- apply(RescaledAbilities, 2, function(x_){ 
+          RescaledAbilities_InnerNormed  <- ( apply(t(pscl_ideal$x[,,1]), 2, function(x_){scale(x_)})  ) 
+          Bayesian_OLSCoef_InnerNormed <- apply(RescaledAbilities_InnerNormed, 2, function(x_){ 
             VCovHat <- sandwich::vcovHC( myModel <- lm(Y~x_), type = "HC3" ) 
             coef_ <- mvtnorm::rmvnorm(n = 1, mean = coef(myModel), sigma = VCovHat)[1,2]
           } ) # complicated MOC 
@@ -234,7 +236,7 @@ lpme_onerun <- function( Y,
           Bayesian_OLSCoef_InnerNormed <- mean( Bayesian_OLSCoef_InnerNormed )
         }
       }
-      if(estimation_method == "MCMCOverImputation" & split_ == ""){
+      if(estimation_method == "mcmc_overimputation" & split_ == ""){
         t0_ <- Sys.time()
         startval_ <- rowMeans( observables_ )
         maxiter_ <- mcmc_control$n_samples_mcmc + mcmc_control$n_samples_warmup
@@ -326,11 +328,11 @@ lpme_onerun <- function( Y,
         }
         message(sprintf("\n Overimputation Runtime: %.3f min",  tdiff_ <- as.numeric(difftime(Sys.time(),  t0_, units = "secs"))/60))
       }
-      if(estimation_method == "MCMCFull" & split_ == ""){
+      if(estimation_method == "mcmc_joint" & split_ == ""){
         ## ?? 
       }
     }
-    if( grepl(estimation_method, pattern = "MCMC") & mcmc_control$backend == "numpyro" ){
+    if( grepl(estimation_method, pattern = "mcmc") & mcmc_control$backend == "numpyro" ){
         if(!"jax" %in% ls(envir = lpme_env)){ initialize_jax(conda_env, conda_env_required) }
         
         # Construct for annotating conditionally independent variables.
@@ -409,7 +411,7 @@ lpme_onerun <- function( Y,
                 })
                 
                 # If doing a full regression on Y:
-                if (estimation_method == "MCMCFull") {
+                if (estimation_method == "mcmc_joint") {
                   Y_intercept <- lpme_env$numpyro$sample("YModel_intercept",
                                                          lpme_env$dist$Normal(0, 1))
                   Y_slope <- lpme_env$numpyro$sample("YModel_slope",
@@ -469,14 +471,15 @@ lpme_onerun <- function( Y,
               eps_difficulty <- lpme_env$numpyro$sample("eps_difficulty",
                                                         lpme_env$dist$Normal(0, 1))
               difficulty <- lpme_env$numpyro$deterministic("difficulty", 
-                                        (mu_difficulty + sigma_difficulty * eps_difficulty)[NULL,])
+                                         (eps_difficulty)[NULL,]) 
+                                        #(mu_difficulty + sigma_difficulty * eps_difficulty)[NULL,]) 
 
               # discrimination <- lpme_env$numpyro$sample("discrimination", lpme_env$dist$HalfNormal(2))
               eps_log_discrimination <- lpme_env$numpyro$sample("eps_log_discrimination", 
-                                                                lpme_env$dist$Normal(0, 1))
-              log_discrimination <-  mu_log_discrimination + sigma_log_discrimination * eps_log_discrimination
+                                                                lpme_env$dist$Normal(0.5, 2))
               discrimination <- lpme_env$numpyro$deterministic("discrimination", 
-                                                lpme_env$jax$nn$softplus(log_discrimination)[NULL,])
+                                        lpme_env$jax$nn$softplus(eps_log_discrimination)[NULL,]) 
+                                        #lpme_env$jax$nn$softplus(mu_log_discrimination + sigma_log_discrimination * eps_log_discrimination)[NULL,]) 
             })
             
             # Construct logits using the new 'ability' & 'difficulty'
@@ -489,8 +492,8 @@ lpme_onerun <- function( Y,
                 lpme_env$numpyro$sample("Xlik", lpme_env$dist$Bernoulli(logits = Xprobs), obs = X)
               }) })
             
-            # If you are using the outcome portion in "MCMCFull" mode:
-            if(estimation_method == "MCMCFull"){
+            # If you are using the outcome portion in "mcmc_joint" mode:
+            if(estimation_method == "mcmc_joint"){
               Y_intercept <- lpme_env$numpyro$sample("YModel_intercept",
                                                      lpme_env$dist$Normal(0, 1))
               Y_slope <- lpme_env$numpyro$sample("YModel_slope",
@@ -539,8 +542,7 @@ lpme_onerun <- function( Y,
       
       # set initial parameters 
       UseEMInits <- FALSE
-      # ability_init <- lpme_env$jnp$array(x_init<- scale(rowMeans(observables_))*INIT_SCALER )$astype(pdtype_)
-      ability_init <- lpme_env$jnp$broadcast_to(lpme_env$jnp$array(x_init<- (x.est_EM))$astype(pdtype_), list(mcmc_control$n_chains, N, 1L))
+      ability_init <- lpme_env$jnp$broadcast_to(lpme_env$jnp$array(x_init<- (scale(rowMeans(observables_))*INIT_SCALER))$astype(pdtype_), list(mcmc_control$n_chains, N, 1L))
       if(UseEMInits){ ability_init <- lpme_env$jnp$broadcast_to(lpme_env$jnp$array( x_init<- scale(rowMeans(observables_))*INIT_SCALER )$astype(pdtype_), list(mcmc_control$n_chains, N, 1L)) } 
       
       difficulty_init <- lpme_env$jnp$array(matrix(rnorm(K*mcmc_control$n_chains,mean=0,sd=1/sqrt(K)),nrow=mcmc_control$n_chains) )$astype(pdtype_)
@@ -580,7 +582,6 @@ lpme_onerun <- function( Y,
       # Calculate posterior means
       AbilityMean <- rowMeans(  ExtractAbil(PosteriorDraws$ability) )
       DifficultyMean <- as.matrix(lpme_env$np$array(lpme_env$jnp$mean(PosteriorDraws$difficulty,0L:1L))) #  colMeans( as.matrix(lpme_env$np$array(PosteriorDraws$difficulty)) )
-      DiscriminationMean <- as.matrix(lpme_env$np$array(lpme_env$jnp$mean(PosteriorDraws$discrimination,0L:1L))) # colMeans( as.matrix(lpme_env$np$array(PosteriorDraws$discrimination)) )
       
       # plot(scale(x.true[i_sampled]),scale(AbilityMean))
       # cor(x.true[i_sampled],AbilityMean)
@@ -591,13 +592,40 @@ lpme_onerun <- function( Y,
                 lpme_env$jnp$reshape( PosteriorDraws$ability, list(mcmc_control$n_chains, ai(mcmc_control$n_samples_mcmc/mcmc_control$n_thin_by), N)), 
                 bias = FALSE  ), na.rm=T)/(ai(mcmc_control$n_chains*mcmc_control$n_samples_mcmc/mcmc_control$n_thin_by) ) ))
       plot(lpme_env$np$array(PosteriorDraws$ability[1,,1,1]))
-      if(estimation_method == "MCMCFull" & split_ == ""){ # full bayesian model 
-        RescaledAbilities <- (ExtractAbil(PosteriorDraws$ability)-mean(AbilityMean))/sd(AbilityMean)
-        #ExtractAbil(PosteriorDraws$ability,return_sign=TRUE)
-        # plot(RescaledAbilities[,1],RescaledAbilities[,2])
-        #SignSwap <- sign(cor(RescaledAbilities)[1,])
-        #AbilityMean <- rowMeans(  ExtractAbil(PosteriorDraws$ability)*SignSwap )
-        Bayesian_OLSCoef_OuterNormed <- c(as.matrix(lpme_env$np$array(PosteriorDraws$YModel_slope)))/sd(AbilityMean) # CONFIRM 
+      if(estimation_method == "mcmc" & split_ == ""){ # method of compositions 
+        # OuterNormed - this is what ideal does 
+        RescaledAbilities_OuterNormed  <- (ExtractAbil(PosteriorDraws$ability)-mean(AbilityMean))/sd(AbilityMean)
+        #Bayesian_OLSCoef_OuterNormed <- apply(RescaledAbilities, 2, function(x_){ coef(lm(Y~x_))[2]}) # simple MOC 
+        Bayesian_OLSCoef_OuterNormed <- apply(RescaledAbilities_OuterNormed, 2, function(x_){ 
+          VCovHat <- sandwich::vcovHC( myModel <- lm(Y~x_), type = "HC3" ) 
+          coef_ <- mvtnorm::rmvnorm(n = 1, mean = coef(myModel), sigma = VCovHat)[1,2]
+          } ) # complicated MOC 
+        
+        # summary( apply(RescaledAbilities_OuterNormed, 2, sd) ) 
+        # sd(rowMeans(RescaledAbilities_OuterNormed));mean(rowMeans(RescaledAbilities_OuterNormed)) # confirm sanity value of 1, 0
+        # hist( Bayesian_OLSCoef_OuterNormed ); summary( Bayesian_OLSCoef_OuterNormed)
+        Bayesian_OLSSE_OuterNormed <- sd( Bayesian_OLSCoef_OuterNormed ) 
+        Bayesian_OLSCoef_OuterNormed <- mean( Bayesian_OLSCoef_OuterNormed )
+        
+        # InnerNormed
+        RescaledAbilities_InnerNormed  <- ( apply(ExtractAbil(PosteriorDraws$ability), 2, function(x_){scale(x_)})  ) 
+        #Bayesian_OLSCoef_InnerNormed <- apply(RescaledAbilities_InnerNormed, 2, function(x_){ coef(lm(Y~x_))[2]}) # simple MOC 
+        Bayesian_OLSCoef_InnerNormed <- apply(RescaledAbilities_InnerNormed, 2, function(x_){ 
+          VCovHat <- sandwich::vcovHC( myModel <- lm(Y~x_), type = "HC3" ) 
+          coef_ <- mvtnorm::rmvnorm(n = 1, mean = coef(myModel), sigma = VCovHat)[1,2]
+        } ) # complicated MOC 
+        # apply(RescaledAbilities_InnerNormed, 2, sd)
+        # sd(rowMeans(RescaledAbilities_InnerNormed));mean(rowMeans(RescaledAbilities_InnerNormed)) # confirm sanity value of 1, 0
+        # hist( Bayesian_OLSCoef_InnerNormed ); summary( Bayesian_OLSCoef_InnerNormed )
+        Bayesian_OLSSE_InnerNormed <- sd( Bayesian_OLSCoef_InnerNormed ) 
+        Bayesian_OLSCoef_InnerNormed <- mean( Bayesian_OLSCoef_InnerNormed )
+      }
+      if(estimation_method == "mcmc_joint" & split_ == ""){ # full bayesian model 
+        #RescaledAbilities <- (ExtractAbil(PosteriorDraws$ability)-mean(AbilityMean))/sd(AbilityMean)
+
+        # note: multiplication of coefficient by sd generates interpretation of coeff 
+        # as representing change in outcome associated with 1 unit deviation
+        Bayesian_OLSCoef_OuterNormed <- c(as.matrix(lpme_env$np$array(PosteriorDraws$YModel_slope))) * sd(AbilityMean)
         # sd(rowMeans(RescaledAbilities));mean(rowMeans(RescaledAbilities)) # confirm sanity values of 1,0 
         # hist(Bayesian_OLSCoef_OuterNormed);abline(v=0.4); summary( Bayesian_OLSCoef_OuterNormed )
         #Bayesian_OLSCoef_OuterNormed[Bayesian_OLSCoef_OuterNormed<0] <- -1*Bayesian_OLSCoef_OuterNormed[Bayesian_OLSCoef_OuterNormed<0]
@@ -605,50 +633,16 @@ lpme_onerun <- function( Y,
         Bayesian_OLSCoef_OuterNormed <- mean( Bayesian_OLSCoef_OuterNormed )
         
         InnerSDs <- apply(ExtractAbil(PosteriorDraws$ability), 2, sd)
-        RescaledAbilities <- ( apply(ExtractAbil(PosteriorDraws$ability), 2, function(x_){scale(x_)})  ) 
-        Bayesian_OLSCoef_InnerNormed <- c(as.matrix(lpme_env$np$array(PosteriorDraws$YModel_slope)))/InnerSDs
-        Bayesian_OLSCoef_InnerNormed[Bayesian_OLSCoef_InnerNormed<0] <- -1*Bayesian_OLSCoef_InnerNormed[Bayesian_OLSCoef_InnerNormed<0]
+        Bayesian_OLSCoef_InnerNormed <- c(as.matrix(lpme_env$np$array(PosteriorDraws$YModel_slope))) * InnerSDs
         # sd(rowMeans(RescaledAbilities));mean(rowMeans(RescaledAbilities)) # confirm sanity values of 1,0 
         # hist(Bayesian_OLSCoef_InnerNormed); abline(v=0.4,lwd=2); summary( Bayesian_OLSCoef_InnerNormed )
-        Bayesian_OLSSE_InnerNormed <- sd( Bayesian_OLSCoef_InnerNormed ) 
-        Bayesian_OLSCoef_InnerNormed <- mean( Bayesian_OLSCoef_InnerNormed )
-      }
-      if(estimation_method == "MCMC" & split_ == ""){ # method of compositions 
-        # OuterNormed - this is what ideal does 
-        RescaledAbilities  <- (ExtractAbil(PosteriorDraws$ability)-mean(AbilityMean))/sd(AbilityMean)
-        #Bayesian_OLSCoef_OuterNormed <- apply(RescaledAbilities, 2, function(x_){ coef(lm(Y~x_))[2]}) # simple MOC 
-        Bayesian_OLSCoef_OuterNormed <- apply(RescaledAbilities, 2, function(x_){ 
-          VCovHat <- sandwich::vcovHC( myModel <- lm(Y~x_), type = "HC3" ) 
-          coef_ <- mvtnorm::rmvnorm(n = 1, mean = coef(myModel), sigma = VCovHat)[1,2]
-          } ) # complicated MOC 
-        
-        # summary( apply(RescaledAbilities, 2, sd) ) 
-        # sd(rowMeans(RescaledAbilities));mean(rowMeans(RescaledAbilities)) # confirm sanity value of 1, 0
-        # hist( Bayesian_OLSCoef_OuterNormed ); summary( Bayesian_OLSCoef_OuterNormed)
-        Bayesian_OLSSE_OuterNormed <- sd( Bayesian_OLSCoef_OuterNormed ) 
-        Bayesian_OLSCoef_OuterNormed <- mean( Bayesian_OLSCoef_OuterNormed )
-        
-        # InnerNormed
-        RescaledAbilities  <- ( apply(ExtractAbil(PosteriorDraws$ability), 2, function(x_){scale(x_)})  ) 
-        #Bayesian_OLSCoef_InnerNormed <- apply(RescaledAbilities, 2, function(x_){ coef(lm(Y~x_))[2]}) # simple MOC 
-        Bayesian_OLSCoef_InnerNormed <- apply(RescaledAbilities, 2, function(x_){ 
-          VCovHat <- sandwich::vcovHC( myModel <- lm(Y~x_), type = "HC3" ) 
-          coef_ <- mvtnorm::rmvnorm(n = 1, mean = coef(myModel), sigma = VCovHat)[1,2]
-        } ) # complicated MOC 
-        # apply(RescaledAbilities, 2, sd)
-        # sd(rowMeans(RescaledAbilities));mean(rowMeans(RescaledAbilities)) # confirm sanity value of 1, 0
-        # hist( Bayesian_OLSCoef_InnerNormed ); summary( Bayesian_OLSCoef_InnerNormed )
         Bayesian_OLSSE_InnerNormed <- sd( Bayesian_OLSCoef_InnerNormed ) 
         Bayesian_OLSCoef_InnerNormed <- mean( Bayesian_OLSCoef_InnerNormed )
       }
       
       # rescale 
       x.est_MCMC <- x.est_ <- as.matrix(scale(AbilityMean)); s_past <- 1
-      # as.matrix(lpme_env$np$array(PosteriorDraws$ability))[,1:3]
-      # plot(DifficultyMean,DiscriminationMean)
-      # plot(x.est_MCMC, x.est_EM); abline(a=0,b=1); cor(x.est_MCMC, x.est_EM)
-      
-      if(estimation_method == "MCMCOverImputation" & split_ == ""){ 
+      if(estimation_method == "mcmc_overimputation" & split_ == ""){ 
         for(outType_ in c("Outer","Inner")){ 
           # file:///Users/cjerzak/Dropbox/LatentMeasures/literature/CAUGHEY-ps8-solution.html
           if(outType_ == "Outer"){

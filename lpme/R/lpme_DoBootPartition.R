@@ -13,10 +13,10 @@
 #' @param return_intermediaries Logical. If TRUE, returns intermediate results. Default is TRUE.
 #' @param estimation_method Character specifying the estimation approach. Options include:
 #' \itemize{
-#' \item "emIRT" (default): Uses expectation-maximization via \code{emIRT} package. Supports both binary (via \code{emIRT::binIRT}) and ordinal (via \code{emIRT::ordIRT}) indicators.
-#' \item "MCMC": Markov Chain Monte Carlo estimation using either \code{pscl::ideal} (R backend) or \code{numpyro} (Python backend)
-#' \item "MCMCFull": Full Bayesian model that simultaneously estimates latent variables and outcome relationship using \code{numpyro}
-#' \item "MCMCOverImputation": Two-stage MCMC approach with measurement error correction via over-imputation
+#' \item "em" (default): Uses expectation-maximization via \code{emIRT} package. Supports both binary (via \code{emIRT::binIRT}) and ordinal (via \code{emIRT::ordIRT}) indicators.
+#' \item "mcmc": Markov Chain Monte Carlo estimation using either \code{pscl::ideal} (R backend) or \code{numpyro} (Python backend)
+#' \item "mcmc_joint": Full Bayesian model that simultaneously estimates latent variables and outcome relationship using \code{numpyro}
+#' \item ""mcmc_overimputation"": Two-stage MCMC approach with measurement error correction via over-imputation
 #' }
 #' @param mcmc_control A list indicating parameter specifications if MCMC used. 
 #' \itemize{
@@ -128,7 +128,7 @@ lpme <- function(Y,
                  boot_basis = 1:length(Y),
                  return_intermediaries = TRUE, 
                  ordinal = FALSE, 
-                 estimation_method = "emIRT",
+                 estimation_method = "em",
                  mcmc_control = list(
                    backend = "numpyro",  # will override to use NumPyro-based MCMC
                    n_samples_warmup = 500L,
@@ -251,9 +251,8 @@ lpme <- function(Y,
   # median (or mean) across partitions for the "first" bootstrap, etc.).
   # Then we also produce an overall standard error across the bootstraps,
   # lower/upper bounds, etc.
-  
-  takeforse <- which(c(LatentRunResults$Intermediary_BootIndex)!=1)
 
+  takeforse <- which(c(LatentRunResults$Intermediary_BootIndex)!=1)
   results <- list(
       # Naive OLS
       "ols_coef"   = (m1_ <- tapply(
