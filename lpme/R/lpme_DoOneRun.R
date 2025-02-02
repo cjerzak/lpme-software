@@ -589,7 +589,7 @@ lpme_onerun <- function( Y,
       message(sprintf("\n MCMC Runtime: %.3f min",  tdiff_ <- as.numeric(difftime(Sys.time(),  t0_, units = "secs"))/60))
       message(sprintf("Mean(N-eff of nMCMC %%): %.2f%% \n", 100*mean(
               lpme_env$numpyro$diagnostics$effective_sample_size(# Computes effective sample size of input x, where the first dimension of x is chain dimension and the second dimension of x is draw dimension.
-                lpme_env$jnp$reshape( PosteriorDraws$ability, list(mcmc_control$n_chains, ai(mcmc_control$n_samples_mcmc/mcmc_control$n_thin_by), N)), 
+                lpme_env$jnp$reshape( PosteriorDraws$ability, list(mcmc_control$n_chains, ai(mcmc_control$n_samples_mcmc/mcmc_control$n_thin_by), N))
                 ), na.rm=T)/(ai(mcmc_control$n_chains*mcmc_control$n_samples_mcmc/mcmc_control$n_thin_by) ) ))
       plot(lpme_env$np$array(PosteriorDraws$ability[1,,1,1]))
       if(estimation_method == "mcmc" & split_ == ""){ # method of compositions 
