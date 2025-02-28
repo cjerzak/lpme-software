@@ -4,6 +4,7 @@
 #'
 #' @param Y A vector of observed outcome variables
 #' @param observables A matrix of observable indicators used to estimate the latent variable
+#' @param orientation_signs (optional) A numeric vector of length equal to the number of columns in `observables`, containing 1 or -1 to indicate the desired orientation of each column. If provided, each column of `observables` will be multiplied by the corresponding sign before analysis. Default is NULL (no orientation applied).
 #' @param observables_groupings A vector specifying groupings for the observable indicators. Default is column names of observables.
 #' @param make_observables_groupings Logical. If TRUE, creates dummy variables for each level of the observable indicators. Default is FALSE.
 #' @param n_boot Integer. Number of bootstrap iterations. Default is 32.
@@ -16,7 +17,7 @@
 #' \item "em" (default): Uses expectation-maximization via \code{emIRT} package. Supports both binary (via \code{emIRT::binIRT}) and ordinal (via \code{emIRT::ordIRT}) indicators.
 #' \item "mcmc": Markov Chain Monte Carlo estimation using either \code{pscl::ideal} (R backend) or \code{numpyro} (Python backend)
 #' \item "mcmc_joint": Full Bayesian model that simultaneously estimates latent variables and outcome relationship using \code{numpyro}
-#' \item ""mcmc_overimputation"": Two-stage MCMC approach with measurement error correction via over-imputation
+#' \item "mcmc_overimputation": Two-stage MCMC approach with measurement error correction via over-imputation
 #' }
 #' @param mcmc_control A list indicating parameter specifications if MCMC used. 
 #' \itemize{
@@ -122,6 +123,7 @@
 lpme <- function(Y,
                  observables, 
                  observables_groupings = colnames(observables),
+                 orientation_signs = NULL,
                  make_observables_groupings = FALSE,
                  n_boot = 32L, 
                  n_partition = 10L, 
@@ -136,11 +138,31 @@ lpme <- function(Y,
                    batch_size = 512L, 
                    chain_method = "parallel", 
                    subsample_method = "full", 
+                   anchor_parameter_id = NULL, 
                    n_thin_by = 1L, 
                    n_chains = 2L), 
                  conda_env = "lpme", 
                  conda_env_required = TRUE
                  ){ 
+  
+  # Orient the observables if orientation_signs are provided
+  if (!is.null(orientation_signs)) {
+    if (!is.numeric(orientation_signs) || length(orientation_signs) != ncol(observables)) {
+      stop("orientation_signs must be a numeric vector of length equal to ncol(observables).")
+    }
+    if (!all(orientation_signs %in% c(1, -1))) {
+      stop("orientation_signs must contain only 1 and -1.")
+    }
+    if(!all(observables %in% c(0,1))){
+      stop("Re-orientation in the non-binary case not yet implementated")
+    }
+    if(all(observables %in% c(0,1))){
+      observables <- sapply(1:ncol(observables), function(d_){
+        observables[, d_] <- orientation_signs[d_] * observables[, d_] + 
+                                    (1 - orientation_signs[d_]) / 2
+      })
+    }
+  }
   
   for(booti_ in seq_len(n_boot + 1L)){
     # if not the first iteration, sample bootstrap indices

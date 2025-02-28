@@ -102,6 +102,9 @@
 #' @importFrom sandwich vcovHC
 #' @importFrom mvtnorm rmvnorm
 #' @importFrom Amelia amelia
+#' @importFrom gtools quantcut
+#' @importFrom emIRT binIRT ordIRT
+#' @importFrom sensemakr extreme_robustness_value
 
 lpme_onerun <- function( Y,
                          observables, 
@@ -346,6 +349,7 @@ lpme_onerun <- function( Y,
         K <- ai(ncol(observables_))
         
         # Define the two-parameter IRT model using Matt's trick + subsampling
+        # Note: IRTModel_batch is depreciated 
         IRTModel_batch <- function(X, Y) {
             # Number of observations (rows) and items (columns)
             N <- X$shape[[1]]
@@ -458,6 +462,13 @@ lpme_onerun <- function( Y,
                                  (mu_ability + sigma_ability * eps_ability) )
             })
             
+            # If the user gave us an anchor_parameter_id, we convert it to 0-based
+            # for Python indexing. We will forcibly ensure difficulty[anchor_id] is > 0.
+            anchor_id <- NULL
+            if (!is.null(mcmc_control$anchor_parameter_id)) {
+              anchor_id <- as.integer(mcmc_control$anchor_parameter_id - 1L)  # R is 1-based, NumPyro is 0-based
+            }
+            
             # For difficulty, you might keep it simple or also do a non-centered param:
             mu_difficulty <- lpme_env$numpyro$sample("mu_difficulty",
                                                      lpme_env$dist$Normal(0, 2))
@@ -468,21 +479,31 @@ lpme_onerun <- function( Y,
             sigma_log_discrimination <- lpme_env$numpyro$sample("sigma_log_discrimination",
                                                                 lpme_env$dist$HalfNormal(0.5))
             with(lpme_env$numpyro$plate("columns", X$shape[[2]], dim = -1L), {  # D
-              eps_difficulty <- lpme_env$numpyro$sample("eps_difficulty",
+              difficulty_raw <- lpme_env$numpyro$sample("eps_difficulty",
                                                         lpme_env$dist$Normal(0, 1))
+              
+              # If anchor_id was specified, force difficulty for that item to be positive
+              difficulty_adjusted <- difficulty_raw
+              if( !is.null(anchor_id) ){
+                # Use at update to ensure the anchor difficulty is strictly positive
+                difficulty_adjusted <- difficulty_raw$at[anchor_id]$set(
+                  lpme_env$jax$nn$softplus(difficulty_raw[anchor_id])
+                )
+              }
               difficulty <- lpme_env$numpyro$deterministic("difficulty", 
-                                         (eps_difficulty)[NULL,]) 
-                                        #(mu_difficulty + sigma_difficulty * eps_difficulty)[NULL,]) 
+                                         (difficulty_adjusted)[NULL,]) # if NOT using centered parameterization
+                                        #(mu_difficulty + sigma_difficulty * difficulty_adjusted)[NULL,]) # if using centered parameterization
 
               # discrimination <- lpme_env$numpyro$sample("discrimination", lpme_env$dist$HalfNormal(2))
               eps_log_discrimination <- lpme_env$numpyro$sample("eps_log_discrimination", 
                                                                 lpme_env$dist$Normal(0.5, 2))
               discrimination <- lpme_env$numpyro$deterministic("discrimination", 
-                                        lpme_env$jax$nn$softplus(eps_log_discrimination)[NULL,]) 
-                                        #lpme_env$jax$nn$softplus(mu_log_discrimination + sigma_log_discrimination * eps_log_discrimination)[NULL,]) 
+                                        lpme_env$jax$nn$softplus(eps_log_discrimination)[NULL,]) # if NOT using centered parameterization
+                                        #lpme_env$jax$nn$softplus(mu_log_discrimination + sigma_log_discrimination * eps_log_discrimination)[NULL,]) # if using centered parameterization
             })
             
             # Construct logits using the new 'ability' & 'difficulty'
+            # note: discrimination constrained to be positive 
             Xprobs <- ( ability - difficulty ) * discrimination
             
             # Likelihood for X using a Bernoulli logit, wrapped in plates
@@ -536,8 +557,8 @@ lpme_onerun <- function( Y,
       )
       
       # run sampler with initialized abilities as COLMEANS of X (ASSUMPTION!)
-      #pdtype_ <- ddtype_ <- lpme_env$jnp$float64; lpme_env$jax$config$update("jax_enable_x64", TRUE) 
       pdtype_ <- ddtype_ <- lpme_env$jnp$float32; lpme_env$jax$config$update("jax_enable_x64", FALSE) 
+      #pdtype_ <- ddtype_ <- lpme_env$jnp$float64; lpme_env$jax$config$update("jax_enable_x64", TRUE) 
       #pdtype_ <- ddtype_ <- lpme_env$jnp$float16; lpme_env$jax$config$update("jax_enable_x64", FALSE) 
       
       # set initial parameters 
@@ -569,6 +590,8 @@ lpme_onerun <- function( Y,
         }))
         theAnchor <- which.max(x_init)
         abil <- apply(abil,2,function(x){
+                    # XXX here 
+                    #if(x[theAnchor] < 0){ x <- -1*x } # anchor based on anchor
                     if(x[theAnchor] < 0){ x <- -1*x } # anchor based on anchor 
                     return(x) })
         return( abil ) 
@@ -580,6 +603,9 @@ lpme_onerun <- function( Y,
       # plot( as.matrix( lpme_env$np$array( PosteriorDraws$discrimination ) )[1,,2])
       
       # Calculate posterior means
+      # ExtractAbil(PosteriorDraws$ability)
+      # plot(ExtractAbil(PosteriorDraws$ability)[1,],main="i=1")
+      # plot(ExtractAbil(PosteriorDraws$ability)[2,],main="i=1")
       AbilityMean <- rowMeans(  ExtractAbil(PosteriorDraws$ability) )
       DifficultyMean <- as.matrix(lpme_env$np$array(lpme_env$jnp$mean(PosteriorDraws$difficulty,0L:1L))) #  colMeans( as.matrix(lpme_env$np$array(PosteriorDraws$difficulty)) )
       
