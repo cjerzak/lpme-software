@@ -157,10 +157,12 @@ lpme <- function(Y,
       stop("Re-orientation in the non-binary case not yet implementated")
     }
     if(all(observables %in% c(0,1))){
+      colnames_observables <- colnames(observables)
       observables <- sapply(1:ncol(observables), function(d_){
         observables[, d_] <- orientation_signs[d_] * observables[, d_] + 
                                     (1 - orientation_signs[d_]) / 2
       })
+      colnames(observables) <- colnames_observables
     }
   }
   
