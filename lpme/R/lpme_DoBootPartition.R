@@ -4,7 +4,7 @@
 #'
 #' @param Y A vector of observed outcome variables
 #' @param observables A matrix of observable indicators used to estimate the latent variable
-#' @param orientation_signs (optional) A numeric vector of length equal to the number of columns in `observables`, containing 1 or -1 to indicate the desired orientation of each column. If provided, each column of `observables` will be multiplied by the corresponding sign before analysis. Default is NULL (no orientation applied).
+#' @param orientation_signs (optional) A numeric vector of length equal to the number of columns in `observables`, containing 1 or -1 to indicate the desired orientation of each column. If provided, each column of `observables` will be oriented by this sign before analysis. Default is NULL (no orientation applied).
 #' @param observables_groupings A vector specifying groupings for the observable indicators. Default is column names of observables.
 #' @param make_observables_groupings Logical. If TRUE, creates dummy variables for each level of the observable indicators. Default is FALSE.
 #' @param n_boot Integer. Number of bootstrap iterations. Default is 32.

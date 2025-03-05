@@ -12,7 +12,7 @@ Within an `R` session, you can install the development version of `lpme` from Gi
 ```
 # Install from GitHub
 # install.packages("devtools") 
-devtools::install_github("cjerzak/lpme/lpme-software")
+devtools::install_github("cjerzak/lpme-software/lpme")
 ```
 
 # Key Functions<a id="keyfxns"></a>
