@@ -8,6 +8,7 @@ lpme(
   Y,
   observables,
   observables_groupings = colnames(observables),
+  orientation_signs = NULL,
   make_observables_groupings = FALSE,
   n_boot = 32L,
   n_partition = 10L,
@@ -17,7 +18,7 @@ lpme(
   estimation_method = "em",
   mcmc_control = list(backend = "numpyro", n_samples_warmup = 500L, n_samples_mcmc =
     1000L, batch_size = 512L, chain_method = "parallel", subsample_method = "full",
-    n_thin_by = 1L, n_chains = 2L),
+    anchor_parameter_id = NULL, n_thin_by = 1L, n_chains = 2L),
   conda_env = "lpme",
   conda_env_required = TRUE
 )
@@ -28,6 +29,8 @@ lpme(
 \item{observables}{A matrix of observable indicators used to estimate the latent variable}
 
 \item{observables_groupings}{A vector specifying groupings for the observable indicators. Default is column names of observables.}
+
+\item{orientation_signs}{(optional) A numeric vector of length equal to the number of columns in `observables`, containing 1 or -1 to indicate the desired orientation of each column. If provided, each column of `observables` will be oriented by this sign before analysis. Default is NULL (no orientation applied).}
 
 \item{make_observables_groupings}{Logical. If TRUE, creates dummy variables for each level of the observable indicators. Default is FALSE.}
 
@@ -46,7 +49,7 @@ lpme(
 \item "em" (default): Uses expectation-maximization via \code{emIRT} package. Supports both binary (via \code{emIRT::binIRT}) and ordinal (via \code{emIRT::ordIRT}) indicators.
 \item "mcmc": Markov Chain Monte Carlo estimation using either \code{pscl::ideal} (R backend) or \code{numpyro} (Python backend)
 \item "mcmc_joint": Full Bayesian model that simultaneously estimates latent variables and outcome relationship using \code{numpyro}
-\item ""mcmc_overimputation"": Two-stage MCMC approach with measurement error correction via over-imputation
+\item "mcmc_overimputation": Two-stage MCMC approach with measurement error correction via over-imputation
 }}
 
 \item{mcmc_control}{A list indicating parameter specifications if MCMC used. 
