@@ -152,30 +152,53 @@ lpme_onerun <- function( Y,
       if(ordinal){
         observables__ <- apply(as.matrix(observables_),2,f2n)
         if( !all(c(observables__) %in% 1:3) ){
-          observables__ <- apply(observables__,2,function(x){ 
-            x_ <- as.numeric(gtools::quantcut(x, q = 3))
-            if(length(unique(x_)) != 3){ x_ <- as.numeric(cut(x, breaks = 3)) } 
-            return(x_) })
+          #observables__ <- apply(observables__,2,function(x){ 
+            #x_ <- as.numeric(gtools::quantcut(x, q = 3, labels = 1:3))
+            #if(length(unique(x_)) != 3){ x_ <- as.numeric(cut(x, breaks = 3)) } 
+            #return(x_) })
+          observables__ <- apply(observables__, 2, function(x){ 
+            r <- rank(x, ties.method = "average")
+            group <- ceiling(r / (length(x) / 3))
+            return(group)
+          })
         }
-        observables__[is.na(observables__)] <- 0
-        if( !all(apply(observables__,2,function(x)length(unique(x))) == 3)){
+        if( !all(apply(observables__,2,function(x)length(unique(x))) == 3) ){
           warning("Some observables mapped to binary, not ordinal values -- dropping those.")
-          observables__ <- observables__[,apply(observables__,2,function(x) length(unique(x)))!=3]
+          observables__ <- observables__[,which(apply(observables__,2,function(x){length(unique(x))})==3)]
+          # apply(observables__,2,table)
+          # colSums(apply(observables__,2,table))
+          # sum(observables__)
+          # summary(c(cor(observables__)[lower.tri(cor(observables__))]))
         }
+        observables__[is.na(observables__)] <- 0 # map missing to zero
+        
+        ## Generate starts and priors for ordered model
+        JJ <- ncol(observables__)
+        NN <- nrow(observables__)
+        cur <- vector(mode = "list")
+        cur$DD <- matrix(rep(0.5,JJ), ncol=1)
+        cur$tau <- matrix(rep(-0.5,JJ), ncol=1)
+        cur$beta <- matrix(runif(JJ,-1,1), ncol=1) 
+        cur$x <- matrix(runif(NN,-1,1), ncol=1) 
+        priors <- vector(mode = "list")
+        priors$x <- list(mu = matrix(0,1,1), sigma = matrix(1,1,1) )
+        priors$beta <- list(mu = matrix(0,2,1), sigma = matrix(diag(25,2),2,2))
+
         capture.output(
-          out_emIRT <- try(emIRT::ordIRT(
-            .rc      = observables__,
-            .starts  = list(
-                            "beta" = matrix(rnorm(ncol(observables__), sd = 0.1/sqrt(ncol(observables__))), ncol = 1),
-                            "x"    = matrix(x_init, ncol = 1),
-                            "tau"  = matrix(rnorm(ncol(observables__), mean = -0.5, sd = 0.1/sqrt(ncol(observables__))), ncol = 1),
-                            "DD"   = matrix(abs(rnorm(ncol(observables__), mean = 0.5, sd = 0.1/sqrt(ncol(observables__)))), ncol = 1)
-                          ),
-            .priors  = emIRT::makePriors(.N = nrow(observables__), .J = ncol(observables__), .D = 1), 
-            .control = list(threads = 1, verbose = TRUE, thresh = 1e-6)
-          ),TRUE)
+          out_emIRT <- try(emIRT::ordIRT(.rc = observables__,
+                                  .starts = cur,
+                                  .priors = priors,
+                                  .control = list(
+                                    threads = 1,
+                                    verbose = FALSE,
+                                    thresh = 1e-6,
+                                    maxit=300,
+                                    checkfreq=50
+                        )),TRUE)
         )
-        if("try-error" %in% class(out_emIRT)){ stop(out_emIRT) } 
+        if("try-error" %in% class(out_emIRT)){ 
+          stop(out_emIRT)
+        } 
         
         # Scale the final ideal points and store
         x.est_ <- scale(out_emIRT$means$x)

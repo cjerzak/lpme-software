@@ -190,17 +190,23 @@ lpme <- function(Y,
       message(sprintf("{booti_ %s of %s} -- {parti_ %s of %s}", booti_, n_boot+1, parti_, n_partition))
       
       # Run single analysis
-      LatentRunResults_ <- lpme_onerun(
-        Y[boot_indices],
-        observables[boot_indices,], 
-        observables_groupings = observables_groupings,
-        make_observables_groupings = make_observables_groupings, 
-        estimation_method = estimation_method, 
-        ordinal = ordinal, 
-        mcmc_control = mcmc_control, 
-        conda_env = conda_env,
-        conda_env_required = conda_env_required
-      )
+      rungood <- F;runcounter <- 0; while(!rungood){ 
+        runcounter <- runcounter + 1 
+        LatentRunResults_ <- try(lpme_onerun(
+          Y[boot_indices],
+          observables[boot_indices,], 
+          observables_groupings = observables_groupings,
+          make_observables_groupings = make_observables_groupings, 
+          estimation_method = estimation_method, 
+          ordinal = ordinal, 
+          mcmc_control = mcmc_control, 
+          conda_env = conda_env,
+          conda_env_required = conda_env_required
+        ),T) 
+        if(!"try-error" %in% class(LatentRunResults_)){ rungood <- TRUE }
+        if(runcounter > 100){ stop("100 partition attempts failed... check data") }
+      }
+      
       
       # Tag each result with partition / bootstrap indices
       LatentRunResults_$PartitionIndex <- parti_
