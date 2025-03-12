@@ -153,7 +153,7 @@ lpme <- function(Y,
     if (!all(orientation_signs %in% c(1, -1))) {
       stop("orientation_signs must contain only 1 and -1.")
     }
-    if(!all(observables %in% c(0,1))){
+    if(!all(unlist(observables) %in% c(0,1))){
       stop("Re-orientation in the non-binary case not yet implementated")
     }
     if(all(observables %in% c(0,1))){
