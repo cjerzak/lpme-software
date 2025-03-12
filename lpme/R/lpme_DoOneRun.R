@@ -152,9 +152,16 @@ lpme_onerun <- function( Y,
       if(ordinal){
         observables__ <- apply(as.matrix(observables_),2,f2n)
         if( !all(c(observables__) %in% 1:3) ){
-          observables__ <- apply(observables__,2,function(x){ as.numeric(gtools::quantcut(x, q = 3)) })
+          observables__ <- apply(observables__,2,function(x){ 
+            x_ <- as.numeric(gtools::quantcut(x, q = 3))
+            if(length(unique(x_)) != 3){ x_ <- as.numeric(cut(x, breaks = 3)) } 
+            return(x_) })
         }
         observables__[is.na(observables__)] <- 0
+        if( !all(apply(observables__,2,function(x)length(unique(x))) == 3)){
+          warning("Some observables mapped to binary, not ordinal values -- dropping those.")
+          observables__ <- observables__[,apply(observables__,2,function(x) length(unique(x)))!=3]
+        }
         capture.output(
           out_emIRT <- try(emIRT::ordIRT(
             .rc      = observables__,
