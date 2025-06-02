@@ -1,4 +1,4 @@
-# `lpme`:  R Packge for Dealing with Latent Predictor Measurement Error Under Identification Restrictions
+# `lpme`:  R Package for Dealing with Latent Predictor Measurement Error Under Identification Restrictions
 [**Installation**](#installation)
 | [**Key Functions**](#keyfxns)
 | [**References**](#references)
@@ -17,7 +17,7 @@ devtools::install_github("cjerzak/lpme-software/lpme")
 
 # Key Functions<a id="keyfxns"></a>
 ## `lpme_onerun`
-`lpme_OneRun` performs a single run of latent variable analysis with measurement error correction (no bootstrapping; 1 split sample partition): 
+`lpme_onerun` performs a single run of latent variable analysis with measurement error correction (no bootstrapping; 1 split sample partition): 
 ```
 # Generate data 
 Yobs <- rnorm(1000)
@@ -25,11 +25,11 @@ ObservablesMat <- matrix(sample(c(0,1), 1000*10, replace = T), ncol = 10)
 
 # One run of latent error correction method 
 lpme::lpme_onerun(Y = Yobs, 
-                  observables_mat = ObservablesMat)
+                  observables = ObservablesMat)
 ```
 
 ## `lpme`
-`lpme` implements a bootstrap analysis for latent variable models with measurement error correction. We average over `nPartition` split sample partitions. 
+`lpme` implements a bootstrap analysis for latent variable models with measurement error correction. We average over `n_partition` split sample partitions. 
 ```
 # Generate data
 Yobs <- rnorm(1000)
@@ -38,7 +38,7 @@ ObservablesMat <- matrix(sample(c(0,1), 1000*10, replace = T), ncol = 10)
 # Latent error correction method, with partitioning and bootstrap
 results <- lpme::lpme(
     Y = Yobs,
-    observables_mat = ObservablesMat,
+    observables = ObservablesMat,
     n_boot = 32L,
     n_partition = 10L
 )
@@ -48,7 +48,7 @@ print(results)
 ```
 
 # Contributing
-Contributions to latenterror are welcome! Feel free to submit a [pull request](https://github.com/cjerzak/latenterror-software/pulls) or open an [issue](https://github.com/cjerzak/latenterror/issues).
+Contributions to lpme are welcome! Feel free to submit a [pull request](https://github.com/cjerzak/lpme-software/pulls) or open an [issue](https://github.com/cjerzak/lpme-software/issues).
 
 # Acknowledgements 
 We thank [Guilherme Duarte](https://duarteguilherme.github.io/), [Jeff Lewis](https://polisci.ucla.edu/person/jeffrey-b-lewis/), [Umberto Mignozzetti](https://umbertomig.com/), [Aaron Pancost](https://sites.google.com/site/aaronpancost/), [Erik Snowberg](https://eriksnowberg.com/), [Chris Tausanovitch](https://ctausanovitch.com/), and participants of a panel at an MPSA panel for very helpful comments. We thank [Major Valls](https://www.linkedin.com/in/major-valls-39b6b9229/) for excellent research assistance.
