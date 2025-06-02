@@ -145,6 +145,35 @@ lpme_onerun <- function( Y,
         list( model.matrix(~0+as.factor(zer))[,-1] )}),recursive = FALSE))
     }
     
+    if(estimation_method == "pca"){
+        # For PCA, we typically want numeric inputs only
+        x_init <- scale(apply( observables_, 1, function(x){ mean(f2n(x), na.rm=TRUE)})) * INIT_SCALER
+        observables__ <- apply(as.matrix(observables_), 2, f2n)
+        
+        # do not zero impute
+        #observables__[is.na(observables__)] <- 0
+        
+        # Run PCA on centered + scaled columns:
+        pca_out <- prcomp(observables__, center = TRUE, scale. = TRUE)
+        
+        # Extract the first principal component
+        x.est_ <- pca_out$x[, 1]
+        
+        # Scale so that it has mean 0, sd 1
+        x.est_ <- scale(x.est_)
+        
+        # (Optional) Flip sign to match an anchor — 
+        # compare with whichever initial reference you want, e.g. x_init
+        if (x.est_[which.max(x_init)] < 0) {
+          x.est_ <- -1 * x.est_
+        }
+    }
+    
+    if (estimation_method == "averaging") {
+      # Final estimate is just this averaged measure (split-by-split)
+      x.est_ <- scale(apply(observables_, 1, function(x) mean(f2n(x), na.rm = TRUE)))
+    }
+    
     # first, do emIRT
     if(estimation_method == "em"){
       x_init <- scale(apply( observables_, 1, function(x){ mean(f2n(x), na.rm=TRUE)})) * INIT_SCALER
@@ -152,12 +181,8 @@ lpme_onerun <- function( Y,
       if(ordinal){
         observables__ <- apply(as.matrix(observables_),2,f2n)
         if( !all(c(observables__) %in% 1:3) ){
-          #observables__ <- apply(observables__,2,function(x){ 
-            #x_ <- as.numeric(gtools::quantcut(x, q = 3, labels = 1:3))
-            #if(length(unique(x_)) != 3){ x_ <- as.numeric(cut(x, breaks = 3)) } 
-            #return(x_) })
           observables__ <- apply(observables__, 2, function(x){ 
-            r <- rank(x, ties.method = "average")
+            r <- rank(f2n(x), ties.method = "average")
             group <- ceiling(r / (length(x) / 3))
             return(group)
           })
@@ -175,26 +200,28 @@ lpme_onerun <- function( Y,
         ## Generate starts and priors for ordered model
         JJ <- ncol(observables__)
         NN <- nrow(observables__)
-        cur <- vector(mode = "list")
-        cur$DD <- matrix(rep(0.5,JJ), ncol=1)
-        cur$tau <- matrix(rep(-0.5,JJ), ncol=1)
-        cur$beta <- matrix(runif(JJ,-1,1), ncol=1) 
-        cur$x <- matrix(runif(NN,-1,1), ncol=1) 
-        priors <- vector(mode = "list")
-        priors$x <- list(mu = matrix(0,1,1), sigma = matrix(1,1,1) )
-        priors$beta <- list(mu = matrix(0,2,1), sigma = matrix(diag(25,2),2,2))
-
+        
+        # starts
+        starts <- vector(mode = "list")
+        starts$DD <- matrix(rep(0.5,JJ), ncol=1)
+        starts$tau <- matrix(rep(-0.5,JJ), ncol=1)
+        starts$beta <- matrix(runif(JJ,-1,1), ncol=1) 
+        starts$x <- as.matrix(c(x_init))
+        
+        priors <- list("x" = list(mu = matrix(0,1,1), sigma = matrix(1,1,1) ), 
+                      "beta" = list(mu = matrix(0,2,1), sigma = matrix(diag(25,2),2,2)))
+        
         capture.output(
           out_emIRT <- try(emIRT::ordIRT(.rc = observables__,
-                                  .starts = cur,
-                                  .priors = priors,
+                                  .starts = starts, 
+                                  .priors = priors, 
                                   .control = list(
                                     threads = 1,
                                     verbose = FALSE,
                                     thresh = 1e-6,
-                                    maxit=300,
-                                    checkfreq=50
-                        )),TRUE)
+                                    maxit=3000,
+                                    checkfreq=50)
+                        ),TRUE)
         )
         if("try-error" %in% class(out_emIRT)){ 
           stop(out_emIRT)
@@ -202,7 +229,11 @@ lpme_onerun <- function( Y,
         
         # Scale the final ideal points and store
         x.est_ <- scale(out_emIRT$means$x)
-        if(x.est_[which.max(x_init)] < 0){ x.est_ <- -1*x.est_ }  # anchor
+        if(x.est_[which.max(x_init)] < 0){ x.est_ <- -1*x.est_ }  # anchor - no .anchor_subject arg 
+        
+        # FORCING FORCING SANITY SANITY
+        #x.est_ <- scale(x_init)
+        
         x.est_EM <- x.est_
       }
     
@@ -620,8 +651,6 @@ lpme_onerun <- function( Y,
         }))
         theAnchor <- which.max(x_init)
         abil <- apply(abil,2,function(x){
-                    # XXX here 
-                    #if(x[theAnchor] < 0){ x <- -1*x } # anchor based on anchor
                     if(x[theAnchor] < 0){ x <- -1*x } # anchor based on anchor 
                     return(x) })
         return( abil ) 
@@ -780,7 +809,8 @@ lpme_onerun <- function( Y,
     x_est_past <- x.est_
     eval(parse(text = sprintf("x.est%s <- x.est_", split_)))
   }
-
+  # c(mean(x.est),sd(x.est))
+  
   # simple linear reg 
   theOLS <- lm(Y ~ x.est)
   
@@ -788,16 +818,22 @@ lpme_onerun <- function( Y,
   IVStage1 <- lm(x.est2 ~ x.est1)
   
   # corrected IV
+  # cor(x.est1,x.est2)
   IVStage2_a <- AER::ivreg(Y ~ x.est2 | x.est1)
   IVStage2_b <- AER::ivreg(Y ~ x.est1 | x.est2)
-  Corrected_IVRegCoef_a <- (coef(IVStage2_a)[2] * sqrt( max(c((ep_ <- 0.01), cor(x.est1, x.est2) ))) )
-  Corrected_IVRegCoef_b <- (coef(IVStage2_b)[2] * sqrt( max(c(ep_, cor(x.est1, x.est2) ))) )
+  IVRegCoef_a <- coef(IVStage2_a)[2]
+  IVRegCoef_b <- coef(IVStage2_b)[2]
+  IVRegCoef <- (IVRegCoef_a + IVRegCoef_b) / 2
+  Corrected_IVRegCoef_a <- (coef(IVStage2_a)[2] * sqrt( max(c((ep_ <- 0.01), 
+                                                              cor(x.est1, x.est2) ))) )
+  Corrected_IVRegCoef_b <- (coef(IVStage2_b)[2] * sqrt( max(c(ep_,
+                                                              cor(x.est1, x.est2) ))) )
   Corrected_IVRegCoef <- ( Corrected_IVRegCoef_a + Corrected_IVRegCoef_b )/2
   
   # corrected OLS 
-  Corrected_OLSCoef1 <- coef(lm(Y ~ x.est1))[2] * (CorrectionFactor <- 1/sqrt( max(c(ep_, cor(x.est1, x.est2) ))))
-  Corrected_OLSCoef2 <- coef(lm(Y ~ x.est2))[2] * CorrectionFactor
-  Corrected_OLSCoef <- (Corrected_OLSCoef1 + Corrected_OLSCoef2)/2
+  Corrected_OLSCoef_a <- coef(lm(Y ~ x.est1))[2] * (CorrectionFactor <- 1/sqrt( max(c(ep_, cor(x.est1, x.est2) ))))
+  Corrected_OLSCoef_b <- coef(lm(Y ~ x.est2))[2] * CorrectionFactor
+  Corrected_OLSCoef <- (Corrected_OLSCoef_a + Corrected_OLSCoef_b)/2
   t_OneRun <- as.numeric(difftime(Sys.time(), t0, units = "secs"))
   
   # ERV analysis 
@@ -812,15 +848,21 @@ lpme_onerun <- function( Y,
     "ols_se" = coef(summary(theOLS))[2, 2],
     "ols_tstat" = coef(summary(theOLS))[2, 3],
     
-    "iv_coef" = coef(summary(IVStage2_a))[2, 1], 
+    "iv_coef_a" = IVRegCoef_a, 
+    "iv_coef_b" = IVRegCoef_b, 
+    "iv_coef" = IVRegCoef, 
     "iv_se" = coef(summary(IVStage2_a))[2, 2],
     "iv_tstat" = coef(summary(IVStage2_a))[2, 3],
     
+    "corrected_iv_coef_a" = Corrected_IVRegCoef_a,
+    "corrected_iv_coef_b" = Corrected_IVRegCoef_b,
     "corrected_iv_coef" = Corrected_IVRegCoef,
     "corrected_iv_se" = NA,
     "corrected_iv_tstat" = Corrected_IVRegCoef / coef(summary(IVStage2_a))[2, 2],
     "var_est_split" = var(x.est1 - x.est2) / 2,  # var_est_split
     
+    "corrected_ols_coef_a" = Corrected_OLSCoef_a, 
+    "corrected_ols_coef_b" = Corrected_OLSCoef_b, 
     "corrected_ols_coef" = Corrected_OLSCoef, 
     "corrected_ols_se" = NA,
     "corrected_ols_tstat" = NA,

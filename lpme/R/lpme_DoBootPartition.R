@@ -303,6 +303,14 @@ lpme <- function(Y,
       "ols_tstat"  = (m1_ / se1_),
       
       # Corrected OLS
+      "corrected_ols_coef_a" = (m1b_ <- tapply(
+        LatentRunResults$Intermediary_corrected_ols_coef_a, 
+        LatentRunResults$Intermediary_BootIndex, theSumFxn
+      )[1]),
+      "corrected_ols_coef_b" = (m1b_ <- tapply(
+        LatentRunResults$Intermediary_corrected_ols_coef_b, 
+        LatentRunResults$Intermediary_BootIndex, theSumFxn
+      )[1]),
       "corrected_ols_coef" = (m1b_ <- tapply(
         LatentRunResults$Intermediary_corrected_ols_coef, 
         LatentRunResults$Intermediary_BootIndex, theSumFxn
@@ -341,6 +349,14 @@ lpme <- function(Y,
       "corrected_ols_tstat_alt" = (m1b_ / se1b_),
       
       # IV regression
+      "iv_coef_a" = (m2_ <- tapply(
+        LatentRunResults$Intermediary_iv_coef_a, 
+        LatentRunResults$Intermediary_BootIndex, theSumFxn
+      )[1]),
+      "iv_coef_b" = (m2_ <- tapply(
+        LatentRunResults$Intermediary_iv_coef_b, 
+        LatentRunResults$Intermediary_BootIndex, theSumFxn
+      )[1]),
       "iv_coef" = (m2_ <- tapply(
         LatentRunResults$Intermediary_iv_coef, 
         LatentRunResults$Intermediary_BootIndex, theSumFxn
@@ -360,6 +376,14 @@ lpme <- function(Y,
       "iv_tstat" = (m2_ / se2_),
       
       # Corrected IV
+      "corrected_iv_coef_a" = (m2_ <- tapply(
+        LatentRunResults$Intermediary_corrected_iv_coef_a, 
+        LatentRunResults$Intermediary_BootIndex, theSumFxn
+      )[1]),
+      "corrected_iv_coef_b" = (m2_ <- tapply(
+        LatentRunResults$Intermediary_corrected_iv_coef_b, 
+        LatentRunResults$Intermediary_BootIndex, theSumFxn
+      )[1]),
       "corrected_iv_coef" = (m4_ <- tapply(
         LatentRunResults$Intermediary_corrected_iv_coef, 
         LatentRunResults$Intermediary_BootIndex, theSumFxn
