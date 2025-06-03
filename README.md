@@ -1,10 +1,10 @@
 # `lpme`:  R Package for Dealing with Latent Predictor Measurement Error Under Identification Restrictions
-[![CI](https://github.com/cjerzak/lpme-software/actions/workflows/ci.yml/badge.svg)](https://github.com/cjerzak/lpme-software/actions/workflows/ci.yml)
 [**Installation**](#installation)
 | [**Key Functions**](#keyfxns)
 | [**References**](#references)
 
 [<img src="https://img.shields.io/badge/Demo-View%20Demo-blue" alt="Demo Button">](https://github.com/cjerzak/lpme-software/blob/main/lpme/vignettes/IntroVignette.Rmd)
+[![CI](https://github.com/cjerzak/lpme-software/actions/workflows/ci.yml/badge.svg)](https://github.com/cjerzak/lpme-software/actions/workflows/ci.yml)
 
 `lpme` is an R package that provides tools for analyzing latent variable models with measurement error correction, using bootstrapping techniques for inference.
 
