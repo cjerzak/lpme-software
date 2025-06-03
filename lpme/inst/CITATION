@@ -1,0 +1,8 @@
+citHeader("To cite lpme in publications use:")
+citEntry(entry = "Manual",
+         title = "lpme: Measurement Error Analysis and Correction Under Identification Restrictions",
+         author = personList(person("Connor", "Jerzak"),
+                             person("Stephen", "Jessee")),
+         year = "2023",
+         note = "R package version 0.1.1",
+         url = "https://github.com/cjerzak/lpme-software")
