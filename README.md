@@ -1,4 +1,5 @@
 # `lpme`:  R Package for Dealing with Latent Predictor Measurement Error Under Identification Restrictions
+[![CI](https://github.com/cjerzak/lpme-software/actions/workflows/ci.yml/badge.svg)](https://github.com/cjerzak/lpme-software/actions/workflows/ci.yml)
 [**Installation**](#installation)
 | [**Key Functions**](#keyfxns)
 | [**References**](#references)
