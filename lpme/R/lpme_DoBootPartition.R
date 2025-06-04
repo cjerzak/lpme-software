@@ -95,8 +95,8 @@
 #'
 #' @details 
 #' This function implements a bootstrapped latent variable analysis with measurement error correction. 
-#' It performs multiple bootstrap iterations, each with multiple partitions. For each partition, 
-#' it calls the LatentOneRun function to estimate latent variables and apply various correction methods. 
+#' It performs multiple bootstrap iterations, each with multiple partitions. For each partition,
+#' it calls the \code{lpme_onerun} function to estimate latent variables and apply various correction methods.
 #' The results are then aggregated across partitions and bootstrap iterations to produce final estimates 
 #' and bootstrap standard errors.
 #'
@@ -154,7 +154,7 @@ lpme <- function(Y,
       stop("orientation_signs must contain only 1 and -1.")
     }
     if(!all(unlist(observables) %in% c(0,1))){
-      stop("Re-orientation in the non-binary case not yet implementated")
+      stop("Re-orientation in the non-binary case not yet implemented")
     }
     if(all(observables %in% c(0,1))){
       colnames_observables <- colnames(observables)

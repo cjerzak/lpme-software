@@ -134,8 +134,8 @@ Implements bootstrapped analysis for latent variable models with measurement err
 }
 \details{
 This function implements a bootstrapped latent variable analysis with measurement error correction. 
-It performs multiple bootstrap iterations, each with multiple partitions. For each partition, 
-it calls the LatentOneRun function to estimate latent variables and apply various correction methods. 
+It performs multiple bootstrap iterations, each with multiple partitions. For each partition,
+it calls the \code{lpme_onerun} function to estimate latent variables and apply various correction methods.
 The results are then aggregated across partitions and bootstrap iterations to produce final estimates 
 and bootstrap standard errors.
 }
