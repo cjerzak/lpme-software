@@ -2,7 +2,7 @@
 % Please edit documentation in R/lpme_BuildBackend.R
 \name{build_backend}
 \alias{build_backend}
-\title{A function to build the environment for lpme. Builds a conda environment in which 'JAX', 'numpyro', and 'np' are installed. Users can also create a conda environment where 'JAX' and 'np' are installed themselves.}
+\title{A function to build the environment for lpme. Builds a conda environment in which 'JAX', 'numpyro', and 'numpy' are installed. Users can also create a conda environment where 'JAX' and 'numpy' are installed themselves.}
 \usage{
 build_backend(conda_env = "lpme", conda = "auto")
 }
@@ -18,7 +18,7 @@ This function requires an Internet connection.
 You can find out a list of conda Python paths via: \code{Sys.which("python")}
 }
 \description{
-A function to build the environment for lpme. Builds a conda environment in which 'JAX', 'numpyro', and 'np' are installed. Users can also create a conda environment where 'JAX' and 'np' are installed themselves.
+A function to build the environment for lpme. Builds a conda environment in which 'JAX', 'numpyro', and 'numpy' are installed. Users can also create a conda environment where 'JAX' and 'numpy' are installed themselves.
 }
 \examples{
 \dontrun{

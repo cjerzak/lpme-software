@@ -1,4 +1,6 @@
-#' A function to build the environment for lpme. Builds a conda environment in which 'JAX', 'numpyro', and 'np' are installed. Users can also create a conda environment where 'JAX' and 'np' are installed themselves. 
+#' A function to build the environment for lpme. Builds a conda environment in which
+#' 'JAX', 'numpyro', and 'numpy' are installed. Users can also create a conda
+#' environment where 'JAX' and 'numpy' are installed themselves.
 #'
 #' @param conda_env (default = `"lpme"`) Name of the conda environment in which to place the backends.
 #' @param conda (default = `auto`) The path to a conda executable. Using `"auto"` allows reticulate to attempt to automatically find an appropriate conda binary.
