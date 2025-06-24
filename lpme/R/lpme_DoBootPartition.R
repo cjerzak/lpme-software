@@ -20,7 +20,7 @@
 #' \item "mcmc_joint": Full Bayesian model that simultaneously estimates latent variables and outcome relationship using \code{numpyro}
 #' \item "mcmc_overimputation": Two-stage MCMC approach with measurement error correction via over-imputation
 #' }
-#' @param latent_estimation_fn Custom function for estimating latent trait from \code{observables} if \code{estimation_method="custom"} (optional).
+#' @param latent_estimation_fn Custom function for estimating latent trait from \code{observables} if \code{estimation_method="custom"} (optional). The function should accept a matrix of observables (rows are observations) and return a numeric vector of length equal to the number of observations.
 #' @param mcmc_control A list indicating parameter specifications if MCMC used. 
 #' \itemize{
 #'   \item{\code{backend}}{
