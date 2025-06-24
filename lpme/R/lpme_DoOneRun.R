@@ -123,6 +123,9 @@ lpme_onerun <- function( Y,
                          ordinal = FALSE, 
                          conda_env = "lpme", 
                          conda_env_required = TRUE){
+  # coerce to data.frame
+  observables <- as.data.frame( observables )
+  
   t0 <- Sys.time()
   INIT_SCALER <- 1/10
   Bayesian_OLSSE_InnerNormed <- Bayesian_OLSCoef_InnerNormed <- NA; 

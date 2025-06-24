@@ -144,6 +144,9 @@ lpme <- function(Y,
                  conda_env = "lpme", 
                  conda_env_required = TRUE
                  ){ 
+
+  # coerce to data.frame
+  observables <- as.data.frame( observables )
   
   # Orient the observables if orientation_signs are provided
   if (!is.null(orientation_signs)) {
