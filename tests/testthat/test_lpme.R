@@ -33,3 +33,4 @@ test_that("lpme S3 methods", {
   expect_silent(plot(res))
   expect_error(plot(res, type = "coefficients"))
 })
+
