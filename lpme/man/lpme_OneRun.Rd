@@ -82,7 +82,7 @@ via \code{reticulate}. Default is \code{"lpme"}.}
 must be strictly used. If \code{TRUE}, an error is thrown if the environment is not found. 
 Default is \code{TRUE}.}
 
-\item{latent_estimation_fn}{Custom function for estimating latent trait from \code{observables} if \code{estimation_method="custom"} (optional).}
+\item{latent_estimation_fn}{Custom function for estimating latent trait from \code{observables} if \code{estimation_method="custom"} (optional). The function should accept a matrix of observables (rows are observations) and return a numeric vector of length equal to the number of observations.}
 }
 \value{
 A list containing various estimates and statistics:

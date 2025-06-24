@@ -54,7 +54,7 @@ lpme(
 \item "mcmc_overimputation": Two-stage MCMC approach with measurement error correction via over-imputation
 }}
 
-\item{latent_estimation_fn}{Custom function for estimating latent trait from \code{observables} if \code{estimation_method="custom"} (optional).}
+\item{latent_estimation_fn}{Custom function for estimating latent trait from \code{observables} if \code{estimation_method="custom"} (optional). The function should accept a matrix of observables (rows are observations) and return a numeric vector of length equal to the number of observations.}
 
 \item{mcmc_control}{A list indicating parameter specifications if MCMC used. 
 \itemize{
