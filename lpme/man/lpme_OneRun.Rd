@@ -30,9 +30,11 @@ lpme_onerun(
 \item{estimation_method}{Character specifying the estimation approach. Options include:
 \itemize{
 \item "em" (default): Uses expectation-maximization via \code{emIRT} package. Supports both binary (via \code{emIRT::binIRT}) and ordinal (via \code{emIRT::ordIRT}) indicators.
+\item "averaging": Uses feature averaging.
 \item "mcmc": Markov Chain Monte Carlo estimation using either \code{pscl::ideal} (R backend) or \code{numpyro} (Python backend)
 \item "mcmc_joint": Joint Bayesian model that simultaneously estimates latent variables and outcome relationship using \code{numpyro}
 \item "mcmc_overimputation": Two-stage MCMC approach with measurement error correction via over-imputation
+\item "custom": In this case, latent estimation performed using \code{latent_estimation_fn}.
 }}
 
 \item{mcmc_control}{A list indicating parameter specifications if MCMC used. 
@@ -79,6 +81,8 @@ via \code{reticulate}. Default is \code{"lpme"}.}
 \item{conda_env_required}{A logical indicating whether the specified conda environment 
 must be strictly used. If \code{TRUE}, an error is thrown if the environment is not found. 
 Default is \code{TRUE}.}
+
+\item{latent_estimation_fn}{Custom function for estimating latent trait from \code{observables} if \code{estimation_method="custom"} (optional).}
 }
 \value{
 A list containing various estimates and statistics:

@@ -2,30 +2,38 @@
 % Please edit documentation in R/orientation_helpers.R
 \name{infer_orientation_signs}
 \alias{infer_orientation_signs}
-\title{Infer orientation signs for observable indicators}
+\title{Infer orientation signs for each observable indicator}
 \usage{
 infer_orientation_signs(Y, observables, method = c("Y", "PC1"))
 }
 \arguments{
-\item{Y}{Numeric outcome vector. Required when \code{method = "Y"}.}
+\item{Y}{Numeric outcome vector. Only used when \code{method = "Y"}.}
 
-\item{observables}{Matrix or data frame of binary observable indicators.}
+\item{observables}{A matrix or data frame of binary observable indicators.}
 
-\item{method}{Method used to determine orientation. Either \code{"Y"} for
-correlation with \code{Y} or \code{"PC1"} for correlation with the first
-principal component.}
+\item{method}{Character string specifying how to orient the indicators.
+\describe{
+  \item{\code{"Y"}}{orient each indicator so that its correlation with
+    \code{Y} is positive.}
+  \item{\code{"PC1"}}{orient each indicator so that its correlation with
+    the first principal component of \code{observables} is positive.}
+}
+Default is \code{"Y"}.}
 }
 \value{
-Numeric vector of \code{1} and \code{-1} indicating column orientations.
+A numeric vector of length \code{ncol(observables)} containing
+  \code{1} or \code{-1}.
 }
 \description{
-Analyzes each indicator and returns signs suitable for the
-\code{orientation_signs} argument of \code{lpme} so that correlations with
-the specified target are positive.
+This helper analyzes observable indicators and returns a numeric vector
+of \code{1} or \code{-1} for use with the \code{orientation_signs}
+argument in \code{lpme}. Each sign is chosen so that the correlation
+between the oriented indicator and either the outcome \code{Y} or the
+first principal component of the indicators is positive.
 }
 \examples{
 set.seed(1)
 Y <- rnorm(10)
-obs <- data.frame(matrix(sample(c(0,1), 20, replace=TRUE), ncol=2))
+obs <- data.frame(matrix(sample(c(0,1), 20, replace = TRUE), ncol = 2))
 infer_orientation_signs(Y, obs)
 }
