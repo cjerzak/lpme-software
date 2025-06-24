@@ -49,6 +49,8 @@
   # Visualization
   plot(results)
   
+  # Advanced use
+  if(TRUE == FALSE){ 
   # Try out the Bayesian methods 
   # lpme::build_backend() # build backend if needed
   mcmc_results <- lpme(
@@ -101,5 +103,6 @@
   summary(mcmc_results)
   summary(mcmc_joint_results)
   summary(mcmc_overimputation_results)
+  }
 
 }
