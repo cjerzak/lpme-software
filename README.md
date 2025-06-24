@@ -1,4 +1,4 @@
-# `lpme`:  R Package for Dealing with Latent Predictor Measurement Error Under Identification Restrictions
+# `lpme`: R Package for Dealing with Latent Predictor Measurement Error Under Identification Restrictions
 [**Installation**](#installation)
 | [**Key Functions**](#keyfxns)
 | [**References**](#references)
@@ -22,7 +22,7 @@ devtools::install_github("cjerzak/lpme-software/lpme")
 ```
 # Generate data 
 Yobs <- rnorm(1000)
-ObservablesMat <- matrix(sample(c(0,1), 1000*10, replace = T), ncol = 10)
+ObservablesMat <- matrix(sample(c(0,1), 1000*10, replace = TRUE), ncol = 10)
 
 # One run of latent error correction method 
 lpme::lpme_onerun(Y = Yobs, 
@@ -34,7 +34,7 @@ lpme::lpme_onerun(Y = Yobs,
 ```
 # Generate data
 Yobs <- rnorm(1000)
-ObservablesMat <- matrix(sample(c(0,1), 1000*10, replace = T), ncol = 10)
+ObservablesMat <- matrix(sample(c(0,1), 1000*10, replace = TRUE), ncol = 10)
 
 # Latent error correction method, with partitioning and bootstrap
 results <- lpme::lpme(
