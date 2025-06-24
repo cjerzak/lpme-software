@@ -17,7 +17,7 @@ print.lpme_onerun <- function(x, ...) {
   cat("Single-Run LPME Results\n")
   cat("-----------------------\n")
   cat(sprintf("Uncorrected Coefficient (OLS): %.3f (SE: %.3f)\n", x$ols_coef, x$ols_se))
-  cat(sprintf("Corrected Coefficient: %.3f (SE: %.3f)\n", x$ols_coef, x$ols_se))
+  cat(sprintf("Corrected Coefficient: %.3f (SE: %.3f)\n", x$corrected_ols_coef, x$corrected_ols_se))
   cat("Use summary() for detailed results.\n")
 }
 
