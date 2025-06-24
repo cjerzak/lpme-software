@@ -19,6 +19,7 @@
 #' \item "mcmc": Markov Chain Monte Carlo estimation using either \code{pscl::ideal} (R backend) or \code{numpyro} (Python backend)
 #' \item "mcmc_joint": Full Bayesian model that simultaneously estimates latent variables and outcome relationship using \code{numpyro}
 #' \item "mcmc_overimputation": Two-stage MCMC approach with measurement error correction via over-imputation
+#' \item "custom": In this case, latent estimation performed using \code{latent_estimation_fn}.
 #' }
 #' @param latent_estimation_fn Custom function for estimating latent trait from \code{observables} if \code{estimation_method="custom"} (optional). The function should accept a matrix of observables (rows are observations) and return a numeric vector of length equal to the number of observations.
 #' @param mcmc_control A list indicating parameter specifications if MCMC used. 
@@ -135,7 +136,7 @@ lpme <- function(Y,
                  estimation_method = "em",
                  latent_estimation_fn = NULL, 
                  mcmc_control = list(
-                   backend = "numpyro",  # will override to use NumPyro-based MCMC
+                   backend = "pscl",  # will override to use NumPyro-based MCMC
                    n_samples_warmup = 500L,
                    n_samples_mcmc   = 1000L,
                    batch_size = 512L, 

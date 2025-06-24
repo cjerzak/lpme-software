@@ -10,9 +10,10 @@ lpme_onerun(
   observables_groupings = colnames(observables),
   make_observables_groupings = FALSE,
   estimation_method = "em",
-  mcmc_control = list(backend = "numpyro", n_samples_warmup = 500L, n_samples_mcmc =
-    1000L, batch_size = 512L, chain_method = "parallel", subsample_method = "full",
-    n_thin_by = 1L, n_chains = 2L),
+  latent_estimation_fn = NULL,
+  mcmc_control = list(backend = "pscl", n_samples_warmup = 500L, n_samples_mcmc = 1000L,
+    batch_size = 512L, chain_method = "parallel", subsample_method = "full", n_thin_by =
+    1L, n_chains = 2L),
   ordinal = FALSE,
   conda_env = "lpme",
   conda_env_required = TRUE
@@ -36,6 +37,8 @@ lpme_onerun(
 \item "mcmc_overimputation": Two-stage MCMC approach with measurement error correction via over-imputation
 \item "custom": In this case, latent estimation performed using \code{latent_estimation_fn}.
 }}
+
+\item{latent_estimation_fn}{Custom function for estimating latent trait from \code{observables} if \code{estimation_method="custom"} (optional). The function should accept a matrix of observables (rows are observations) and return a numeric vector of length equal to the number of observations.}
 
 \item{mcmc_control}{A list indicating parameter specifications if MCMC used. 
 \itemize{
@@ -81,8 +84,6 @@ via \code{reticulate}. Default is \code{"lpme"}.}
 \item{conda_env_required}{A logical indicating whether the specified conda environment 
 must be strictly used. If \code{TRUE}, an error is thrown if the environment is not found. 
 Default is \code{TRUE}.}
-
-\item{latent_estimation_fn}{Custom function for estimating latent trait from \code{observables} if \code{estimation_method="custom"} (optional). The function should accept a matrix of observables (rows are observations) and return a numeric vector of length equal to the number of observations.}
 }
 \value{
 A list containing various estimates and statistics:

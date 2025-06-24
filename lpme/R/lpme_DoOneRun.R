@@ -114,8 +114,9 @@ lpme_onerun <- function( Y,
                          observables_groupings = colnames(observables),
                          make_observables_groupings = FALSE, 
                          estimation_method = "em", 
+                         latent_estimation_fn = NULL, 
                          mcmc_control = list(
-                           backend = "numpyro",  # will override to use NumPyro-based MCMC
+                           backend = "pscl",  # will override to use NumPyro-based MCMC
                            n_samples_warmup = 500L,
                            n_samples_mcmc   = 1000L,
                            batch_size = 512L, 
