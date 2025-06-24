@@ -1,5 +1,7 @@
 {
+  # Local install for development team 
   # install.packages("~/Documents/lpme-software/lpme", repos = NULL, type = "source", force = FALSE)
+  
   # Install via GitHub
   # devtools::install_github("cjerzak/lpme-software/lpme")
   
@@ -53,6 +55,8 @@
   if(TRUE == FALSE){ 
   # Try out the Bayesian methods 
   # lpme::build_backend() # build backend if needed
+  BayesBackend <- "pscl"
+  # BayesBackend <- "numpyro"
   mcmc_results <- lpme(
       Y = Yobs,
       observables = as.data.frame(ObservablesMat),
@@ -60,8 +64,7 @@
       n_partition = 2L, # Reduced for demonstration
       estimation_method = "mcmc",
       mcmc_control = list(
-                #backend = "numpyro",  
-                backend = "pscl",  
+                backend = BayesBackend,  
                 n_samples_warmup = 1000L, n_samples_mcmc = 1000L, subsample_method = "full", 
                 chain_method = "sequential", 
                 n_thin_by = 1L, 
@@ -75,8 +78,7 @@
     n_partition = 2L, # Reduced for demonstration
     estimation_method = "mcmc_overimputation",
     mcmc_control = list(
-      #backend = "numpyro",  
-      backend = "pscl",  
+      backend = BayesBackend,   
       n_samples_warmup = 1000L, n_samples_mcmc = 1000L, subsample_method = "full", 
       chain_method = "sequential", 
       n_thin_by = 1L, 
@@ -90,7 +92,7 @@
     n_partition = 1L, # Reduced for demonstration
     estimation_method = "mcmc_joint",
     mcmc_control = list(
-      backend = "numpyro",  
+      backend = BayesBackend,  
       n_samples_warmup = 1000L, n_samples_mcmc = 1000L, subsample_method = "full", 
       chain_method = "sequential", 
       n_thin_by = 1L, 
