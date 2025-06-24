@@ -66,7 +66,7 @@
                 chain_method = "sequential", 
                 n_thin_by = 1L, 
                 n_chains = 2L), 
-      conda_env = "lpme"  # Specify your conda environment, used in this condition, backend="numpryo" 
+      conda_env = "lpme"  # Specify your conda environment, used in this condition, backend="numpyro"
   )
   mcmc_overimputation_results <- lpme(
     Y = Yobs,
@@ -81,7 +81,7 @@
       chain_method = "sequential", 
       n_thin_by = 1L, 
       n_chains = 2L), 
-    conda_env = "lpme"  # Specify your conda environment, used in this condition, backend="numpryo" 
+  conda_env = "lpme"  # Specify your conda environment, used in this condition, backend="numpyro"
   )
   mcmc_joint_results <- lpme(
     Y = Yobs,
@@ -95,7 +95,7 @@
       chain_method = "sequential", 
       n_thin_by = 1L, 
       n_chains = 2L), 
-    conda_env = "lpme"  # Specify your conda environment, used in this condition, backend="numpryo" 
+    conda_env = "lpme"  # Specify your conda environment, used in this condition, backend="numpyro"
   )
 
   # compare 
