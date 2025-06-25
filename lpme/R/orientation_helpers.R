@@ -28,7 +28,9 @@
 #' @export
 infer_orientation_signs <- function(Y, observables, method = c("Y", "PC1")) {
   method <- match.arg(method)
-  if (!all(unlist(observables) %in% c(0, 1))) {
+  # allow for missing values when validating the observables
+  obs_vals <- na.omit(unlist(observables))
+  if (!all(obs_vals %in% c(0, 1))) {
     stop("infer_orientation_signs currently supports only binary observables")
   }
   if (method == "PC1") {
