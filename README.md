@@ -48,6 +48,8 @@ results <- lpme::lpme(
 print(results)
 ```
 
+`lpme` ships with a small example dataset, `KnowledgeVoteDuty`, drawn from the 2024 American National Election Study. Load it with `data(KnowledgeVoteDuty)` to try the package on real survey responses.
+
 # Contributing
 Contributions to lpme are welcome! Feel free to submit a [pull request](https://github.com/cjerzak/lpme-software/pulls) or open an [issue](https://github.com/cjerzak/lpme-software/issues).
 
