@@ -1,8 +1,5 @@
 {
   rm(list=ls()); options(error = NULL)
-  # install.packages("~/Documents/lpme-software/lpme",repos = NULL, type = "source",force = F)
-  #data(package = "lpme")
-  data("KnowledgeVoteDuty",package="lpme")
   
   # set path and specify package name
   setwd(sprintf("~/Documents/%s-software", package_name <- "lpme"))
@@ -20,5 +17,10 @@
 
   # Check package to ensure it meets CRAN standards.
   # devtools::check( package_path )
+  
+  # check data integrity
+  # devtools::install_github(repo = "cjerzak/lpme-software/lpme") 
+  # data(package = "lpme")
+  # data("KnowledgeVoteDuty",package="lpme")
 }
 
