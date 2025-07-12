@@ -1,6 +1,6 @@
-##' KnowledgeVoteDutyANES24: Survey Respondents' Views of Voting as a Duty and Political Knowledge Questions
+##' KnowledgeVoteDuty: Survey Respondents' Views of Voting as a Duty and Political Knowledge Questions
 #'
-#' @description KnowledgeVoteDutyANES24 is a modified set of responses to a small set of questions on the American National Election Study's 2024 Time Series Study. These data only include respondents who had non-missing values on all of the variables included, dropping respondents with one or more missing values.
+#' @description KnowledgeVoteDuty is a modified set of responses to a small set of questions on the American National Election Study's 2024 Time Series Study. These data only include respondents who had non-missing values on all of the variables included, dropping respondents with one or more missing values.
 #'
 #' @format A data frame with 3,059 observations and 5 variables:
 #' \describe{
@@ -14,13 +14,13 @@
 #' @references American National Election Studies. 2024. ANES 2024 Time Series Study Full Release [dataset and documentation]. \url{https://www.electionstudies.org}
 #'
 #' @examples
-#' data(KnowledgeVoteDutyANES24)
-#' voteduty <- KnowledgeVoteDutyANES24$voteduty
-#' knowledge <- scale(rowMeans(KnowledgeVoteDutyANES24[ , -1]))
+#' data(KnowledgeVoteDuty)
+#' voteduty <- KnowledgeVoteDuty$voteduty
+#' knowledge <- scale(rowMeans(KnowledgeVoteDuty[ , -1]))
 #' summary(lm(voteduty ~ knowledge))
 #'
-#' @name KnowledgeVoteDutyANES24
+#' @name KnowledgeVoteDuty
 #' @docType data
-#' @usage data(KnowledgeVoteDutyANES24)
+#' @usage data(KnowledgeVoteDuty)
 NULL
 
