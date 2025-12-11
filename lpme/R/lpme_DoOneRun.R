@@ -127,6 +127,20 @@ lpme_onerun <- function( Y,
                          ordinal = FALSE, 
                          conda_env = "lpme", 
                          conda_env_required = TRUE){
+  # Merge user-provided mcmc_control with defaults
+  # This ensures partial user specifications don't cause missing parameter errors
+  default_mcmc_control <- list(
+    backend = "pscl",
+    n_samples_warmup = 500L,
+    n_samples_mcmc = 1000L,
+    batch_size = 512L,
+    chain_method = "parallel",
+    subsample_method = "full",
+    n_thin_by = 1L,
+    n_chains = 2L
+  )
+  mcmc_control <- modifyList(default_mcmc_control, mcmc_control)
+
   # coerce to data.frame
   observables <- as.data.frame( observables )
   
