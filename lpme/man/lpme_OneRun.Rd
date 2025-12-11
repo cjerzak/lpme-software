@@ -110,10 +110,23 @@ A list containing various estimates and statistics:
 Implements analysis for latent variable models with measurement error correction
 }
 \details{
-This function implements a latent variable analysis with measurement error correction. 
-It splits the observable indicators into two sets, estimates latent variables using each set, 
+This function implements a latent variable analysis with measurement error correction.
+It splits the observable indicators into two sets, estimates latent variables using each set,
 and then applies various correction methods including OLS correction and instrumental variable approaches.
 }
+\section{Standard Errors}{
+
+The following standard errors and t-statistics are currently returned as \code{NA} because
+their analytical derivation is not yet implemented:
+\itemize{
+  \item \code{corrected_ols_se}: Standard error for the corrected OLS coefficient
+  \item \code{corrected_ols_tstat}: T-statistic for the corrected OLS coefficient
+  \item \code{corrected_ols_coef_alt}: Alternative corrected OLS coefficient
+}
+For inference on these quantities, use the bootstrap approach via \code{\link{lpme}}, which
+provides valid confidence intervals and standard errors through resampling.
+}
+
 \examples{
 # Generate some example data
 set.seed(123)

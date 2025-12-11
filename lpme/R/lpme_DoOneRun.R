@@ -78,10 +78,21 @@
 #'   \item \code{x_est2}: Second set of latent variable estimates
 #' }
 #'
-#' @details 
-#' This function implements a latent variable analysis with measurement error correction. 
-#' It splits the observable indicators into two sets, estimates latent variables using each set, 
+#' @details
+#' This function implements a latent variable analysis with measurement error correction.
+#' It splits the observable indicators into two sets, estimates latent variables using each set,
 #' and then applies various correction methods including OLS correction and instrumental variable approaches.
+#'
+#' @section Standard Errors:
+#' The following standard errors and t-statistics are currently returned as \code{NA} because
+#' their analytical derivation is not yet implemented:
+#' \itemize{
+#'   \item \code{corrected_ols_se}: Standard error for the corrected OLS coefficient
+#'   \item \code{corrected_ols_tstat}: T-statistic for the corrected OLS coefficient
+#'   \item \code{corrected_ols_coef_alt}: Alternative corrected OLS coefficient
+#' }
+#' For inference on these quantities, use the bootstrap approach via \code{\link{lpme}}, which
+#' provides valid confidence intervals and standard errors through resampling.
 #'
 #'
 #' @examples
@@ -139,6 +150,16 @@ lpme_onerun <- function( Y,
     n_thin_by = 1L,
     n_chains = 2L
   )
+
+  # Warn user if partial mcmc_control was provided
+  user_params <- names(mcmc_control)
+  default_params <- names(default_mcmc_control)
+  if (length(user_params) > 0 && length(user_params) < length(default_params)) {
+    missing_params <- setdiff(default_params, user_params)
+    message("Note: Partial mcmc_control provided. Using defaults for: ",
+            paste(missing_params, collapse = ", "))
+  }
+
   mcmc_control <- modifyList(default_mcmc_control, mcmc_control)
 
   # coerce to data.frame

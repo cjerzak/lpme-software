@@ -12,9 +12,43 @@
 Within an `R` session, you can install the development version of `lpme` from GitHub with:
 ```
 # Install from GitHub
-# install.packages("devtools") 
+# install.packages("devtools")
 devtools::install_github("cjerzak/lpme-software/lpme")
 ```
+
+## Optional: NumPyro Backend for MCMC
+
+For advanced MCMC estimation, `lpme` supports the NumPyro backend via Python. This is optional; the default `pscl` backend works without any Python setup.
+
+To use the NumPyro backend:
+
+1. **Install Python dependencies** using the built-in setup function:
+```r
+library(lpme)
+build_backend()  # Creates conda environment with JAX and NumPyro
+```
+
+2. **Alternative: Manual installation** if you prefer to manage your own Python environment:
+```bash
+# Create and activate a conda environment
+conda create -n lpme python=3.10
+conda activate lpme
+
+# Install JAX and NumPyro
+pip install jax jaxlib numpyro
+```
+
+3. **Use the NumPyro backend** in your analysis:
+```r
+results <- lpme_onerun(
+  Y = Yobs,
+  observables = ObservablesMat,
+  estimation_method = "mcmc",
+  mcmc_control = list(backend = "numpyro")
+)
+```
+
+Note: The NumPyro backend requires a working Python installation accessible via the `reticulate` package.
 
 # Key Functions<a id="keyfxns"></a>
 ## `lpme_onerun`
