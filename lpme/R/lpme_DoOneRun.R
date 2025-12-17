@@ -162,6 +162,97 @@ lpme_onerun <- function( Y,
 
   mcmc_control <- modifyList(default_mcmc_control, mcmc_control)
 
+  # ============================================================================
+
+  # INPUT VALIDATION
+  # ============================================================================
+
+  # Validate Y
+  if (missing(Y) || is.null(Y)) {
+    stop("'Y' is required and cannot be NULL.")
+  }
+  if (!is.numeric(Y)) {
+    stop("'Y' must be a numeric vector.")
+  }
+  if (length(Y) < 10) {
+    stop("'Y' must have at least 10 observations. Received: ", length(Y))
+  }
+  if (all(is.na(Y))) {
+    stop("'Y' cannot be all NA values.")
+  }
+
+  # Validate observables
+  if (missing(observables) || is.null(observables)) {
+    stop("'observables' is required and cannot be NULL.")
+  }
+  if (!is.data.frame(observables) && !is.matrix(observables)) {
+    stop("'observables' must be a data.frame or matrix.")
+  }
+  if (nrow(observables) != length(Y)) {
+    stop("Number of rows in 'observables' (", nrow(observables),
+         ") must match length of 'Y' (", length(Y), ").")
+  }
+  if (ncol(observables) < 4) {
+    stop("'observables' must have at least 4 columns to allow split-half estimation. Received: ",
+         ncol(observables))
+  }
+
+  # Validate estimation_method
+  valid_methods <- c("em", "pca", "averaging", "mcmc", "mcmc_joint", "mcmc_overimputation", "custom")
+  if (!estimation_method %in% valid_methods) {
+    stop("'estimation_method' must be one of: ", paste(valid_methods, collapse = ", "),
+         ". Received: '", estimation_method, "'")
+  }
+
+  # Validate custom estimation function when method is "custom"
+  if (estimation_method == "custom") {
+    if (is.null(latent_estimation_fn)) {
+      stop("'latent_estimation_fn' is required when estimation_method = 'custom'.")
+    }
+    if (!is.function(latent_estimation_fn)) {
+      stop("'latent_estimation_fn' must be a function.")
+    }
+  }
+
+  # Validate ordinal parameter
+  if (!is.logical(ordinal) || length(ordinal) != 1) {
+    stop("'ordinal' must be a single logical value (TRUE or FALSE).")
+  }
+
+  # Validate mcmc_control parameters
+  if (!is.list(mcmc_control)) {
+    stop("'mcmc_control' must be a list.")
+  }
+  if (!mcmc_control$backend %in% c("pscl", "numpyro")) {
+    stop("mcmc_control$backend must be either 'pscl' or 'numpyro'. Received: '",
+         mcmc_control$backend, "'")
+  }
+  if (!is.numeric(mcmc_control$n_samples_warmup) || mcmc_control$n_samples_warmup < 1) {
+    stop("mcmc_control$n_samples_warmup must be a positive integer.")
+  }
+  if (!is.numeric(mcmc_control$n_samples_mcmc) || mcmc_control$n_samples_mcmc < 1) {
+    stop("mcmc_control$n_samples_mcmc must be a positive integer.")
+  }
+  if (!is.numeric(mcmc_control$n_chains) || mcmc_control$n_chains < 1) {
+    stop("mcmc_control$n_chains must be a positive integer.")
+  }
+
+  # Warn about potential issues
+  n_unique_obs <- length(unique(observables_groupings))
+  if (n_unique_obs < 4) {
+    warning("Only ", n_unique_obs, " unique observable groupings found. ",
+            "Split-half estimation may be unreliable with fewer than 4 groupings.")
+  }
+
+  # Check for excessive missing data
+  na_prop <- mean(is.na(as.matrix(observables)))
+  if (na_prop > 0.5) {
+    warning("More than 50% of values in 'observables' are NA (",
+            round(na_prop * 100, 1), "%). Results may be unreliable.")
+  }
+
+  # ============================================================================
+
   # coerce to data.frame
   observables <- as.data.frame( observables )
   

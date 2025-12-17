@@ -147,11 +147,102 @@ lpme <- function(Y,
                    n_chains = 2L), 
                  conda_env = "lpme", 
                  conda_env_required = TRUE
-                 ){ 
+                 ){
+
+  # ============================================================================
+  # INPUT VALIDATION
+  # ============================================================================
+
+  # Validate Y
+  if (missing(Y) || is.null(Y)) {
+    stop("'Y' is required and cannot be NULL.")
+  }
+  if (!is.numeric(Y)) {
+    stop("'Y' must be a numeric vector.")
+  }
+  if (length(Y) < 10) {
+    stop("'Y' must have at least 10 observations. Received: ", length(Y))
+  }
+  if (all(is.na(Y))) {
+    stop("'Y' cannot be all NA values.")
+  }
+
+  # Validate observables
+  if (missing(observables) || is.null(observables)) {
+    stop("'observables' is required and cannot be NULL.")
+  }
+  if (!is.data.frame(observables) && !is.matrix(observables)) {
+    stop("'observables' must be a data.frame or matrix.")
+  }
+  if (nrow(observables) != length(Y)) {
+    stop("Number of rows in 'observables' (", nrow(observables),
+         ") must match length of 'Y' (", length(Y), ").")
+  }
+  if (ncol(observables) < 4) {
+    stop("'observables' must have at least 4 columns to allow split-half estimation. Received: ",
+         ncol(observables))
+  }
+
+  # Validate estimation_method
+  valid_methods <- c("em", "pca", "averaging", "mcmc", "mcmc_joint", "mcmc_overimputation", "custom")
+  if (!estimation_method %in% valid_methods) {
+    stop("'estimation_method' must be one of: ", paste(valid_methods, collapse = ", "),
+         ". Received: '", estimation_method, "'")
+  }
+
+  # Validate custom estimation function when method is "custom"
+  if (estimation_method == "custom") {
+    if (is.null(latent_estimation_fn)) {
+      stop("'latent_estimation_fn' is required when estimation_method = 'custom'.")
+    }
+    if (!is.function(latent_estimation_fn)) {
+      stop("'latent_estimation_fn' must be a function.")
+    }
+  }
+
+  # Validate bootstrap/partition parameters
+  if (!is.numeric(n_boot) || length(n_boot) != 1 || n_boot < 1) {
+    stop("'n_boot' must be a single positive integer. Received: ", n_boot)
+  }
+  if (!is.numeric(n_partition) || length(n_partition) != 1 || n_partition < 1) {
+    stop("'n_partition' must be a single positive integer. Received: ", n_partition)
+  }
+
+  # Validate boot_basis
+  if (length(boot_basis) != length(Y)) {
+    stop("'boot_basis' must have the same length as 'Y'. ",
+         "Length of boot_basis: ", length(boot_basis), ", length of Y: ", length(Y))
+  }
+
+  # Validate ordinal parameter
+  if (!is.logical(ordinal) || length(ordinal) != 1) {
+    stop("'ordinal' must be a single logical value (TRUE or FALSE).")
+  }
+
+  # Validate return_intermediaries
+  if (!is.logical(return_intermediaries) || length(return_intermediaries) != 1) {
+    stop("'return_intermediaries' must be a single logical value (TRUE or FALSE).")
+  }
+
+  # Check for excessive missing data (warning only)
+  na_prop <- mean(is.na(as.matrix(observables)))
+  if (na_prop > 0.5) {
+    warning("More than 50% of values in 'observables' are NA (",
+            round(na_prop * 100, 1), "%). Results may be unreliable.")
+  }
+
+  # Warn about potential issues with small samples
+  n_unique_groups <- length(unique(observables_groupings))
+  if (n_unique_groups < 4) {
+    warning("Only ", n_unique_groups, " unique observable groupings found. ",
+            "Split-half estimation may be unreliable with fewer than 4 groupings.")
+  }
+
+  # ============================================================================
 
   # coerce to data.frame
   observables <- as.data.frame( observables )
-  
+
   # Orient the observables if orientation_signs are provided
   if (!is.null(orientation_signs)) {
     if (!is.numeric(orientation_signs) || length(orientation_signs) != ncol(observables)) {
