@@ -16,7 +16,7 @@ lpme_onerun(
     1L, n_chains = 2L),
   ordinal = FALSE,
   conda_env = "lpme",
-  conda_env_required = TRUE
+  conda_env_required = FALSE
 )
 }
 \arguments{
@@ -40,40 +40,22 @@ lpme_onerun(
 
 \item{latent_estimation_fn}{Custom function for estimating latent trait from \code{observables} if \code{estimation_method="custom"} (optional). The function should accept a matrix of observables (rows are observations) and return a numeric vector of length equal to the number of observations.}
 
-\item{mcmc_control}{A list indicating parameter specifications if MCMC used. 
-\itemize{
-  \item{\code{backend}}{
-    Character string indicating the MCMC engine to use. Valid options are:
-    \itemize{
-      \item \code{"numpyro"} (default): Uses the Python \code{numpyro} package via \code{reticulate}.
-      \item \code{"pscl"}: Uses the R-based \code{pscl::ideal} function.
-    }
-  }
-  \item{\code{n_samples_warmup}}{
-    Integer specifying the number of warm-up (a.k.a. burn-in) iterations
-    before samples are collected. Default is \code{500}.
-  }
-  \item{\code{n_samples_mcmc}}{
-    Integer specifying the number of post-warmup MCMC iterations to retain.
-    Default is \code{1000}.
-  }
-  \item{\code{chain_method}}{
-    Character string passed to \code{numpyro} specifying how to run multiple
-    chains. Typical options include:
-    \itemize{
-      \item \code{"parallel"} (default): Runs chains in parallel.
-      \item \code{"sequential"}: Runs chains sequentially.
-      \item \code{"vectorized"}: Vectorized evaluation of multiple chains.
-    }
-  }
-  \item{\code{n_thin_by}}{
-    Integer indicating the thinning factor for MCMC samples (i.e., retaining
-    every \code{n_thin_by}-th sample). Default is \code{1}.
-  }
-  \item{\code{n_chains}}{
-    Integer specifying the number of parallel MCMC chains to run.
-    Default is \code{2}.
-  }
+\item{mcmc_control}{A list indicating parameter specifications if MCMC used.
+\describe{
+  \item{\code{backend}}{Character string indicating the MCMC engine to use.
+    Valid options are \code{"pscl"} (default, uses the R-based \code{pscl::ideal} function)
+    or \code{"numpyro"} (uses the Python numpyro package via reticulate).}
+  \item{\code{n_samples_warmup}}{Integer specifying the number of warm-up (burn-in)
+    iterations before samples are collected. Default is \code{500}.}
+  \item{\code{n_samples_mcmc}}{Integer specifying the number of post-warmup MCMC
+    iterations to retain. Default is \code{1000}.}
+  \item{\code{chain_method}}{Character string passed to numpyro specifying how to run
+    multiple chains. Options: \code{"parallel"} (default), \code{"sequential"},
+    or \code{"vectorized"}.}
+  \item{\code{n_thin_by}}{Integer indicating the thinning factor for MCMC samples.
+    Default is \code{1}.}
+  \item{\code{n_chains}}{Integer specifying the number of parallel MCMC chains to run.
+    Default is \code{2}.}
 }}
 
 \item{ordinal}{Logical indicating whether the observable indicators are ordinal (TRUE) or binary (FALSE).}
@@ -81,9 +63,9 @@ lpme_onerun(
 \item{conda_env}{A character string specifying the name of the conda environment to use 
 via \code{reticulate}. Default is \code{"lpme"}.}
 
-\item{conda_env_required}{A logical indicating whether the specified conda environment 
-must be strictly used. If \code{TRUE}, an error is thrown if the environment is not found. 
-Default is \code{TRUE}.}
+\item{conda_env_required}{A logical indicating whether the specified conda environment
+must be strictly used. If \code{TRUE}, an error is thrown if the environment is not found.
+Default is \code{FALSE}.}
 }
 \value{
 A list containing various estimates and statistics:
@@ -128,17 +110,18 @@ provides valid confidence intervals and standard errors through resampling.
 }
 
 \examples{
+\donttest{
 # Generate some example data
 set.seed(123)
-library( lpme )
 Y <- rnorm(1000)
-observables <- as.data.frame( matrix(sample(c(0,1), 1000*10, replace = TRUE), ncol = 10) )
+observables <- as.data.frame(matrix(sample(c(0,1), 1000*10, replace = TRUE), ncol = 10))
 
 # Run the analysis
-results <- lpme_onerun(Y = Y, 
+results <- lpme_onerun(Y = Y,
                        observables = observables)
 
 # View the corrected estimates
 print(results)
+}
 
 }

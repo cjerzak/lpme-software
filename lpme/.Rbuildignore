@@ -1,0 +1,9 @@
+^\.DS_Store$
+^.*\.DS_Store$
+^\.Rapp\.history$
+^data/\.Rapp\.history$
+^vignettes/.*\.html$
+^\.git$
+^\.github$
+^.*\.Rproj$
+^\.Rproj\.user$

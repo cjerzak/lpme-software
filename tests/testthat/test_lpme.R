@@ -1,3 +1,6 @@
+# Skip all tests on CRAN to avoid timeouts
+skip_on_cran()
+
 test_that("lpme basic functionality", {
   set.seed(123)
   Y <- rnorm(80)

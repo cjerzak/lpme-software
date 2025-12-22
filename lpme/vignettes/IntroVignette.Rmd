@@ -56,7 +56,7 @@ results <- lpme(
   observables = as.data.frame(ObservablesMat),
   n_boot = 10,      # Reduced for demonstration
   n_partition = 5,  # Reduced for demonstration
-  estimation_method = "emIRT"
+  estimation_method = "em"
 )
 ```
 
@@ -83,7 +83,7 @@ if(T == F){
 mcmc_results <- lpme(
   Y = Yobs,
   observables = as.data.frame(ObservablesMat),
-  estimation_method = "MCMC",
+  estimation_method = "mcmc",
   conda_env = "lpme"  # Specify your conda environment
 )
 }

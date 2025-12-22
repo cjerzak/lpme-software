@@ -1,4 +1,14 @@
-initialize_jax <- function(conda_env = "lpme", 
+#' Initialize JAX/numpyro Python Environment
+#'
+#' Internal function to initialize the JAX and numpyro Python packages
+#' for MCMC estimation via reticulate.
+#'
+#' @param conda_env Name of conda environment to use
+#' @param conda_env_required Whether the conda environment is required
+#'
+#' @noRd
+#' @keywords internal
+initialize_jax <- function(conda_env = "lpme",
                            conda_env_required = TRUE) {
 
   # Load reticulate (Declared in Imports: in DESCRIPTION)
