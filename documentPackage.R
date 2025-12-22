@@ -1,8 +1,12 @@
 {
   rm(list=ls()); options(error = NULL)
-  
+
   # set path and specify package name
   setwd(sprintf("~/Documents/%s-software", package_name <- "lpme"))
+
+  # get version number from DESCRIPTION
+  package_path <- sprintf("~/Documents/%s-software/%s", package_name, package_name)
+  versionNumber <- read.dcf(file.path(package_path, "DESCRIPTION"), fields = "Version")[1, 1]
 
   # document package
   tools::add_datalist(package_path <- sprintf("~/Documents/%s-software/%s",package_name,package_name),
