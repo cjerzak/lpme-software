@@ -1,0 +1,26 @@
+##' KnowledgeVoteDuty: Survey Respondents' Views of Voting as a Duty and Political Knowledge Questions
+#'
+#' @description KnowledgeVoteDuty is a modified set of responses to a small set of questions on the American National Election Study's 2024 Time Series Study. These data only include respondents who had non-missing values on all of the variables included, dropping respondents with one or more missing values.
+#'
+#' @format A data frame with 3,059 observations and 5 variables:
+#' \describe{
+#'   \item{voteduty}{Whether respondents feel that voting is a duty or a choice. Values range from 1 to 7, with 1 being "Very strongly a duty" and 7 being "Very strongly a choice," created based on variable V241218x.}
+#'   \item{SenateTerm}{Dummy variable (0 or 1) for whether respondent correctly stated the length of a U.S. Senate term. Created based on variable V241612.}
+#'   \item{SpendLeast}{Dummy variable (0 or 1) for whether respondent correctly identified "Foreign aid" from a list as the category the federal government spends the least on. Created based on variable V241613.}
+#'   \item{HouseParty}{Dummy variable (0 or 1) for whether respondent correctly identified the political party that currently has the most members in the U.S. House of Representatives. Created based on variable V241614.}
+#'   \item{SenateParty}{Dummy variable (0 or 1) for whether respondent correctly identified the political party that currently has the most members in the U.S. Senate. Created based on variable V241615.}
+#' }
+#'
+#' @references American National Election Studies. 2024. ANES 2024 Time Series Study Full Release [dataset and documentation]. \url{https://www.electionstudies.org}
+#'
+#' @examples
+#' data(KnowledgeVoteDuty)
+#' voteduty <- KnowledgeVoteDuty$voteduty
+#' knowledge <- scale(rowMeans(KnowledgeVoteDuty[ , -1]))
+#' summary(lm(voteduty ~ knowledge))
+#'
+#' @name KnowledgeVoteDuty
+#' @docType data
+#' @usage data(KnowledgeVoteDuty)
+NULL
+

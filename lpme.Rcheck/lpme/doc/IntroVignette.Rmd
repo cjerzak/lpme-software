@@ -1,0 +1,104 @@
+---
+title: "Latent Variable Measurement Error Correction with `lpme`"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{lpme Package Tutorial}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\usepackage[UTF-8]{inputenc}
+---
+
+## Introduction
+
+This tutorial demonstrates how to use the `lpme` package for measurement error correction in regression models using latent variable estimation. The package implements bootstrapped analyses to account for measurement error in observed indicators and provides corrected regression coefficients.
+
+## Installation
+
+First install the required dependencies and the lpme package:
+```{r setup, eval=FALSE}
+# Install lpme from source (replace with appropriate installation method)
+# devtools::install_github("cjerzak/lpme-software/lpme")
+```
+
+
+## Basic Usage
+
+### Data Simulation
+
+Simulate data with a latent predictor and observed binary indicators:
+
+```{r, eval=TRUE}
+set.seed(123)
+n <- 1000  # Number of observations
+d <- 10    # Number of observable indicators
+
+# Generate latent variable and observed outcomes
+x_true <- rnorm(n)
+Yobs <- 0.4 * x_true + rnorm(n, sd = 0.35)
+
+# Generate binary indicators of latent variable
+ObservablesMat <- sapply(1:d, function(j) {
+  p <- pnorm(0.5 * x_true + rnorm(n, sd = 0.5))
+  rbinom(n, 1, p)
+})
+```
+
+### Running the Analysis
+
+Use lpme to estimate corrected coefficients:
+
+```{r, eval=TRUE}
+library(lpme)
+
+# Run bootstrapped analysis
+results <- lpme(
+  Y = Yobs,
+  observables = as.data.frame(ObservablesMat),
+  n_boot = 10,      # Reduced for demonstration
+  n_partition = 5,  # Reduced for demonstration
+  estimation_method = "em"
+)
+```
+
+Compare naive and corrected estimates:
+```{r, eval=TRUE}
+print(results)
+summary(results)
+```
+
+You can visualize the relationship between split-half estimates:
+```{r}
+plot(results)
+```
+
+## Advanced Features
+
+### Using Different Estimation Methods
+
+The package supports multiple estimation approaches:
+
+```{r, eval=TRUE}
+# Bayesian MCMC estimation (requires Python environment setup)
+if(T == F){ 
+mcmc_results <- lpme(
+  Y = Yobs,
+  observables = as.data.frame(ObservablesMat),
+  estimation_method = "mcmc",
+  conda_env = "lpme"  # Specify your conda environment
+)
+}
+```
+
+## Conclusion
+
+The `lpme` package provides robust measurement error correction through:
+
+  - Bootstrapped latent variable estimation
+  - Multiple correction methods (OLS, IV, Bayesian)
+  - Flexible estimation backends (EM, MCMC)
+
+Refer to package documentation for advanced configuration options.
+
+<!--
+ install.packages( "~/Documents/lpme-software/lpme", repos = NULL, type = "source",force = FALSE)
+-->
