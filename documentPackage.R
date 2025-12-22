@@ -14,6 +14,17 @@
  
   # create new PDF
   system(sprintf("R CMD Rd2pdf %s",package_path))
+  
+  # build tar
+  system( paste(shQuote(file.path(R.home("bin"), "R")),
+                "R CMD build --resave-data", shQuote(package_path)) )
+  
+  # check as cran
+  system( paste(shQuote(file.path(R.home("bin"), "R")),
+                "R CMD check --as-cran",
+                shQuote(
+                  paste(package_name, "_", versionNumber, ".tar.gz", sep = "")
+                ))  )
 
   # Check package to ensure it meets CRAN standards.
   # devtools::check( package_path )
@@ -22,5 +33,8 @@
   # devtools::install_github(repo = "cjerzak/lpme-software/lpme") 
   # data(package = "lpme")
   # data("KnowledgeVoteDuty",package="lpme")
+  
+  # install current local build 
+  install.packages( "~/Documents/lpme-software/lpme",repos = NULL, type = "source",force = F) # install from local  
 }
 

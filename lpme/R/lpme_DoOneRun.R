@@ -526,7 +526,7 @@ lpme_onerun <- function( Y,
         # Construct for annotating conditionally independent variables.
         # Within a plate context manager, sample sites will be automatically broadcasted to the size of the plate. 
         # Additionally, a scale factor might be applied by certain inference algorithms
-        # ifsubsample_size is specified.
+        # if subsample_size is specified.
         
         # Set up MCMC
         lpme_env$numpyro$set_host_device_count( mcmc_control$n_chains )
@@ -534,7 +534,7 @@ lpme_onerun <- function( Y,
         K <- ai(ncol(observables_))
         
         # Define the two-parameter IRT model using Matt's trick + subsampling
-        # Note: IRTModel_batch is depreciated 
+        # Note: IRTModel_batch is deprecated 
         IRTModel_batch <- function(X, Y) {
             # Number of observations (rows) and items (columns)
             N <- X$shape[[1]]
