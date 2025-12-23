@@ -1,0 +1,332 @@
+Hmm ... looks like a package
+Converting parsed Rd's to LaTeX 
+Creating pdf output from LaTeX ...
+This is pdfTeX, Version 3.141592653-2.6-1.40.26 (TeX Live 2024) (preloaded format=pdflatex)
+ restricted \write18 enabled.
+entering extended mode
+(./Rd2.tex
+LaTeX2e <2023-11-01> patch level 1
+L3 programming layer <2024-02-20>
+
+(/usr/local/texlive/2024/texmf-dist/tex/latex/base/book.cls
+Document Class: book 2023/05/17 v1.4n Standard LaTeX document class
+(/usr/local/texlive/2024/texmf-dist/tex/latex/base/bk10.clo))
+(/Library/Frameworks/R.framework/Resources/share/texmf/tex/latex/Rd.sty
+(/usr/local/texlive/2024/texmf-dist/tex/latex/base/ifthen.sty)
+(/usr/local/texlive/2024/texmf-dist/tex/generic/iftex/iftex.sty)
+(/usr/local/texlive/2024/texmf-dist/tex/latex/tools/longtable.sty)
+(/usr/local/texlive/2024/texmf-dist/tex/latex/tools/bm.sty)
+(/usr/local/texlive/2024/texmf-dist/tex/latex/base/alltt.sty)
+(/usr/local/texlive/2024/texmf-dist/tex/latex/tools/verbatim.sty)
+(/usr/local/texlive/2024/texmf-dist/tex/latex/url/url.sty)
+(/usr/local/texlive/2024/texmf-dist/tex/latex/base/textcomp.sty)
+(/usr/local/texlive/2024/texmf-dist/tex/latex/amsmath/amsmath.sty
+For additional information on amsmath, use the `?' option.
+(/usr/local/texlive/2024/texmf-dist/tex/latex/amsmath/amstext.sty
+(/usr/local/texlive/2024/texmf-dist/tex/latex/amsmath/amsgen.sty))
+(/usr/local/texlive/2024/texmf-dist/tex/latex/amsmath/amsbsy.sty)
+(/usr/local/texlive/2024/texmf-dist/tex/latex/amsmath/amsopn.sty))
+(/usr/local/texlive/2024/texmf-dist/tex/latex/amsfonts/amsfonts.sty)
+(/usr/local/texlive/2024/texmf-dist/tex/latex/amsfonts/amssymb.sty)
+(/usr/local/texlive/2024/texmf-dist/tex/latex/jknapltx/mathrsfs.sty)
+(/usr/local/texlive/2024/texmf-dist/tex/latex/base/fontenc.sty)
+(/usr/local/texlive/2024/texmf-dist/tex/latex/psnfss/times.sty)
+(/usr/local/texlive/2024/texmf-dist/tex/latex/graphics/color.sty
+(/usr/local/texlive/2024/texmf-dist/tex/latex/graphics-cfg/color.cfg)
+(/usr/local/texlive/2024/texmf-dist/tex/latex/graphics-def/pdftex.def)
+(/usr/local/texlive/2024/texmf-dist/tex/latex/graphics/mathcolor.ltx))
+(/usr/local/texlive/2024/texmf-dist/tex/latex/hyperref/hyperref.sty
+(/usr/local/texlive/2024/texmf-dist/tex/latex/graphics/keyval.sty)
+(/usr/local/texlive/2024/texmf-dist/tex/latex/kvsetkeys/kvsetkeys.sty)
+(/usr/local/texlive/2024/texmf-dist/tex/generic/kvdefinekeys/kvdefinekeys.sty)
+(/usr/local/texlive/2024/texmf-dist/tex/generic/pdfescape/pdfescape.sty
+(/usr/local/texlive/2024/texmf-dist/tex/generic/ltxcmds/ltxcmds.sty)
+(/usr/local/texlive/2024/texmf-dist/tex/generic/pdftexcmds/pdftexcmds.sty
+(/usr/local/texlive/2024/texmf-dist/tex/generic/infwarerr/infwarerr.sty)))
+(/usr/local/texlive/2024/texmf-dist/tex/latex/hycolor/hycolor.sty)
+(/usr/local/texlive/2024/texmf-dist/tex/latex/auxhook/auxhook.sty)
+(/usr/local/texlive/2024/texmf-dist/tex/latex/hyperref/nameref.sty
+(/usr/local/texlive/2024/texmf-dist/tex/latex/refcount/refcount.sty)
+(/usr/local/texlive/2024/texmf-dist/tex/generic/gettitlestring/gettitlestring.s
+ty (/usr/local/texlive/2024/texmf-dist/tex/latex/kvoptions/kvoptions.sty)))
+(/usr/local/texlive/2024/texmf-dist/tex/latex/etoolbox/etoolbox.sty)
+(/usr/local/texlive/2024/texmf-dist/tex/latex/hyperref/pd1enc.def)
+(/usr/local/texlive/2024/texmf-dist/tex/generic/intcalc/intcalc.sty)
+(/usr/local/texlive/2024/texmf-dist/tex/latex/hyperref/puenc.def)
+(/usr/local/texlive/2024/texmf-dist/tex/generic/bitset/bitset.sty
+(/usr/local/texlive/2024/texmf-dist/tex/generic/bigintcalc/bigintcalc.sty))
+(/usr/local/texlive/2024/texmf-dist/tex/latex/base/atbegshi-ltx.sty))
+(/usr/local/texlive/2024/texmf-dist/tex/latex/hyperref/hpdftex.def
+(/usr/local/texlive/2024/texmf-dist/tex/latex/base/atveryend-ltx.sty)
+(/usr/local/texlive/2024/texmf-dist/tex/latex/rerunfilecheck/rerunfilecheck.sty
+
+(/usr/local/texlive/2024/texmf-dist/tex/generic/uniquecounter/uniquecounter.sty
+)))) (/usr/local/texlive/2024/texmf-dist/tex/latex/psnfss/t1ptm.fd)
+(/usr/local/texlive/2024/texmf-dist/tex/latex/l3backend/l3backend-pdftex.def)
+No file Rd2.aux.
+(/usr/local/texlive/2024/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
+[Loading MPS to PDF converter (version 2006.09.02).]
+) (/usr/local/texlive/2024/texmf-dist/tex/latex/psnfss/t1pcr.fd)
+(/usr/local/texlive/2024/texmf-dist/tex/latex/amsfonts/umsa.fd)
+(/usr/local/texlive/2024/texmf-dist/tex/latex/amsfonts/umsb.fd)
+(/usr/local/texlive/2024/texmf-dist/tex/latex/jknapltx/ursfs.fd)
+No file Rd2.toc.
+[1{/usr/local/texlive/2024/texmf-var/fonts/map/pdftex/updmap/pdftex.map}{/usr/l
+ocal/texlive/2024/texmf-dist/fonts/enc/dvips/base/8r.enc}] [2] [3]
+Overfull \hbox (132.78088pt too wide) in paragraph at lines 190--190
+ []  \T1/pcr/m/n/10 mcmc_control = list(backend = "pscl", n_samples_warmup = 50
+0L, n_samples_mcmc = 1000L,[] 
+
+Overfull \hbox (60.78088pt too wide) in paragraph at lines 191--191
+ []    \T1/pcr/m/n/10 batch_size = 512L, chain_method = "parallel", subsample_m
+ethod = "full",[] 
+[4]
+Overfull \hbox (15.20741pt too wide) in paragraph at lines 215--216
+[]\T1/ptm/m/n/10 Vector of in-dices or group-ing vari-able for strat-i-fied boo
+t-strap. De-fault is 1:length(Y). 
+(/usr/local/texlive/2024/texmf-dist/tex/latex/psnfss/ts1ptm.fd)
+Overfull \hbox (15.80898pt too wide) in paragraph at lines 224--225
+\T1/ptm/m/n/10 ports both bi-nary (via []\T1/pcr/m/n/10 emIRT::binIRT[]\T1/ptm/
+m/n/10 ) and or-di-nal (via []\T1/pcr/m/n/10 emIRT::ordIRT[]\T1/ptm/m/n/10 )
+
+Overfull \hbox (7.9682pt too wide) in paragraph at lines 226--227
+[]\T1/ptm/m/n/10 "mcmc": Markov Chain Monte Carlo es-ti-ma-tion us-ing ei-ther 
+[]\T1/pcr/m/n/10 pscl::ideal
+
+Overfull \hbox (48.99799pt too wide) in paragraph at lines 229--230
+[]\T1/ptm/m/n/10 "custom": In this case, la-tent es-ti-ma-tion per-formed us-in
+g []\T1/pcr/m/n/10 latent_estimation_fn[]\T1/ptm/m/n/10 . 
+
+Overfull \hbox (102.8083pt too wide) in paragraph at lines 234--235
+[]\T1/ptm/m/n/10 Custom func-tion for es-ti-mat-ing la-tent trait from []\T1/pc
+r/m/n/10 observables []\T1/ptm/m/n/10 if []\T1/pcr/m/n/10 estimation_method="cu
+stom"
+[5]
+Overfull \hbox (146.76926pt too wide) in paragraph at lines 296--297
+[]\T1/pcr/m/n/10 bayesian_ols_se_outer_normed[]\T1/ptm/m/n/10 : Pos-te-rior sta
+n-dard er-ror cor-re-spond-ing to []\T1/pcr/m/n/10 bayesian_ols_coef_outer_norm
+ed[]\T1/ptm/m/n/10 . 
+
+Overfull \hbox (55.39986pt too wide) in paragraph at lines 297--298
+[]\T1/pcr/m/n/10 bayesian_ols_tstat_outer_normed[]\T1/ptm/m/n/10 : T-statistic 
+for []\T1/pcr/m/n/10 bayesian_ols_coef_outer_normed[]\T1/ptm/m/n/10 . 
+
+Overfull \hbox (146.76926pt too wide) in paragraph at lines 300--301
+[]\T1/pcr/m/n/10 bayesian_ols_se_inner_normed[]\T1/ptm/m/n/10 : Pos-te-rior sta
+n-dard er-ror cor-re-spond-ing to []\T1/pcr/m/n/10 bayesian_ols_coef_inner_norm
+ed[]\T1/ptm/m/n/10 . 
+[6]
+Overfull \hbox (55.39986pt too wide) in paragraph at lines 301--302
+[]\T1/pcr/m/n/10 bayesian_ols_tstat_inner_normed[]\T1/ptm/m/n/10 : T-statistic 
+for []\T1/pcr/m/n/10 bayesian_ols_coef_inner_normed[]\T1/ptm/m/n/10 . 
+
+Overfull \hbox (79.98035pt too wide) in paragraph at lines 318--318
+ []\T1/pcr/m/n/9 observables <- as.data.frame(matrix(sample(c(0,1), 1000*10, re
+place = TRUE), ncol = 10))[] 
+
+Overfull \hbox (132.78088pt too wide) in paragraph at lines 348--348
+ []  \T1/pcr/m/n/10 mcmc_control = list(backend = "pscl", n_samples_warmup = 50
+0L, n_samples_mcmc = 1000L,[] 
+
+Overfull \hbox (132.78088pt too wide) in paragraph at lines 349--349
+ []    \T1/pcr/m/n/10 batch_size = 512L, chain_method = "parallel", subsample_m
+ethod = "full", n_thin_by =[] 
+[7]
+Overfull \hbox (15.80898pt too wide) in paragraph at lines 371--372
+\T1/ptm/m/n/10 ports both bi-nary (via []\T1/pcr/m/n/10 emIRT::binIRT[]\T1/ptm/
+m/n/10 ) and or-di-nal (via []\T1/pcr/m/n/10 emIRT::ordIRT[]\T1/ptm/m/n/10 )
+
+Overfull \hbox (7.9682pt too wide) in paragraph at lines 373--374
+[]\T1/ptm/m/n/10 "mcmc": Markov Chain Monte Carlo es-ti-ma-tion us-ing ei-ther 
+[]\T1/pcr/m/n/10 pscl::ideal
+
+Overfull \hbox (48.99799pt too wide) in paragraph at lines 376--377
+[]\T1/ptm/m/n/10 "custom": In this case, la-tent es-ti-ma-tion per-formed us-in
+g []\T1/pcr/m/n/10 latent_estimation_fn[]\T1/ptm/m/n/10 . 
+
+Overfull \hbox (102.8083pt too wide) in paragraph at lines 381--382
+[]\T1/ptm/m/n/10 Custom func-tion for es-ti-mat-ing la-tent trait from []\T1/pc
+r/m/n/10 observables []\T1/ptm/m/n/10 if []\T1/pcr/m/n/10 estimation_method="cu
+stom"
+[8]
+Overfull \hbox (79.98035pt too wide) in paragraph at lines 468--468
+ []\T1/pcr/m/n/9 observables <- as.data.frame(matrix(sample(c(0,1), 1000*10, re
+place = TRUE), ncol = 10))[] 
+[9] [10] (./Rd2.aux)
+
+Package rerunfilecheck Warning: File `Rd2.out' has changed.
+(rerunfilecheck)                Rerun to get outlines right
+(rerunfilecheck)                or use package `bookmark'.
+
+ )
+(see the transcript file for additional information)</usr/local/texlive/2024/te
+xmf-dist/fonts/type1/urw/courier/ucrr8a.pfb></usr/local/texlive/2024/texmf-dist
+/fonts/type1/urw/times/utmb8a.pfb></usr/local/texlive/2024/texmf-dist/fonts/typ
+e1/urw/times/utmr8a.pfb></usr/local/texlive/2024/texmf-dist/fonts/type1/urw/tim
+es/utmr8a.pfb></usr/local/texlive/2024/texmf-dist/fonts/type1/urw/times/utmri8a
+.pfb>
+Output written on Rd2.pdf (10 pages, 96731 bytes).
+Transcript written on Rd2.log.
+This is pdfTeX, Version 3.141592653-2.6-1.40.26 (TeX Live 2024) (preloaded format=pdflatex)
+ restricted \write18 enabled.
+entering extended mode
+(./Rd2.tex
+LaTeX2e <2023-11-01> patch level 1
+L3 programming layer <2024-02-20>
+
+(/usr/local/texlive/2024/texmf-dist/tex/latex/base/book.cls
+Document Class: book 2023/05/17 v1.4n Standard LaTeX document class
+(/usr/local/texlive/2024/texmf-dist/tex/latex/base/bk10.clo))
+(/Library/Frameworks/R.framework/Resources/share/texmf/tex/latex/Rd.sty
+(/usr/local/texlive/2024/texmf-dist/tex/latex/base/ifthen.sty)
+(/usr/local/texlive/2024/texmf-dist/tex/generic/iftex/iftex.sty)
+(/usr/local/texlive/2024/texmf-dist/tex/latex/tools/longtable.sty)
+(/usr/local/texlive/2024/texmf-dist/tex/latex/tools/bm.sty)
+(/usr/local/texlive/2024/texmf-dist/tex/latex/base/alltt.sty)
+(/usr/local/texlive/2024/texmf-dist/tex/latex/tools/verbatim.sty)
+(/usr/local/texlive/2024/texmf-dist/tex/latex/url/url.sty)
+(/usr/local/texlive/2024/texmf-dist/tex/latex/base/textcomp.sty)
+(/usr/local/texlive/2024/texmf-dist/tex/latex/amsmath/amsmath.sty
+For additional information on amsmath, use the `?' option.
+(/usr/local/texlive/2024/texmf-dist/tex/latex/amsmath/amstext.sty
+(/usr/local/texlive/2024/texmf-dist/tex/latex/amsmath/amsgen.sty))
+(/usr/local/texlive/2024/texmf-dist/tex/latex/amsmath/amsbsy.sty)
+(/usr/local/texlive/2024/texmf-dist/tex/latex/amsmath/amsopn.sty))
+(/usr/local/texlive/2024/texmf-dist/tex/latex/amsfonts/amsfonts.sty)
+(/usr/local/texlive/2024/texmf-dist/tex/latex/amsfonts/amssymb.sty)
+(/usr/local/texlive/2024/texmf-dist/tex/latex/jknapltx/mathrsfs.sty)
+(/usr/local/texlive/2024/texmf-dist/tex/latex/base/fontenc.sty)
+(/usr/local/texlive/2024/texmf-dist/tex/latex/psnfss/times.sty)
+(/usr/local/texlive/2024/texmf-dist/tex/latex/graphics/color.sty
+(/usr/local/texlive/2024/texmf-dist/tex/latex/graphics-cfg/color.cfg)
+(/usr/local/texlive/2024/texmf-dist/tex/latex/graphics-def/pdftex.def)
+(/usr/local/texlive/2024/texmf-dist/tex/latex/graphics/mathcolor.ltx))
+(/usr/local/texlive/2024/texmf-dist/tex/latex/hyperref/hyperref.sty
+(/usr/local/texlive/2024/texmf-dist/tex/latex/graphics/keyval.sty)
+(/usr/local/texlive/2024/texmf-dist/tex/latex/kvsetkeys/kvsetkeys.sty)
+(/usr/local/texlive/2024/texmf-dist/tex/generic/kvdefinekeys/kvdefinekeys.sty)
+(/usr/local/texlive/2024/texmf-dist/tex/generic/pdfescape/pdfescape.sty
+(/usr/local/texlive/2024/texmf-dist/tex/generic/ltxcmds/ltxcmds.sty)
+(/usr/local/texlive/2024/texmf-dist/tex/generic/pdftexcmds/pdftexcmds.sty
+(/usr/local/texlive/2024/texmf-dist/tex/generic/infwarerr/infwarerr.sty)))
+(/usr/local/texlive/2024/texmf-dist/tex/latex/hycolor/hycolor.sty)
+(/usr/local/texlive/2024/texmf-dist/tex/latex/auxhook/auxhook.sty)
+(/usr/local/texlive/2024/texmf-dist/tex/latex/hyperref/nameref.sty
+(/usr/local/texlive/2024/texmf-dist/tex/latex/refcount/refcount.sty)
+(/usr/local/texlive/2024/texmf-dist/tex/generic/gettitlestring/gettitlestring.s
+ty (/usr/local/texlive/2024/texmf-dist/tex/latex/kvoptions/kvoptions.sty)))
+(/usr/local/texlive/2024/texmf-dist/tex/latex/etoolbox/etoolbox.sty)
+(/usr/local/texlive/2024/texmf-dist/tex/latex/hyperref/pd1enc.def)
+(/usr/local/texlive/2024/texmf-dist/tex/generic/intcalc/intcalc.sty)
+(/usr/local/texlive/2024/texmf-dist/tex/latex/hyperref/puenc.def)
+(/usr/local/texlive/2024/texmf-dist/tex/generic/bitset/bitset.sty
+(/usr/local/texlive/2024/texmf-dist/tex/generic/bigintcalc/bigintcalc.sty))
+(/usr/local/texlive/2024/texmf-dist/tex/latex/base/atbegshi-ltx.sty))
+(/usr/local/texlive/2024/texmf-dist/tex/latex/hyperref/hpdftex.def
+(/usr/local/texlive/2024/texmf-dist/tex/latex/base/atveryend-ltx.sty)
+(/usr/local/texlive/2024/texmf-dist/tex/latex/rerunfilecheck/rerunfilecheck.sty
+
+(/usr/local/texlive/2024/texmf-dist/tex/generic/uniquecounter/uniquecounter.sty
+)))) (/usr/local/texlive/2024/texmf-dist/tex/latex/psnfss/t1ptm.fd)
+(/usr/local/texlive/2024/texmf-dist/tex/latex/l3backend/l3backend-pdftex.def)
+(./Rd2.aux)
+(/usr/local/texlive/2024/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
+[Loading MPS to PDF converter (version 2006.09.02).]
+) (./Rd2.out) (./Rd2.out)
+(/usr/local/texlive/2024/texmf-dist/tex/latex/psnfss/t1pcr.fd)
+(/usr/local/texlive/2024/texmf-dist/tex/latex/amsfonts/umsa.fd)
+(/usr/local/texlive/2024/texmf-dist/tex/latex/amsfonts/umsb.fd)
+(/usr/local/texlive/2024/texmf-dist/tex/latex/jknapltx/ursfs.fd) (./Rd2.toc)
+[1{/usr/local/texlive/2024/texmf-var/fonts/map/pdftex/updmap/pdftex.map}{/usr/l
+ocal/texlive/2024/texmf-dist/fonts/enc/dvips/base/8r.enc}] [2] [3]
+Overfull \hbox (132.78088pt too wide) in paragraph at lines 190--190
+ []  \T1/pcr/m/n/10 mcmc_control = list(backend = "pscl", n_samples_warmup = 50
+0L, n_samples_mcmc = 1000L,[] 
+
+Overfull \hbox (60.78088pt too wide) in paragraph at lines 191--191
+ []    \T1/pcr/m/n/10 batch_size = 512L, chain_method = "parallel", subsample_m
+ethod = "full",[] 
+[4]
+Overfull \hbox (15.20741pt too wide) in paragraph at lines 215--216
+[]\T1/ptm/m/n/10 Vector of in-dices or group-ing vari-able for strat-i-fied boo
+t-strap. De-fault is 1:length(Y). 
+(/usr/local/texlive/2024/texmf-dist/tex/latex/psnfss/ts1ptm.fd)
+Overfull \hbox (15.80898pt too wide) in paragraph at lines 224--225
+\T1/ptm/m/n/10 ports both bi-nary (via []\T1/pcr/m/n/10 emIRT::binIRT[]\T1/ptm/
+m/n/10 ) and or-di-nal (via []\T1/pcr/m/n/10 emIRT::ordIRT[]\T1/ptm/m/n/10 )
+
+Overfull \hbox (7.9682pt too wide) in paragraph at lines 226--227
+[]\T1/ptm/m/n/10 "mcmc": Markov Chain Monte Carlo es-ti-ma-tion us-ing ei-ther 
+[]\T1/pcr/m/n/10 pscl::ideal
+
+Overfull \hbox (48.99799pt too wide) in paragraph at lines 229--230
+[]\T1/ptm/m/n/10 "custom": In this case, la-tent es-ti-ma-tion per-formed us-in
+g []\T1/pcr/m/n/10 latent_estimation_fn[]\T1/ptm/m/n/10 . 
+
+Overfull \hbox (102.8083pt too wide) in paragraph at lines 234--235
+[]\T1/ptm/m/n/10 Custom func-tion for es-ti-mat-ing la-tent trait from []\T1/pc
+r/m/n/10 observables []\T1/ptm/m/n/10 if []\T1/pcr/m/n/10 estimation_method="cu
+stom"
+[5]
+Overfull \hbox (146.76926pt too wide) in paragraph at lines 296--297
+[]\T1/pcr/m/n/10 bayesian_ols_se_outer_normed[]\T1/ptm/m/n/10 : Pos-te-rior sta
+n-dard er-ror cor-re-spond-ing to []\T1/pcr/m/n/10 bayesian_ols_coef_outer_norm
+ed[]\T1/ptm/m/n/10 . 
+
+Overfull \hbox (55.39986pt too wide) in paragraph at lines 297--298
+[]\T1/pcr/m/n/10 bayesian_ols_tstat_outer_normed[]\T1/ptm/m/n/10 : T-statistic 
+for []\T1/pcr/m/n/10 bayesian_ols_coef_outer_normed[]\T1/ptm/m/n/10 . 
+
+Overfull \hbox (146.76926pt too wide) in paragraph at lines 300--301
+[]\T1/pcr/m/n/10 bayesian_ols_se_inner_normed[]\T1/ptm/m/n/10 : Pos-te-rior sta
+n-dard er-ror cor-re-spond-ing to []\T1/pcr/m/n/10 bayesian_ols_coef_inner_norm
+ed[]\T1/ptm/m/n/10 . 
+[6]
+Overfull \hbox (55.39986pt too wide) in paragraph at lines 301--302
+[]\T1/pcr/m/n/10 bayesian_ols_tstat_inner_normed[]\T1/ptm/m/n/10 : T-statistic 
+for []\T1/pcr/m/n/10 bayesian_ols_coef_inner_normed[]\T1/ptm/m/n/10 . 
+
+Overfull \hbox (79.98035pt too wide) in paragraph at lines 318--318
+ []\T1/pcr/m/n/9 observables <- as.data.frame(matrix(sample(c(0,1), 1000*10, re
+place = TRUE), ncol = 10))[] 
+
+Overfull \hbox (132.78088pt too wide) in paragraph at lines 348--348
+ []  \T1/pcr/m/n/10 mcmc_control = list(backend = "pscl", n_samples_warmup = 50
+0L, n_samples_mcmc = 1000L,[] 
+
+Overfull \hbox (132.78088pt too wide) in paragraph at lines 349--349
+ []    \T1/pcr/m/n/10 batch_size = 512L, chain_method = "parallel", subsample_m
+ethod = "full", n_thin_by =[] 
+[7]
+Overfull \hbox (15.80898pt too wide) in paragraph at lines 371--372
+\T1/ptm/m/n/10 ports both bi-nary (via []\T1/pcr/m/n/10 emIRT::binIRT[]\T1/ptm/
+m/n/10 ) and or-di-nal (via []\T1/pcr/m/n/10 emIRT::ordIRT[]\T1/ptm/m/n/10 )
+
+Overfull \hbox (7.9682pt too wide) in paragraph at lines 373--374
+[]\T1/ptm/m/n/10 "mcmc": Markov Chain Monte Carlo es-ti-ma-tion us-ing ei-ther 
+[]\T1/pcr/m/n/10 pscl::ideal
+
+Overfull \hbox (48.99799pt too wide) in paragraph at lines 376--377
+[]\T1/ptm/m/n/10 "custom": In this case, la-tent es-ti-ma-tion per-formed us-in
+g []\T1/pcr/m/n/10 latent_estimation_fn[]\T1/ptm/m/n/10 . 
+
+Overfull \hbox (102.8083pt too wide) in paragraph at lines 381--382
+[]\T1/ptm/m/n/10 Custom func-tion for es-ti-mat-ing la-tent trait from []\T1/pc
+r/m/n/10 observables []\T1/ptm/m/n/10 if []\T1/pcr/m/n/10 estimation_method="cu
+stom"
+[8]
+Overfull \hbox (79.98035pt too wide) in paragraph at lines 468--468
+ []\T1/pcr/m/n/9 observables <- as.data.frame(matrix(sample(c(0,1), 1000*10, re
+place = TRUE), ncol = 10))[] 
+[9] [10] (./Rd2.aux) )
+(see the transcript file for additional information)</usr/local/texlive/2024/te
+xmf-dist/fonts/type1/urw/courier/ucrr8a.pfb></usr/local/texlive/2024/texmf-dist
+/fonts/type1/urw/times/utmb8a.pfb></usr/local/texlive/2024/texmf-dist/fonts/typ
+e1/urw/times/utmr8a.pfb></usr/local/texlive/2024/texmf-dist/fonts/type1/urw/tim
+es/utmr8a.pfb></usr/local/texlive/2024/texmf-dist/fonts/type1/urw/times/utmri8a
+.pfb>
+Output written on Rd2.pdf (10 pages, 97717 bytes).
+Transcript written on Rd2.log.
+Saving output to ‘lpmec-manual.pdf’ ...
+Done
+You may want to clean up by 'rm -Rf /var/folders/gv/l5wlstr55gl_g0pgx6k47z9m0000gn/T//RtmpG3Nivs/Rd2pdfd88373257422'
