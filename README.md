@@ -1,4 +1,6 @@
 # `lpmec`: R Package for Dealing with Latent Predictor Measurement Error Under Identification Restrictions
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+
 [**Installation**](#installation)
 | [**Key Functions**](#keyfxns)
 | [**References**](#references)
@@ -7,12 +9,40 @@
 
 `lpmec` is an R package that provides tools for analyzing latent variable models with measurement error correction, using bootstrapping techniques for inference.
 
+## Overview
+Measurement error in latent predictors (e.g., ideology scores from survey responses, ability measures from test items) causes **attenuation bias** in regression coefficients—systematically biasing estimates toward zero.
+
+`lpmec` implements split-sample instrumental variables and OLS correction methods to obtain consistent estimates when your predictor is measured with error.
+
+**Key features:**
+- Split-sample IV estimation for latent predictors
+- Multiple estimation methods: EM (emIRT), PCA, MCMC (pscl/NumPyro)
+- Bootstrap inference with confidence intervals
+- Sensitivity analysis via sensemakr integration
+
 # Package Installation<a id="installation"></a>
 Within an `R` session, you can install the development version of `lpmec` from GitHub with:
 ```
 # Install from GitHub
 # install.packages("devtools")
 devtools::install_github("cjerzak/lpmec-software/lpmec")
+```
+
+## Quick Start
+```r
+library(lpmec)
+data(KnowledgeVoteDuty)
+
+# Run correction with bootstrap
+results <- lpmec(Y = KnowledgeVoteDuty$VoteDuty,
+                 observables = as.matrix(KnowledgeVoteDuty[, 1:5]),
+                 n_boot = 50)
+
+print(results)
+# Latent Predictor Measurement Error Correction (LPMEC) Model Results
+# -------------------------------------------------------------------
+# Uncorrected Coefficient (OLS): X.XXX (SE: X.XXX)
+# Corrected Coefficient: X.XXX (SE: X.XXX)
 ```
 
 ## Optional: NumPyro Backend for MCMC
@@ -82,6 +112,19 @@ print(results)
 ```
 
 `lpmec` ships with a small example dataset, `KnowledgeVoteDuty`, drawn from the 2024 American National Election Study. Load it with `data(KnowledgeVoteDuty)` to try the package on real survey responses.
+
+## Estimation Methods
+| Method | Description | Backend |
+|--------|-------------|---------|
+| `em` (default) | EM algorithm | emIRT |
+| `pca` | Principal component | base R |
+| `averaging` | Simple row means | base R |
+| `mcmc` | Full Bayesian MCMC | pscl or NumPyro |
+| `custom` | User-provided function | - |
+
+## Documentation
+- [Introduction Vignette](https://github.com/cjerzak/lpmec-software/blob/main/lpmec/vignettes/IntroVignette.Rmd) - Complete walkthrough with real data
+- Run `?lpmec` after installation for function documentation
 
 # Contributing
 Contributions to lpmec are welcome! Feel free to submit a [pull request](https://github.com/cjerzak/lpmec-software/pulls) or open an [issue](https://github.com/cjerzak/lpmec-software/issues).
