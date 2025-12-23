@@ -109,7 +109,9 @@ We thank [Guilherme Duarte](https://duarteguilherme.github.io/), [Jeff Lewis](ht
 [<img src="https://connorjerzak.com/wp-content/uploads/2024/08/LatentErrorViz.png">](https://connorjerzak.com/)
 -->
 
-True Values
+
+```
+                       True Values
                      [Mean 0, Var = 1]
 
                     o   oo ooooo oo   o
@@ -140,3 +142,4 @@ True Values
 
        |-------|-------|-------|-------|-------|-------|
       -3      -2      -1       0       1       2       3
+	  ```
