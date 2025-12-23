@@ -1,3 +1,4 @@
+# Software citation
 bibentry(
   bibtype = "Manual",
   title = "lpmec: Measurement Error Analysis and Correction Under Identification Restrictions",
@@ -8,4 +9,20 @@ bibentry(
   year = "2025",
   note = "R package version 1.1.4",
   url = "https://github.com/cjerzak/lpmec-software"
+)
+
+# Paper citation
+bibentry(
+  bibtype = "Misc",
+  title = "Attenuation Bias with Latent Predictors",
+  author = c(
+    person("Connor T.", "Jerzak"),
+    person("Stephen A.", "Jessee")
+  ),
+  year = "2025",
+  eprint = "2507.22218",
+  archiveprefix = "arXiv",
+  primaryclass = "stat.AP",
+  url = "https://arxiv.org/abs/2507.22218",
+  note = "arXiv:2507.22218 [stat.AP]"
 )

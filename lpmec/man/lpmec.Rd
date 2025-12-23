@@ -145,3 +145,7 @@ print(results)
 }
 
 }
+\references{
+Jerzak, C. T. and Jessee, S. A. (2025). Attenuation Bias with Latent Predictors.
+arXiv:2507.22218 [stat.AP]. \url{https://arxiv.org/abs/2507.22218}
+}
