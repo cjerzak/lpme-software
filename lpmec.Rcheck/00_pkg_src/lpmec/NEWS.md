@@ -3,7 +3,7 @@
 ## Package Rename
 * Renamed package from `lpme` to `lpmec` (Latent Predictor Measurement Error Correction).
 * The name "lpme" was already taken by a different archived CRAN package (by Zhou & Huang).
-* Function names (`lpme()`, `lpme_onerun()`) remain unchanged for backward compatibility.
+* Main functions are `lpmec()` and `lpmec_onerun()`.
 
 ## CRAN Resubmission
 * Removed dependency on archived package `decon`.
