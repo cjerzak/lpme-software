@@ -28,5 +28,5 @@ summary(lm(voteduty ~ knowledge))
 
 }
 \references{
-American National Election Studies. 2024. ANES 2024 Time Series Study Full Release [dataset and documentation]. \url{https://www.electionstudies.org}
+American National Election Studies. 2024. ANES 2024 Time Series Study Full Release [dataset and documentation]. Available at electionstudies.org.
 }
