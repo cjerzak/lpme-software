@@ -111,7 +111,7 @@ We thank [Guilherme Duarte](https://duarteguilherme.github.io/), [Jeff Lewis](ht
 
 
 ```
-                       True Values
+                        True Values
                      [Mean 0, Var = 1]
 
                     o   oo ooooo oo   o
