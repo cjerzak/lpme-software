@@ -143,4 +143,4 @@ We thank [Guilherme Duarte](https://duarteguilherme.github.io/), [Jeff Lewis](ht
 
        |-------|-------|-------|-------|-------|-------|
       -3      -2      -1       0       1       2       3
-	  ```
+```
