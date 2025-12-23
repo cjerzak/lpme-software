@@ -4,7 +4,6 @@
 | [**References**](#references)
 
 [<img src="https://img.shields.io/badge/Demo-View%20Demo-blue" alt="Demo Button">](https://github.com/cjerzak/lpmec-software/blob/main/lpmec/vignettes/IntroVignette.Rmd)
-[![CI](https://github.com/cjerzak/lpmec-software/actions/workflows/ci.yml/badge.svg)](https://github.com/cjerzak/lpmec-software/actions/workflows/ci.yml)
 
 `lpmec` is an R package that provides tools for analyzing latent variable models with measurement error correction, using bootstrapping techniques for inference.
 
