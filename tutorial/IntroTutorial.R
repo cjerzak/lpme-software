@@ -1,9 +1,9 @@
 {
-  # Local install for development team 
-  # install.packages("~/Documents/lpme-software/lpme", repos = NULL, type = "source", force = FALSE)
-  
+  # Local install for development team
+  # install.packages("~/Documents/lpmec-software/lpmec", repos = NULL, type = "source", force = FALSE)
+
   # Install via GitHub
-  # devtools::install_github("cjerzak/lpme-software/lpme")
+  # devtools::install_github("cjerzak/lpmec-software/lpmec")
   
   options(error = NULL)
   n <- 600  # Number of observations
@@ -33,10 +33,10 @@
   # 5) Generate a continuous outcome correlated with the latent trait
   Yobs <- 0.4 * x_true + rnorm(n, sd = 0.35)
   
-  library( lpme )
+  library( lpmec )
   
   # Run bootstrapped analysis
-  results <- lpme(
+  results <- lpmec(
     Y = Yobs,
     observables = as.data.frame(ObservablesMat),
     n_boot = 6L,      # Reduced for demonstration
@@ -54,10 +54,10 @@
   # Advanced use
   if(TRUE == FALSE){ 
   # Try out the Bayesian methods 
-  # lpme::build_backend() # build backend if needed
+  # lpmec::build_backend() # build backend if needed
   BayesBackend <- "pscl"
   # BayesBackend <- "numpyro"
-  mcmc_results <- lpme(
+  mcmc_results <- lpmec(
       Y = Yobs,
       observables = as.data.frame(ObservablesMat),
       n_boot = 0L,      # Reduced for demonstration
@@ -69,9 +69,9 @@
                 chain_method = "sequential", 
                 n_thin_by = 1L, 
                 n_chains = 2L), 
-      conda_env = "lpme"  # Specify your conda environment, used in this condition, backend="numpyro"
+      conda_env = "lpmec"  # Specify your conda environment, used in this condition, backend="numpyro"
   )
-  mcmc_overimputation_results <- lpme(
+  mcmc_overimputation_results <- lpmec(
     Y = Yobs,
     observables = as.data.frame(ObservablesMat),
     n_boot = 0L,      # Reduced for demonstration
@@ -83,9 +83,9 @@
       chain_method = "sequential", 
       n_thin_by = 1L, 
       n_chains = 2L), 
-  conda_env = "lpme"  # Specify your conda environment, used in this condition, backend="numpyro"
+  conda_env = "lpmec"  # Specify your conda environment, used in this condition, backend="numpyro"
   )
-  mcmc_joint_results <- lpme(
+  mcmc_joint_results <- lpmec(
     Y = Yobs,
     observables = as.data.frame(ObservablesMat),
     n_boot = 0L,      # Reduced for demonstration
@@ -97,7 +97,7 @@
       chain_method = "sequential", 
       n_thin_by = 1L, 
       n_chains = 2L), 
-    conda_env = "lpme"  # Specify your conda environment, used in this condition, backend="numpyro"
+    conda_env = "lpmec"  # Specify your conda environment, used in this condition, backend="numpyro"
   )
 
   # compare 

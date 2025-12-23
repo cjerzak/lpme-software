@@ -1,4 +1,4 @@
 library(testthat)
-library(lpme)
+library(lpmec)
 
-test_check("lpme")
+test_check("lpmec")

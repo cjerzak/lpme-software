@@ -36,7 +36,7 @@ apt-get update \
 
 
 # Quickly install other binaries 
-BIN_ROOT="https://raw.githubusercontent.com/cjerzak/lpme-software/main/misc/binaries"
+BIN_ROOT="https://raw.githubusercontent.com/cjerzak/lpmec-software/main/misc/binaries"
 
 # Tarballs you produced in the builder container
 for f in emIRT_0.0.14_R_x86_64-pc-linux-gnu.tar.gz
@@ -58,8 +58,8 @@ rm /tmp/*.tar.gz
 Rscript -e "
 install.packages('sensemakr');
 remotes::install_github(
-  'cjerzak/lpme-software',
-  subdir = 'lpme',
+  'cjerzak/lpmec-software',
+  subdir = 'lpmec',
   dependencies = FALSE,
   build_vignettes = FALSE   # speeds up CI builds
 )"
