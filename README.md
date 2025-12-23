@@ -109,7 +109,7 @@ We thank [Guilherme Duarte](https://duarteguilherme.github.io/), [Jeff Lewis](ht
 [<img src="https://connorjerzak.com/wp-content/uploads/2024/08/LatentErrorViz.png">](https://connorjerzak.com/)
 -->
 
-# Happy lmpec-ing! 
+# Happy lpmec-ing! 
 
 ```
                         True Values
