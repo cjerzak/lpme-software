@@ -10,16 +10,10 @@
 * checking for file ‘lpmec/DESCRIPTION’ ... OK
 * this is package ‘lpmec’ version ‘1.1.4’
 * package encoding: UTF-8
-* checking CRAN incoming feasibility ... [3s/45s] NOTE
+* checking CRAN incoming feasibility ... [3s/34s] NOTE
 Maintainer: ‘Connor Jerzak <connor.jerzak@gmail.com>’
 
 New submission
-
-Found the following (possibly) invalid URLs:
-  URL: https://www.electionstudies.org
-    From: man/KnowledgeVoteDuty.Rd
-    Status: 403
-    Message: Forbidden
 * checking package namespace information ... OK
 * checking package dependencies ... OK
 * checking if this is a source package ... OK
@@ -66,19 +60,4 @@ Found the following (possibly) invalid URLs:
 * checking installed files from ‘inst/doc’ ... OK
 * checking files in ‘vignettes’ ... OK
 * checking examples ... OK
-* checking examples with --run-donttest ... [12s/13s] OK
-* checking for unstated dependencies in vignettes ... OK
-* checking package vignettes ... OK
-* checking re-building of vignette outputs ... [14s/14s] OK
-* checking PDF version of manual ... WARNING
-LaTeX errors when creating PDF version.
-This typically indicates Rd problems.
-* checking PDF version of manual without index ... OK
-* checking HTML version of manual ... NOTE
-Skipping checking HTML validation: 'tidy' doesn't look like recent enough HTML Tidy.
-Please obtain a recent version of HTML Tidy by downloading a binary
-release or compiling the source code from <https://www.html-tidy.org/>.
-* checking for non-standard things in the check directory ... OK
-* checking for detritus in the temp directory ... OK
-* DONE
-Status: 1 WARNING, 2 NOTEs
+* checking examples with --run-donttest ...

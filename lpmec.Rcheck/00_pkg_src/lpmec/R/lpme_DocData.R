@@ -11,7 +11,7 @@
 #'   \item{SenateParty}{Dummy variable (0 or 1) for whether respondent correctly identified the political party that currently has the most members in the U.S. Senate. Created based on variable V241615.}
 #' }
 #'
-#' @references American National Election Studies. 2024. ANES 2024 Time Series Study Full Release [dataset and documentation]. \url{https://www.electionstudies.org}
+#' @references American National Election Studies. 2024. ANES 2024 Time Series Study Full Release [dataset and documentation]. Available at electionstudies.org.
 #'
 #' @examples
 #' data(KnowledgeVoteDuty)
