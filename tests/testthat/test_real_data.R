@@ -7,49 +7,49 @@ skip_on_cran()
 # KNOWLEDGEVOTEDUTY DATASET TESTS
 # ==============================================================================
 
-test_that("lpme works with KnowledgeVoteDuty dataset using PCA", {
-  skip_if_not_installed("lpme")
+test_that("lpmec works with KnowledgeVoteDuty dataset using PCA", {
+  skip_if_not_installed("lpmec")
 
-  data(KnowledgeVoteDuty, package = "lpme")
+  data(KnowledgeVoteDuty, package = "lpmec")
 
   # Extract outcome and observables
   Y <- KnowledgeVoteDuty$voteduty
   obs <- KnowledgeVoteDuty[, c("SenateTerm", "SpendLeast", "HouseParty", "SenateParty")]
 
   # Run with minimal bootstrap for speed
-  res <- lpme(Y, obs, n_boot = 1, n_partition = 1, estimation_method = "pca")
+  res <- lpmec(Y, obs, n_boot = 1, n_partition = 1, estimation_method = "pca")
 
-  expect_s3_class(res, "lpme")
+  expect_s3_class(res, "lpmec")
   expect_true("ols_coef" %in% names(res))
   expect_true("corrected_iv_coef" %in% names(res))
   expect_true(is.numeric(res$ols_coef))
   expect_true(is.numeric(res$corrected_iv_coef))
 })
 
-test_that("lpme_onerun works with KnowledgeVoteDuty dataset", {
-  skip_if_not_installed("lpme")
+test_that("lpmec_onerun works with KnowledgeVoteDuty dataset", {
+  skip_if_not_installed("lpmec")
 
-  data(KnowledgeVoteDuty, package = "lpme")
+  data(KnowledgeVoteDuty, package = "lpmec")
 
   Y <- KnowledgeVoteDuty$voteduty
   obs <- KnowledgeVoteDuty[, c("SenateTerm", "SpendLeast", "HouseParty", "SenateParty")]
 
-  res <- lpme_onerun(Y, obs, estimation_method = "pca")
+  res <- lpmec_onerun(Y, obs, estimation_method = "pca")
 
-  expect_s3_class(res, "lpme_onerun")
+  expect_s3_class(res, "lpmec_onerun")
   expect_equal(length(res$x_est1), nrow(KnowledgeVoteDuty))
   expect_equal(length(res$x_est2), nrow(KnowledgeVoteDuty))
 })
 
-test_that("lpme with KnowledgeVoteDuty produces sensible coefficient directions", {
-  skip_if_not_installed("lpme")
+test_that("lpmec with KnowledgeVoteDuty produces sensible coefficient directions", {
+  skip_if_not_installed("lpmec")
 
-  data(KnowledgeVoteDuty, package = "lpme")
+  data(KnowledgeVoteDuty, package = "lpmec")
 
   Y <- KnowledgeVoteDuty$voteduty
   obs <- KnowledgeVoteDuty[, c("SenateTerm", "SpendLeast", "HouseParty", "SenateParty")]
 
-  res <- lpme_onerun(Y, obs, estimation_method = "pca")
+  res <- lpmec_onerun(Y, obs, estimation_method = "pca")
 
   # Latent variables should be correlated with row means of observables
   knowledge_simple <- rowMeans(obs)
@@ -61,39 +61,39 @@ test_that("lpme with KnowledgeVoteDuty produces sensible coefficient directions"
   expect_true(abs(cor_est2) > 0.5)
 })
 
-test_that("lpme with KnowledgeVoteDuty using EM estimation", {
-  skip_if_not_installed("lpme")
+test_that("lpmec with KnowledgeVoteDuty using EM estimation", {
+  skip_if_not_installed("lpmec")
   skip_if_not_installed("emIRT")
 
-  data(KnowledgeVoteDuty, package = "lpme")
+  data(KnowledgeVoteDuty, package = "lpmec")
 
   Y <- KnowledgeVoteDuty$voteduty
   obs <- KnowledgeVoteDuty[, c("SenateTerm", "SpendLeast", "HouseParty", "SenateParty")]
 
-  res <- lpme(Y, obs, n_boot = 1, n_partition = 1, estimation_method = "em")
+  res <- lpmec(Y, obs, n_boot = 1, n_partition = 1, estimation_method = "em")
 
-  expect_s3_class(res, "lpme")
+  expect_s3_class(res, "lpmec")
   expect_true(is.numeric(res$ols_coef))
 })
 
-test_that("lpme with KnowledgeVoteDuty using averaging estimation", {
-  skip_if_not_installed("lpme")
+test_that("lpmec with KnowledgeVoteDuty using averaging estimation", {
+  skip_if_not_installed("lpmec")
 
-  data(KnowledgeVoteDuty, package = "lpme")
+  data(KnowledgeVoteDuty, package = "lpmec")
 
   Y <- KnowledgeVoteDuty$voteduty
   obs <- KnowledgeVoteDuty[, c("SenateTerm", "SpendLeast", "HouseParty", "SenateParty")]
 
-  res <- lpme(Y, obs, n_boot = 1, n_partition = 1, estimation_method = "averaging")
+  res <- lpmec(Y, obs, n_boot = 1, n_partition = 1, estimation_method = "averaging")
 
-  expect_s3_class(res, "lpme")
+  expect_s3_class(res, "lpmec")
   expect_true(is.numeric(res$ols_coef))
 })
 
 test_that("KnowledgeVoteDuty dataset has expected structure", {
-  skip_if_not_installed("lpme")
+  skip_if_not_installed("lpmec")
 
-  data(KnowledgeVoteDuty, package = "lpme")
+  data(KnowledgeVoteDuty, package = "lpmec")
 
   # Check it's a data frame
 

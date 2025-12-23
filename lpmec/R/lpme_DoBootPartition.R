@@ -1,4 +1,4 @@
-#' lpme
+#' lpmec
 #'
 #' Implements bootstrapped analysis for latent variable models with measurement error correction
 #'
@@ -39,8 +39,8 @@
 #'   \item{\code{n_chains}}{Integer specifying the number of parallel MCMC chains to run.
 #'     Default is \code{2}.}
 #' }
-#' @param conda_env A character string specifying the name of the conda environment to use 
-#'   via \code{reticulate}. Default is \code{"lpme"}.
+#' @param conda_env A character string specifying the name of the conda environment to use
+#'   via \code{reticulate}. Default is \code{"lpmec"}.
 #' @param conda_env_required A logical indicating whether the specified conda environment
 #'   must be strictly used. If \code{TRUE}, an error is thrown if the environment is not found.
 #'   Default is \code{FALSE}.
@@ -78,11 +78,11 @@
 #'   \item \code{x_est2}: Second set of latent variable estimates.
 #' }
 #'
-#' @details 
-#' This function implements a bootstrapped latent variable analysis with measurement error correction. 
+#' @details
+#' This function implements a bootstrapped latent variable analysis with measurement error correction.
 #' It performs multiple bootstrap iterations, each with multiple partitions. For each partition,
-#' it calls the \code{lpme_onerun} function to estimate latent variables and apply various correction methods.
-#' The results are then aggregated across partitions and bootstrap iterations to produce final estimates 
+#' it calls the \code{lpmec_onerun} function to estimate latent variables and apply various correction methods.
+#' The results are then aggregated across partitions and bootstrap iterations to produce final estimates
 #' and bootstrap standard errors.
 #'
 #' @examples
@@ -93,11 +93,11 @@
 #' observables <- as.data.frame(matrix(sample(c(0,1), 1000*10, replace = TRUE), ncol = 10))
 #'
 #' # Run the bootstrapped analysis
-#' results <- lpme(Y = Y,
-#'                 observables = observables,
-#'                 n_boot = 10,    # small values for illustration only
-#'                 n_partition = 5 # small for size
-#'                 )
+#' results <- lpmec(Y = Y,
+#'                  observables = observables,
+#'                  n_boot = 10,    # small values for illustration only
+#'                  n_partition = 5 # small for size
+#'                  )
 #'
 #' # View the corrected IV coefficient and its standard error
 #' print(results)
@@ -105,33 +105,32 @@
 #'
 #' @export
 #' @importFrom stats sd median na.omit
-#' @importFrom lpme lpme_onerun
 
-lpme <- function(Y,
-                 observables, 
-                 observables_groupings = colnames(observables),
-                 orientation_signs = NULL,
-                 make_observables_groupings = FALSE,
-                 n_boot = 32L, 
-                 n_partition = 10L, 
-                 boot_basis = 1:length(Y),
-                 return_intermediaries = TRUE, 
-                 ordinal = FALSE, 
-                 estimation_method = "em",
-                 latent_estimation_fn = NULL, 
-                 mcmc_control = list(
-                   backend = "pscl",  # will override to use NumPyro-based MCMC
-                   n_samples_warmup = 500L,
-                   n_samples_mcmc   = 1000L,
-                   batch_size = 512L, 
-                   chain_method = "parallel", 
-                   subsample_method = "full", 
-                   anchor_parameter_id = NULL, 
-                   n_thin_by = 1L, 
-                   n_chains = 2L), 
-                 conda_env = "lpme", 
-                 conda_env_required = FALSE
-                 ){
+lpmec <- function(Y,
+                  observables,
+                  observables_groupings = colnames(observables),
+                  orientation_signs = NULL,
+                  make_observables_groupings = FALSE,
+                  n_boot = 32L,
+                  n_partition = 10L,
+                  boot_basis = 1:length(Y),
+                  return_intermediaries = TRUE,
+                  ordinal = FALSE,
+                  estimation_method = "em",
+                  latent_estimation_fn = NULL,
+                  mcmc_control = list(
+                    backend = "pscl",  # will override to use NumPyro-based MCMC
+                    n_samples_warmup = 500L,
+                    n_samples_mcmc   = 1000L,
+                    batch_size = 512L,
+                    chain_method = "parallel",
+                    subsample_method = "full",
+                    anchor_parameter_id = NULL,
+                    n_thin_by = 1L,
+                    n_chains = 2L),
+                  conda_env = "lpmec",
+                  conda_env_required = FALSE
+                  ){
 
   # ============================================================================
   # INPUT VALIDATION
@@ -274,7 +273,7 @@ lpme <- function(Y,
       # Run single analysis
       rungood <- FALSE; runcounter <- 0; while(!rungood){ 
         runcounter <- runcounter + 1 
-        LatentRunResults_ <- try(lpme_onerun(
+        LatentRunResults_ <- try(lpmec_onerun(
           Y[boot_indices],
           observables[boot_indices,], 
           observables_groupings = observables_groupings,
@@ -578,7 +577,7 @@ lpme <- function(Y,
       "var_est_split"    = VarEst_split,
       "var_est_split_se" = VarEst_split_se
     )
-  class(results) <- "lpme"
+  class(results) <- "lpmec"
   return(results)
   
 }

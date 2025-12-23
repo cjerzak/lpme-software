@@ -2,36 +2,36 @@
 % Please edit documentation in R/lpme_BuildBackend.R
 \name{build_backend}
 \alias{build_backend}
-\title{A function to build the environment for lpme. Builds a conda environment in which
+\title{A function to build the environment for lpmec. Builds a conda environment in which
 'JAX', 'numpyro', and 'numpy' are installed. Users can also create a conda
 environment where 'JAX' and 'numpy' are installed themselves.}
 \usage{
-build_backend(conda_env = "lpme", conda = "auto")
+build_backend(conda_env = "lpmec", conda = "auto")
 }
 \arguments{
-\item{conda_env}{(default = \code{"lpme"}) Name of the conda environment in which to place the backends.}
+\item{conda_env}{(default = \code{"lpmec"}) Name of the conda environment in which to place the backends.}
 
 \item{conda}{(default = \code{auto}) The path to a conda executable. Using \code{"auto"} allows reticulate to attempt to automatically find an appropriate conda binary.}
 }
 \value{
 Invisibly returns NULL; this function is used for its side effects
-of creating and configuring a conda environment for \code{lpme}.
+of creating and configuring a conda environment for \code{lpmec}.
 This function requires an Internet connection.
 You can find out a list of conda Python paths via: \code{Sys.which("python")}
 }
 \description{
-A function to build the environment for lpme. Builds a conda environment in which
+A function to build the environment for lpmec. Builds a conda environment in which
 'JAX', 'numpyro', and 'numpy' are installed. Users can also create a conda
 environment where 'JAX' and 'numpy' are installed themselves.
 }
 \examples{
 \dontrun{
-# Create a conda environment named "lpme"
+# Create a conda environment named "lpmec"
 # and install the required Python packages (jax, numpy, etc.)
-build_backend(conda_env = "lpme", conda = "auto")
+build_backend(conda_env = "lpmec", conda = "auto")
 
 # If you want to specify a particular conda path:
-# build_backend(conda_env = "lpme", conda = "/usr/local/bin/conda")
+# build_backend(conda_env = "lpmec", conda = "/usr/local/bin/conda")
 }
 
 }

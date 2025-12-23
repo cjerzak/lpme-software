@@ -1,4 +1,4 @@
-#' lpme_onerun
+#' lpmec_onerun
 #'
 #' Implements analysis for latent variable models with measurement error correction
 #'
@@ -33,8 +33,8 @@
 #'   \item{\code{n_chains}}{Integer specifying the number of parallel MCMC chains to run.
 #'     Default is \code{2}.}
 #' }
-#' @param conda_env A character string specifying the name of the conda environment to use 
-#'   via \code{reticulate}. Default is \code{"lpme"}.
+#' @param conda_env A character string specifying the name of the conda environment to use
+#'   via \code{reticulate}. Default is \code{"lpmec"}.
 #' @param conda_env_required A logical indicating whether the specified conda environment
 #'   must be strictly used. If \code{TRUE}, an error is thrown if the environment is not found.
 #'   Default is \code{FALSE}.
@@ -73,7 +73,7 @@
 #'   \item \code{corrected_ols_tstat}: T-statistic for the corrected OLS coefficient
 #'   \item \code{corrected_ols_coef_alt}: Alternative corrected OLS coefficient
 #' }
-#' For inference on these quantities, use the bootstrap approach via \code{\link{lpme}}, which
+#' For inference on these quantities, use the bootstrap approach via \code{\link{lpmec}}, which
 #' provides valid confidence intervals and standard errors through resampling.
 #'
 #'
@@ -85,8 +85,8 @@
 #' observables <- as.data.frame(matrix(sample(c(0,1), 1000*10, replace = TRUE), ncol = 10))
 #'
 #' # Run the analysis
-#' results <- lpme_onerun(Y = Y,
-#'                        observables = observables)
+#' results <- lpmec_onerun(Y = Y,
+#'                         observables = observables)
 #'
 #' # View the corrected estimates
 #' print(results)
@@ -106,24 +106,24 @@
 #' @importFrom emIRT binIRT ordIRT
 #' @importFrom sensemakr extreme_robustness_value
 
-lpme_onerun <- function( Y,
-                         observables, 
-                         observables_groupings = colnames(observables),
-                         make_observables_groupings = FALSE, 
-                         estimation_method = "em", 
-                         latent_estimation_fn = NULL, 
-                         mcmc_control = list(
-                           backend = "pscl",  # will override to use NumPyro-based MCMC
-                           n_samples_warmup = 500L,
-                           n_samples_mcmc   = 1000L,
-                           batch_size = 512L, 
-                           chain_method = "parallel", 
-                           subsample_method = "full", 
-                           n_thin_by = 1L, 
-                           n_chains = 2L), 
-                         ordinal = FALSE, 
-                         conda_env = "lpme",
-                         conda_env_required = FALSE){
+lpmec_onerun <- function(Y,
+                          observables,
+                          observables_groupings = colnames(observables),
+                          make_observables_groupings = FALSE,
+                          estimation_method = "em",
+                          latent_estimation_fn = NULL,
+                          mcmc_control = list(
+                            backend = "pscl",  # will override to use NumPyro-based MCMC
+                            n_samples_warmup = 500L,
+                            n_samples_mcmc   = 1000L,
+                            batch_size = 512L,
+                            chain_method = "parallel",
+                            subsample_method = "full",
+                            n_thin_by = 1L,
+                            n_chains = 2L),
+                          ordinal = FALSE,
+                          conda_env = "lpmec",
+                          conda_env_required = FALSE){
   # Merge user-provided mcmc_control with defaults
   # This ensures partial user specifications don't cause missing parameter errors
   default_mcmc_control <- list(
@@ -521,7 +521,7 @@ lpme_onerun <- function( Y,
       }
     }
     if( grepl(estimation_method, pattern = "mcmc") & mcmc_control$backend == "numpyro" ){
-        if(!"jax" %in% ls(envir = lpme_env)){ initialize_jax(conda_env, conda_env_required) }
+        if(!"jax" %in% ls(envir = lpmec_env)){ initialize_jax(conda_env, conda_env_required) }
         
         # Construct for annotating conditionally independent variables.
         # Within a plate context manager, sample sites will be automatically broadcasted to the size of the plate. 
@@ -529,7 +529,7 @@ lpme_onerun <- function( Y,
         # if subsample_size is specified.
         
         # Set up MCMC
-        lpme_env$numpyro$set_host_device_count( mcmc_control$n_chains )
+        lpmec_env$numpyro$set_host_device_count( mcmc_control$n_chains )
         N <- ai(nrow(observables_))
         K <- ai(ncol(observables_))
         
@@ -541,78 +541,78 @@ lpme_onerun <- function( Y,
             K <- X$shape[[2]]
             
             # Global hyperpriors for ability (non-centered)
-            mu_ability <- lpme_env$numpyro$sample("mu_ability",
-                                                  lpme_env$dist$Normal(0, 1))
-            sigma_ability <- lpme_env$numpyro$sample("sigma_ability",
-                                                     lpme_env$dist$HalfNormal(1))
-            with(lpme_env$numpyro$plate("rows", N), {
-              eps_ability <- lpme_env$numpyro$sample("eps_ability",
-                                                     lpme_env$dist$Normal(0, 1))
-              ability <- lpme_env$numpyro$deterministic(
+            mu_ability <- lpmec_env$numpyro$sample("mu_ability",
+                                                  lpmec_env$dist$Normal(0, 1))
+            sigma_ability <- lpmec_env$numpyro$sample("sigma_ability",
+                                                     lpmec_env$dist$HalfNormal(1))
+            with(lpmec_env$numpyro$plate("rows", N), {
+              eps_ability <- lpmec_env$numpyro$sample("eps_ability",
+                                                     lpmec_env$dist$Normal(0, 1))
+              ability <- lpmec_env$numpyro$deterministic(
                 "ability", (mu_ability + sigma_ability * eps_ability)[,NULL] )
             })
             
             # Hyperpriors for item parameters
-            mu_difficulty <- lpme_env$numpyro$sample("mu_difficulty",
-                                                     lpme_env$dist$Normal(0, 3))
-            sigma_difficulty <- lpme_env$numpyro$sample("sigma_difficulty",
-                                                        lpme_env$dist$HalfNormal(3))
-            mu_log_discrimination <- lpme_env$numpyro$sample("mu_log_discrimination",
-                                                             lpme_env$dist$Normal(0.5, 1))
-            sigma_log_discrimination <- lpme_env$numpyro$sample("sigma_log_discrimination",
-                                                                lpme_env$dist$HalfNormal(0.5))
-            with(lpme_env$numpyro$plate("columns", K), {
-              eps_difficulty <- lpme_env$numpyro$sample("eps_difficulty",
-                                                        lpme_env$dist$Normal(0, 3))
-              difficulty <- lpme_env$numpyro$deterministic(
+            mu_difficulty <- lpmec_env$numpyro$sample("mu_difficulty",
+                                                     lpmec_env$dist$Normal(0, 3))
+            sigma_difficulty <- lpmec_env$numpyro$sample("sigma_difficulty",
+                                                        lpmec_env$dist$HalfNormal(3))
+            mu_log_discrimination <- lpmec_env$numpyro$sample("mu_log_discrimination",
+                                                             lpmec_env$dist$Normal(0.5, 1))
+            sigma_log_discrimination <- lpmec_env$numpyro$sample("sigma_log_discrimination",
+                                                                lpmec_env$dist$HalfNormal(0.5))
+            with(lpmec_env$numpyro$plate("columns", K), {
+              eps_difficulty <- lpmec_env$numpyro$sample("eps_difficulty",
+                                                        lpmec_env$dist$Normal(0, 3))
+              difficulty <- lpmec_env$numpyro$deterministic(
                 "difficulty", (mu_difficulty + sigma_difficulty * eps_difficulty)[NULL,] )
               
-              eps_log_discrimination <- lpme_env$numpyro$sample("eps_log_discrimination",
-                                                      lpme_env$dist$Normal(0, 1))
+              eps_log_discrimination <- lpmec_env$numpyro$sample("eps_log_discrimination",
+                                                      lpmec_env$dist$Normal(0, 1))
               log_discrimination <- mu_log_discrimination + sigma_log_discrimination * eps_log_discrimination
-              discrimination <- lpme_env$numpyro$deterministic(
-                "discrimination", lpme_env$jax$nn$softplus(log_discrimination)[NULL,] )
+              discrimination <- lpmec_env$numpyro$deterministic(
+                "discrimination", lpmec_env$jax$nn$softplus(log_discrimination)[NULL,] )
             })
             
             # Define a local likelihood function for the *subset* of rows
             local_lik_fn <- function(){
-              with(lpme_env$numpyro$plate(
+              with(lpmec_env$numpyro$plate(
                 "rows_subsample",
                 size = N,
                 subsample_size = ai(mcmc_control$batch_size),
                 dim = -2L
               ) %as% "idx", {
                 # Subset 
-                ability_sub <- lpme_env$jnp$take(ability, idx, axis = 0L)
+                ability_sub <- lpmec_env$jnp$take(ability, idx, axis = 0L)
                 
                 # Observed subset of X
-                X_sub <- lpme_env$jnp$take(X, indices = idx, axis = 0L)
+                X_sub <- lpmec_env$jnp$take(X, indices = idx, axis = 0L)
                 
                 # Construct logit for subset
                 logits_sub <- (ability_sub - difficulty) * discrimination
                 
                 # Add columns plate around the sample statement
-                with(lpme_env$numpyro$plate("columns", K, dim = -1L), {
-                  lpme_env$numpyro$sample(
+                with(lpmec_env$numpyro$plate("columns", K, dim = -1L), {
+                  lpmec_env$numpyro$sample(
                     "Xlik_sub",
-                    lpme_env$dist$Bernoulli(logits = logits_sub),
+                    lpmec_env$dist$Bernoulli(logits = logits_sub),
                     obs = X_sub )
                 })
                 
                 # If doing a full regression on Y:
                 if (estimation_method == "mcmc_joint") {
-                  Y_intercept <- lpme_env$numpyro$sample("YModel_intercept",
-                                                         lpme_env$dist$Normal(0, 1))
-                  Y_slope <- lpme_env$numpyro$sample("YModel_slope",
-                                                     lpme_env$dist$Normal(0, 1))
-                  Y_sigma <- lpme_env$numpyro$sample("YModel_sigma",
-                                                     lpme_env$dist$HalfNormal(1))
+                  Y_intercept <- lpmec_env$numpyro$sample("YModel_intercept",
+                                                         lpmec_env$dist$Normal(0, 1))
+                  Y_slope <- lpmec_env$numpyro$sample("YModel_slope",
+                                                     lpmec_env$dist$Normal(0, 1))
+                  Y_sigma <- lpmec_env$numpyro$sample("YModel_sigma",
+                                                     lpmec_env$dist$HalfNormal(1))
                   
-                  Y_sub <- lpme_env$jnp$take(Y, idx)
+                  Y_sub <- lpmec_env$jnp$take(Y, idx)
                   Y_mu_sub <- Y_intercept + Y_slope * ability_sub
-                  lpme_env$numpyro$sample(
+                  lpmec_env$numpyro$sample(
                     "Ylik_sub",
-                    lpme_env$dist$Normal(Y_mu_sub, Y_sigma),
+                    lpmec_env$dist$Normal(Y_mu_sub, Y_sigma),
                     obs = Y_sub
                   )
                 }
@@ -620,7 +620,7 @@ lpme_onerun <- function( Y,
             }
             
             # Scale the local likelihood by (N / batch_size) for unbiased gradient
-            scaled_lik <- lpme_env$numpyro$handlers$scale(
+            scaled_lik <- lpmec_env$numpyro$handlers$scale(
               scale = as.numeric(N / mcmc_control$batch_size))(local_lik_fn)
             
             # Execute the scaled likelihood
@@ -634,16 +634,16 @@ lpme_onerun <- function( Y,
         ){
             
             # Global hyperpriors for ability
-            mu_ability <- lpme_env$numpyro$sample("mu_ability",
-                                                  lpme_env$dist$Normal(0, 1))
-            sigma_ability <- lpme_env$numpyro$sample("sigma_ability",
-                                                     lpme_env$dist$HalfNormal(0.5))
+            mu_ability <- lpmec_env$numpyro$sample("mu_ability",
+                                                  lpmec_env$dist$Normal(0, 1))
+            sigma_ability <- lpmec_env$numpyro$sample("sigma_ability",
+                                                     lpmec_env$dist$HalfNormal(0.5))
             
             # Non-centered parameterization for ability
-            with(lpme_env$numpyro$plate("rows", X$shape[[1]], dim = -2L), { # N
-              eps_ability <- lpme_env$numpyro$sample("eps_ability",
-                                                     lpme_env$dist$Normal(0, 1))
-              ability <- lpme_env$numpyro$deterministic("ability", 
+            with(lpmec_env$numpyro$plate("rows", X$shape[[1]], dim = -2L), { # N
+              eps_ability <- lpmec_env$numpyro$sample("eps_ability",
+                                                     lpmec_env$dist$Normal(0, 1))
+              ability <- lpmec_env$numpyro$deterministic("ability", 
                                  (mu_ability + sigma_ability * eps_ability) )
             })
             
@@ -655,36 +655,36 @@ lpme_onerun <- function( Y,
             }
             
             # For difficulty, you might keep it simple or also do a non-centered param:
-            mu_difficulty <- lpme_env$numpyro$sample("mu_difficulty",
-                                                     lpme_env$dist$Normal(0, 2))
-            sigma_difficulty <- lpme_env$numpyro$sample("sigma_difficulty",
-                                                        lpme_env$dist$HalfNormal(1))
-            mu_log_discrimination <- lpme_env$numpyro$sample("mu_log_discrimination",
-                                                             lpme_env$dist$Normal(0.5, 1))
-            sigma_log_discrimination <- lpme_env$numpyro$sample("sigma_log_discrimination",
-                                                                lpme_env$dist$HalfNormal(0.5))
-            with(lpme_env$numpyro$plate("columns", X$shape[[2]], dim = -1L), {  # D
-              difficulty_raw <- lpme_env$numpyro$sample("eps_difficulty",
-                                                        lpme_env$dist$Normal(0, 1))
+            mu_difficulty <- lpmec_env$numpyro$sample("mu_difficulty",
+                                                     lpmec_env$dist$Normal(0, 2))
+            sigma_difficulty <- lpmec_env$numpyro$sample("sigma_difficulty",
+                                                        lpmec_env$dist$HalfNormal(1))
+            mu_log_discrimination <- lpmec_env$numpyro$sample("mu_log_discrimination",
+                                                             lpmec_env$dist$Normal(0.5, 1))
+            sigma_log_discrimination <- lpmec_env$numpyro$sample("sigma_log_discrimination",
+                                                                lpmec_env$dist$HalfNormal(0.5))
+            with(lpmec_env$numpyro$plate("columns", X$shape[[2]], dim = -1L), {  # D
+              difficulty_raw <- lpmec_env$numpyro$sample("eps_difficulty",
+                                                        lpmec_env$dist$Normal(0, 1))
               
               # If anchor_id was specified, force difficulty for that item to be positive
               difficulty_adjusted <- difficulty_raw
               if( !is.null(anchor_id) ){
                 # Use at update to ensure the anchor difficulty is strictly positive
                 difficulty_adjusted <- difficulty_raw$at[anchor_id]$set(
-                  lpme_env$jax$nn$softplus(difficulty_raw[anchor_id])
+                  lpmec_env$jax$nn$softplus(difficulty_raw[anchor_id])
                 )
               }
-              difficulty <- lpme_env$numpyro$deterministic("difficulty", 
+              difficulty <- lpmec_env$numpyro$deterministic("difficulty", 
                                          (difficulty_adjusted)[NULL,]) # if NOT using centered parameterization
                                         #(mu_difficulty + sigma_difficulty * difficulty_adjusted)[NULL,]) # if using centered parameterization
 
-              # discrimination <- lpme_env$numpyro$sample("discrimination", lpme_env$dist$HalfNormal(2))
-              eps_log_discrimination <- lpme_env$numpyro$sample("eps_log_discrimination", 
-                                                                lpme_env$dist$Normal(0.5, 2))
-              discrimination <- lpme_env$numpyro$deterministic("discrimination", 
-                                        lpme_env$jax$nn$softplus(eps_log_discrimination)[NULL,]) # if NOT using centered parameterization
-                                        #lpme_env$jax$nn$softplus(mu_log_discrimination + sigma_log_discrimination * eps_log_discrimination)[NULL,]) # if using centered parameterization
+              # discrimination <- lpmec_env$numpyro$sample("discrimination", lpmec_env$dist$HalfNormal(2))
+              eps_log_discrimination <- lpmec_env$numpyro$sample("eps_log_discrimination", 
+                                                                lpmec_env$dist$Normal(0.5, 2))
+              discrimination <- lpmec_env$numpyro$deterministic("discrimination", 
+                                        lpmec_env$jax$nn$softplus(eps_log_discrimination)[NULL,]) # if NOT using centered parameterization
+                                        #lpmec_env$jax$nn$softplus(mu_log_discrimination + sigma_log_discrimination * eps_log_discrimination)[NULL,]) # if using centered parameterization
             })
             
             # Construct logits using the new 'ability' & 'difficulty'
@@ -692,24 +692,24 @@ lpme_onerun <- function( Y,
             Xprobs <- ( ability - difficulty ) * discrimination
             
             # Likelihood for X using a Bernoulli logit, wrapped in plates
-            #lpme_env$numpyro$sample("Xlik", lpme_env$dist$Bernoulli(logits=Xprobs), obs=X)
-            with(lpme_env$numpyro$plate("rows", X$shape[[1]], dim = -2L), {
-              with(lpme_env$numpyro$plate("columns", X$shape[[2]], dim = -1L), {
-                lpme_env$numpyro$sample("Xlik", lpme_env$dist$Bernoulli(logits = Xprobs), obs = X)
+            #lpmec_env$numpyro$sample("Xlik", lpmec_env$dist$Bernoulli(logits=Xprobs), obs=X)
+            with(lpmec_env$numpyro$plate("rows", X$shape[[1]], dim = -2L), {
+              with(lpmec_env$numpyro$plate("columns", X$shape[[2]], dim = -1L), {
+                lpmec_env$numpyro$sample("Xlik", lpmec_env$dist$Bernoulli(logits = Xprobs), obs = X)
               }) })
             
             # If you are using the outcome portion in "mcmc_joint" mode:
             if(estimation_method == "mcmc_joint"){
-              Y_intercept <- lpme_env$numpyro$sample("YModel_intercept",
-                                                     lpme_env$dist$Normal(0, 1))
-              Y_slope <- lpme_env$numpyro$sample("YModel_slope",
-                                                 lpme_env$dist$Normal(0, 1))
-              Y_sigma <- lpme_env$numpyro$sample("YModel_sigma",
-                                                 lpme_env$dist$HalfNormal(1))
+              Y_intercept <- lpmec_env$numpyro$sample("YModel_intercept",
+                                                     lpmec_env$dist$Normal(0, 1))
+              Y_slope <- lpmec_env$numpyro$sample("YModel_slope",
+                                                 lpmec_env$dist$Normal(0, 1))
+              Y_sigma <- lpmec_env$numpyro$sample("YModel_sigma",
+                                                 lpmec_env$dist$HalfNormal(1))
               
               Y_mu <- Y_intercept + Y_slope * ability
-              lpme_env$numpyro$sample("Ylik",
-                                      lpme_env$dist$Normal(Y_mu, Y_sigma),
+              lpmec_env$numpyro$sample("Ylik",
+                                      lpmec_env$dist$Normal(Y_mu, Y_sigma),
                                       obs=Y)
             }
           })
@@ -718,7 +718,7 @@ lpme_onerun <- function( Y,
       if(mcmc_control$subsample_method == "batch"){ 
         message("Enlisting HMCECS kernels...")
         # https://num.pyro.ai/en/stable/mcmc.html#numpyro.infer.hmc_gibbs.HMCECS
-        kernel <- lpme_env$numpyro$infer$HMCECS(lpme_env$numpyro$infer$NUTS(IRTModel_batch), 
+        kernel <- lpmec_env$numpyro$infer$HMCECS(lpmec_env$numpyro$infer$NUTS(IRTModel_batch), 
                                                 num_blocks = 4L)
                                                 #num_blocks = ai(ceiling(N/mcmc_control$batch_size)))
         #Batch size controls computational cost and the variance of the log-likelihood estimate.
@@ -726,11 +726,11 @@ lpme_onerun <- function( Y,
       }
       if(mcmc_control$subsample_method == "full"){ 
         message("Enlisting NUTS kernels...")
-        kernel <- lpme_env$numpyro$infer$NUTS(IRTModel_full, 
+        kernel <- lpmec_env$numpyro$infer$NUTS(IRTModel_full, 
                                               max_tree_depth = ai(8), # 10 is default, slows performance down considerably
                                               target_accept_prob = 0.85 ) 
       }
-      sampler <- lpme_env$numpyro$infer$MCMC(
+      sampler <- lpmec_env$numpyro$infer$MCMC(
         kernel,
         num_warmup = mcmc_control$n_samples_warmup,
         num_samples = mcmc_control$n_samples_mcmc,
@@ -742,26 +742,26 @@ lpme_onerun <- function( Y,
       )
       
       # run sampler with initialized abilities as COLMEANS of X (ASSUMPTION!)
-      pdtype_ <- ddtype_ <- lpme_env$jnp$float32; lpme_env$jax$config$update("jax_enable_x64", FALSE) 
-      #pdtype_ <- ddtype_ <- lpme_env$jnp$float64; lpme_env$jax$config$update("jax_enable_x64", TRUE) 
-      #pdtype_ <- ddtype_ <- lpme_env$jnp$float16; lpme_env$jax$config$update("jax_enable_x64", FALSE) 
+      pdtype_ <- ddtype_ <- lpmec_env$jnp$float32; lpmec_env$jax$config$update("jax_enable_x64", FALSE) 
+      #pdtype_ <- ddtype_ <- lpmec_env$jnp$float64; lpmec_env$jax$config$update("jax_enable_x64", TRUE) 
+      #pdtype_ <- ddtype_ <- lpmec_env$jnp$float16; lpmec_env$jax$config$update("jax_enable_x64", FALSE) 
       
       # set initial parameters 
       UseEMInits <- FALSE
-      ability_init <- lpme_env$jnp$broadcast_to(lpme_env$jnp$array(x_init<- (scale(rowMeans(observables_))*INIT_SCALER))$astype(pdtype_), list(mcmc_control$n_chains, N, 1L))
-      if(UseEMInits){ ability_init <- lpme_env$jnp$broadcast_to(lpme_env$jnp$array( x_init<- scale(rowMeans(observables_))*INIT_SCALER )$astype(pdtype_), list(mcmc_control$n_chains, N, 1L)) } 
+      ability_init <- lpmec_env$jnp$broadcast_to(lpmec_env$jnp$array(x_init<- (scale(rowMeans(observables_))*INIT_SCALER))$astype(pdtype_), list(mcmc_control$n_chains, N, 1L))
+      if(UseEMInits){ ability_init <- lpmec_env$jnp$broadcast_to(lpmec_env$jnp$array( x_init<- scale(rowMeans(observables_))*INIT_SCALER )$astype(pdtype_), list(mcmc_control$n_chains, N, 1L)) } 
       
-      difficulty_init <- lpme_env$jnp$array(matrix(rnorm(K*mcmc_control$n_chains,mean=0,sd=1/sqrt(K)),nrow=mcmc_control$n_chains) )$astype(pdtype_)
-      if(UseEMInits){ difficulty_init <-  lpme_env$jnp$broadcast_to(lpme_env$jnp$array( out_emIRT$means$beta[,1]*INIT_SCALER )$astype(pdtype_), list(mcmc_control$n_chains, K)) }
+      difficulty_init <- lpmec_env$jnp$array(matrix(rnorm(K*mcmc_control$n_chains,mean=0,sd=1/sqrt(K)),nrow=mcmc_control$n_chains) )$astype(pdtype_)
+      if(UseEMInits){ difficulty_init <-  lpmec_env$jnp$broadcast_to(lpmec_env$jnp$array( out_emIRT$means$beta[,1]*INIT_SCALER )$astype(pdtype_), list(mcmc_control$n_chains, K)) }
       
-      discrimination_init <- lpme_env$jnp$array(  matrix( (rnorm(K*mcmc_control$n_chains,mean=1,sd=1/sqrt(K))),nrow=mcmc_control$n_chains))$astype(pdtype_)
-      if(UseEMInits){ discrimination_init <-  lpme_env$jnp$broadcast_to(lpme_env$jnp$array( out_emIRT$means$beta[,2] *INIT_SCALER )$astype(pdtype_),list(mcmc_control$n_chains, K)) }
+      discrimination_init <- lpmec_env$jnp$array(  matrix( (rnorm(K*mcmc_control$n_chains,mean=1,sd=1/sqrt(K))),nrow=mcmc_control$n_chains))$astype(pdtype_)
+      if(UseEMInits){ discrimination_init <-  lpmec_env$jnp$broadcast_to(lpmec_env$jnp$array( out_emIRT$means$beta[,2] *INIT_SCALER )$astype(pdtype_),list(mcmc_control$n_chains, K)) }
       
       # run sampler 
       t0_ <- Sys.time()
-      sampler$run(lpme_env$jax$random$PRNGKey( ai(runif(1,0,10000)) ), 
-                  X = lpme_env$jnp$array(as.matrix(observables_))$astype( ddtype_ ),  # note: lpme_env$jnp$int16 here causes error (expects floats not ints)
-                  Y = lpme_env$jnp$array(as.matrix(Y))$astype( ddtype_ ))
+      sampler$run(lpmec_env$jax$random$PRNGKey( ai(runif(1,0,10000)) ), 
+                  X = lpmec_env$jnp$array(as.matrix(observables_))$astype( ddtype_ ),  # note: lpmec_env$jnp$int16 here causes error (expects floats not ints)
+                  Y = lpmec_env$jnp$array(as.matrix(Y))$astype( ddtype_ ))
                   #init_params = list(
                   #  "ability" = ability_init,
                   #  "difficulty" = difficulty_init,
@@ -770,7 +770,7 @@ lpme_onerun <- function( Y,
       # PosteriorDraws$ability$shape; PosteriorDraws$ability[1,,1]
       ExtractAbil <- function(abil){ 
         abil <- do.call(cbind, sapply(1L:mcmc_control$n_chains, function(c_){
-          abil_c <- as.matrix(lpme_env$np$array(abil)[c_,,,])
+          abil_c <- as.matrix(lpmec_env$np$array(abil)[c_,,,])
           return( list( t(abil_c) ) )
         }))
         theAnchor <- which.max(x_init)
@@ -781,26 +781,26 @@ lpme_onerun <- function( Y,
       }
 
       # summary( lm(Y~scale(AbilityMean) ) )
-      # plot( as.matrix( lpme_env$np$array( PosteriorDraws$discrimination_oriented ) )[1,,1])
-      # plot( as.matrix( lpme_env$np$array( PosteriorDraws$discrimination ) )[1,,1])
-      # plot( as.matrix( lpme_env$np$array( PosteriorDraws$discrimination ) )[1,,2])
+      # plot( as.matrix( lpmec_env$np$array( PosteriorDraws$discrimination_oriented ) )[1,,1])
+      # plot( as.matrix( lpmec_env$np$array( PosteriorDraws$discrimination ) )[1,,1])
+      # plot( as.matrix( lpmec_env$np$array( PosteriorDraws$discrimination ) )[1,,2])
       
       # Calculate posterior means
       # ExtractAbil(PosteriorDraws$ability)
       # plot(ExtractAbil(PosteriorDraws$ability)[1,],main="i=1")
       # plot(ExtractAbil(PosteriorDraws$ability)[2,],main="i=1")
       AbilityMean <- rowMeans(  ExtractAbil(PosteriorDraws$ability) )
-      DifficultyMean <- as.matrix(lpme_env$np$array(lpme_env$jnp$mean(PosteriorDraws$difficulty,0L:1L))) #  colMeans( as.matrix(lpme_env$np$array(PosteriorDraws$difficulty)) )
+      DifficultyMean <- as.matrix(lpmec_env$np$array(lpmec_env$jnp$mean(PosteriorDraws$difficulty,0L:1L))) #  colMeans( as.matrix(lpmec_env$np$array(PosteriorDraws$difficulty)) )
       
       # plot(scale(x.true[i_sampled]),scale(AbilityMean))
       # cor(x.true[i_sampled],AbilityMean)
-      # plot(as.array(lpme_env$np$array(PosteriorDraws$ability))[1,721,])
+      # plot(as.array(lpmec_env$np$array(PosteriorDraws$ability))[1,721,])
       message(sprintf("\n MCMC Runtime: %.3f min",  tdiff_ <- as.numeric(difftime(Sys.time(),  t0_, units = "secs"))/60))
       message(sprintf("Mean(N-eff of nMCMC %%): %.2f%% \n", 100*mean(
-              lpme_env$numpyro$diagnostics$effective_sample_size(# Computes effective sample size of input x, where the first dimension of x is chain dimension and the second dimension of x is draw dimension.
-                lpme_env$jnp$reshape( PosteriorDraws$ability, list(mcmc_control$n_chains, ai(mcmc_control$n_samples_mcmc/mcmc_control$n_thin_by), N))
+              lpmec_env$numpyro$diagnostics$effective_sample_size(# Computes effective sample size of input x, where the first dimension of x is chain dimension and the second dimension of x is draw dimension.
+                lpmec_env$jnp$reshape( PosteriorDraws$ability, list(mcmc_control$n_chains, ai(mcmc_control$n_samples_mcmc/mcmc_control$n_thin_by), N))
                 ), na.rm=T)/(ai(mcmc_control$n_chains*mcmc_control$n_samples_mcmc/mcmc_control$n_thin_by) ) ))
-      plot(lpme_env$np$array(PosteriorDraws$ability[1,,1,1]))
+      plot(lpmec_env$np$array(PosteriorDraws$ability[1,,1,1]))
       if(estimation_method == "mcmc" & split_ == ""){ # method of compositions 
         # OuterNormed - this is what ideal does 
         RescaledAbilities_OuterNormed  <- (ExtractAbil(PosteriorDraws$ability)-mean(AbilityMean))/sd(AbilityMean)
@@ -834,7 +834,7 @@ lpme_onerun <- function( Y,
 
         # note: multiplication of coefficient by sd generates interpretation of coeff 
         # as representing change in outcome associated with 1 unit deviation
-        Bayesian_OLSCoef_OuterNormed <- c(as.matrix(lpme_env$np$array(PosteriorDraws$YModel_slope))) * sd(AbilityMean)
+        Bayesian_OLSCoef_OuterNormed <- c(as.matrix(lpmec_env$np$array(PosteriorDraws$YModel_slope))) * sd(AbilityMean)
         # sd(rowMeans(RescaledAbilities));mean(rowMeans(RescaledAbilities)) # confirm sanity values of 1,0 
         # hist(Bayesian_OLSCoef_OuterNormed);abline(v=0.4); summary( Bayesian_OLSCoef_OuterNormed )
         #Bayesian_OLSCoef_OuterNormed[Bayesian_OLSCoef_OuterNormed<0] <- -1*Bayesian_OLSCoef_OuterNormed[Bayesian_OLSCoef_OuterNormed<0]
@@ -842,7 +842,7 @@ lpme_onerun <- function( Y,
         Bayesian_OLSCoef_OuterNormed <- mean( Bayesian_OLSCoef_OuterNormed )
         
         InnerSDs <- apply(ExtractAbil(PosteriorDraws$ability), 2, sd)
-        Bayesian_OLSCoef_InnerNormed <- c(as.matrix(lpme_env$np$array(PosteriorDraws$YModel_slope))) * InnerSDs
+        Bayesian_OLSCoef_InnerNormed <- c(as.matrix(lpmec_env$np$array(PosteriorDraws$YModel_slope))) * InnerSDs
         # sd(rowMeans(RescaledAbilities));mean(rowMeans(RescaledAbilities)) # confirm sanity values of 1,0 
         # hist(Bayesian_OLSCoef_InnerNormed); abline(v=0.4,lwd=2); summary( Bayesian_OLSCoef_InnerNormed )
         Bayesian_OLSSE_InnerNormed <- sd( Bayesian_OLSCoef_InnerNormed ) 
@@ -1015,6 +1015,6 @@ lpme_onerun <- function( Y,
     "x_est1" = x.est1,
     "x_est2" = x.est2
   )
-    class(results) <- "lpme_onerun"
+    class(results) <- "lpmec_onerun"
     return( results ) 
 }

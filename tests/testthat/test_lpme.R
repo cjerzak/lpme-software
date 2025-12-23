@@ -1,31 +1,31 @@
 # Skip all tests on CRAN to avoid timeouts
 skip_on_cran()
 
-test_that("lpme basic functionality", {
+test_that("lpmec basic functionality", {
   set.seed(123)
   Y <- rnorm(80)
   obs <- as.data.frame(matrix(sample(c(0,1), 80*4, replace=TRUE), ncol=4))
-  res <- lpme(Y, obs, n_boot = 1, n_partition = 1, estimation_method = "pca")
-  expect_s3_class(res, "lpme")
+  res <- lpmec(Y, obs, n_boot = 1, n_partition = 1, estimation_method = "pca")
+  expect_s3_class(res, "lpmec")
   expect_true("ols_coef" %in% names(res))
 })
 
-test_that("lpme orientation_signs validation", {
+test_that("lpmec orientation_signs validation", {
   set.seed(123)
   Y <- rnorm(80)
   obs <- as.data.frame(matrix(sample(c(0,1), 80*4, replace=TRUE), ncol=4))
   expect_error(
-    lpme(Y, obs, n_boot = 1, n_partition = 1, estimation_method = "pca",
-         orientation_signs = c(1, 0, 1)),
+    lpmec(Y, obs, n_boot = 1, n_partition = 1, estimation_method = "pca",
+          orientation_signs = c(1, 0, 1)),
     "orientation_signs"
   )
 })
 
-test_that("lpme S3 methods", {
+test_that("lpmec S3 methods", {
   set.seed(123)
   Y <- rnorm(80)
   obs <- as.data.frame(matrix(sample(c(0,1), 80*4, replace=TRUE), ncol=4))
-  res <- lpme(Y, obs, n_boot = 1, n_partition = 1, estimation_method = "pca")
+  res <- lpmec(Y, obs, n_boot = 1, n_partition = 1, estimation_method = "pca")
   sum_df <- summary(res)
   expect_s3_class(sum_df, "data.frame")
   expect_equal(

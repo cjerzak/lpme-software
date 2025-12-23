@@ -8,19 +8,19 @@
 #'
 #' @noRd
 #' @keywords internal
-initialize_jax <- function(conda_env = "lpme",
+initialize_jax <- function(conda_env = "lpmec",
                            conda_env_required = TRUE) {
 
   # Load reticulate (Declared in Imports: in DESCRIPTION)
   reticulate::use_condaenv(condaenv = conda_env, required = conda_env_required)
   
-  # Import Python packages once, storing them in lpme_env
-  if (!exists("jax", envir = lpme_env, inherits = FALSE)) {
-    lpme_env$jax <- reticulate::import("jax")
-    lpme_env$jnp <- reticulate::import("jax.numpy")
-    lpme_env$np  <- reticulate::import("numpy")
-    lpme_env$random  <- reticulate::import("jax.random")
-    lpme_env$numpyro  <- reticulate::import("numpyro")
-    lpme_env$dist  <- reticulate::import("numpyro.distributions")
+  # Import Python packages once, storing them in lpmec_env
+  if (!exists("jax", envir = lpmec_env, inherits = FALSE)) {
+    lpmec_env$jax <- reticulate::import("jax")
+    lpmec_env$jnp <- reticulate::import("jax.numpy")
+    lpmec_env$np  <- reticulate::import("numpy")
+    lpmec_env$random  <- reticulate::import("jax.random")
+    lpmec_env$numpyro  <- reticulate::import("numpyro")
+    lpmec_env$dist  <- reticulate::import("numpyro.distributions")
   }
 } 

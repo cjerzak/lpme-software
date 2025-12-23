@@ -2,7 +2,7 @@
 #'
 #' This helper analyzes observable indicators and returns a numeric vector
 #' of \code{1} or \code{-1} for use with the \code{orientation_signs}
-#' argument in \code{lpme}. Each sign is chosen so that the correlation
+#' argument in \code{lpmec}. Each sign is chosen so that the correlation
 #' between the oriented indicator and either the outcome \code{Y} or the
 #' first principal component of the indicators is positive.
 #' @importFrom stats cor prcomp

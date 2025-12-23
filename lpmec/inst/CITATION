@@ -1,0 +1,11 @@
+bibentry(
+  bibtype = "Manual",
+  title = "lpmec: Measurement Error Analysis and Correction Under Identification Restrictions",
+  author = c(
+    person("Connor", "Jerzak"),
+    person("Stephen", "Jessee")
+  ),
+  year = "2025",
+  note = "R package version 1.1.4",
+  url = "https://github.com/cjerzak/lpmec-software"
+)

@@ -1,4 +1,13 @@
-# lpme 0.1.1
+# lpmec 1.1.4
+
+## Package Rename
+* Renamed package from `lpme` to `lpmec` (Latent Predictor Measurement Error Correction).
+* The name "lpme" was already taken by a different archived CRAN package (by Zhou & Huang).
+* Function names (`lpme()`, `lpme_onerun()`) remain unchanged for backward compatibility.
+
+## CRAN Resubmission
+* Removed dependency on archived package `decon`.
+* Version bump from 0.1.1 to 1.1.4 (continuing from archived CRAN version 1.1.3).
 
 ## CRAN Preparation
 * Fixed vignette to use correct `estimation_method` values ("em" instead of "emIRT").

@@ -7,14 +7,14 @@ skip_on_cran()
 # BOOTSTRAP AGGREGATION TESTS
 # ==============================================================================
 
-test_that("lpme bootstrap aggregation works with n_boot > 1", {
+test_that("lpmec bootstrap aggregation works with n_boot > 1", {
   set.seed(123)
   Y <- rnorm(80)
   obs <- as.data.frame(matrix(sample(c(0, 1), 80 * 6, replace = TRUE), ncol = 6))
 
-  res <- lpme(Y, obs, n_boot = 3, n_partition = 2, estimation_method = "pca")
+  res <- lpmec(Y, obs, n_boot = 3, n_partition = 2, estimation_method = "pca")
 
-  expect_s3_class(res, "lpme")
+  expect_s3_class(res, "lpmec")
   # Bootstrap should produce standard errors
   expect_true("ols_se" %in% names(res))
   expect_true("corrected_iv_se" %in% names(res))
@@ -23,24 +23,24 @@ test_that("lpme bootstrap aggregation works with n_boot > 1", {
   expect_true(is.numeric(res$corrected_iv_se))
 })
 
-test_that("lpme partition aggregation works with n_partition > 1", {
+test_that("lpmec partition aggregation works with n_partition > 1", {
   set.seed(123)
   Y <- rnorm(80)
   obs <- as.data.frame(matrix(sample(c(0, 1), 80 * 6, replace = TRUE), ncol = 6))
 
-  res <- lpme(Y, obs, n_boot = 1, n_partition = 3, estimation_method = "pca")
+  res <- lpmec(Y, obs, n_boot = 1, n_partition = 3, estimation_method = "pca")
 
-  expect_s3_class(res, "lpme")
+  expect_s3_class(res, "lpmec")
   expect_true("ols_coef" %in% names(res))
   expect_true(is.numeric(res$ols_coef))
 })
 
-test_that("lpme produces confidence intervals with sufficient bootstrap", {
+test_that("lpmec produces confidence intervals with sufficient bootstrap", {
   set.seed(123)
   Y <- rnorm(80)
   obs <- as.data.frame(matrix(sample(c(0, 1), 80 * 6, replace = TRUE), ncol = 6))
 
-  res <- lpme(Y, obs, n_boot = 5, n_partition = 2, estimation_method = "pca")
+  res <- lpmec(Y, obs, n_boot = 5, n_partition = 2, estimation_method = "pca")
 
   # Should have lower and upper bounds
 
@@ -55,41 +55,41 @@ test_that("lpme produces confidence intervals with sufficient bootstrap", {
   }
 })
 
-test_that("lpme with stratified bootstrap (boot_basis) works", {
+test_that("lpmec with stratified bootstrap (boot_basis) works", {
   set.seed(123)
   Y <- rnorm(80)
   obs <- as.data.frame(matrix(sample(c(0, 1), 80 * 6, replace = TRUE), ncol = 6))
   # Create a grouping variable for stratified bootstrap
   boot_groups <- rep(1:10, each = 8)
 
-  res <- lpme(Y, obs, n_boot = 2, n_partition = 1, boot_basis = boot_groups,
+  res <- lpmec(Y, obs, n_boot = 2, n_partition = 1, boot_basis = boot_groups,
               estimation_method = "pca")
 
-  expect_s3_class(res, "lpme")
+  expect_s3_class(res, "lpmec")
   expect_true("ols_coef" %in% names(res))
 })
 
-test_that("lpme intermediary results are stored when return_intermediaries = TRUE", {
+test_that("lpmec intermediary results are stored when return_intermediaries = TRUE", {
   set.seed(123)
   Y <- rnorm(80)
   obs <- as.data.frame(matrix(sample(c(0, 1), 80 * 6, replace = TRUE), ncol = 6))
 
-  res <- lpme(Y, obs, n_boot = 2, n_partition = 2, estimation_method = "pca",
+  res <- lpmec(Y, obs, n_boot = 2, n_partition = 2, estimation_method = "pca",
               return_intermediaries = TRUE)
 
-  expect_s3_class(res, "lpme")
+  expect_s3_class(res, "lpmec")
   # Should have x_est1 and x_est2 from first run
   expect_true("x_est1" %in% names(res))
   expect_true("x_est2" %in% names(res))
   expect_equal(length(res$x_est1), 80)
 })
 
-test_that("lpme var_est_split is computed correctly", {
+test_that("lpmec var_est_split is computed correctly", {
   set.seed(123)
   Y <- rnorm(80)
   obs <- as.data.frame(matrix(sample(c(0, 1), 80 * 6, replace = TRUE), ncol = 6))
 
-  res <- lpme(Y, obs, n_boot = 2, n_partition = 3, estimation_method = "pca")
+  res <- lpmec(Y, obs, n_boot = 2, n_partition = 3, estimation_method = "pca")
 
   # var_est_split should exist
   expect_true("var_est_split" %in% names(res))

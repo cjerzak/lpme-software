@@ -7,51 +7,51 @@ skip_on_cran()
 # Y VALIDATION TESTS
 # ==============================================================================
 
-test_that("lpme_onerun errors on NULL Y", {
+test_that("lpmec_onerun errors on NULL Y", {
   obs <- as.data.frame(matrix(sample(c(0, 1), 80 * 6, replace = TRUE), ncol = 6))
-  expect_error(lpme_onerun(NULL, obs), "'Y' is required")
+  expect_error(lpmec_onerun(NULL, obs), "'Y' is required")
 })
 
-test_that("lpme_onerun errors on non-numeric Y", {
+test_that("lpmec_onerun errors on non-numeric Y", {
   obs <- as.data.frame(matrix(sample(c(0, 1), 80 * 6, replace = TRUE), ncol = 6))
   Y_char <- rep("a", 80)
-  expect_error(lpme_onerun(Y_char, obs), "'Y' must be a numeric vector")
+  expect_error(lpmec_onerun(Y_char, obs), "'Y' must be a numeric vector")
 })
 
-test_that("lpme_onerun errors on Y with too few observations", {
+test_that("lpmec_onerun errors on Y with too few observations", {
   obs <- as.data.frame(matrix(sample(c(0, 1), 5 * 6, replace = TRUE), ncol = 6))
   Y <- rnorm(5)
-  expect_error(lpme_onerun(Y, obs), "at least 10 observations")
+  expect_error(lpmec_onerun(Y, obs), "at least 10 observations")
 })
 
-test_that("lpme_onerun errors on all-NA Y", {
+test_that("lpmec_onerun errors on all-NA Y", {
   obs <- as.data.frame(matrix(sample(c(0, 1), 80 * 6, replace = TRUE), ncol = 6))
   Y <- rep(NA_real_, 80)
-  expect_error(lpme_onerun(Y, obs), "cannot be all NA")
+  expect_error(lpmec_onerun(Y, obs), "cannot be all NA")
 })
 
 # ==============================================================================
 # OBSERVABLES VALIDATION TESTS
 # ==============================================================================
 
-test_that("lpme_onerun errors on NULL observables", {
+test_that("lpmec_onerun errors on NULL observables", {
   Y <- rnorm(80)
-  expect_error(lpme_onerun(Y, NULL), "'observables' is required")
+  expect_error(lpmec_onerun(Y, NULL), "'observables' is required")
 })
 
-test_that("lpme_onerun errors on observables with wrong number of rows", {
+test_that("lpmec_onerun errors on observables with wrong number of rows", {
   Y <- rnorm(80)
   obs <- as.data.frame(matrix(sample(c(0, 1), 50 * 6, replace = TRUE), ncol = 6))
-  expect_error(lpme_onerun(Y, obs), "must match length of 'Y'")
+  expect_error(lpmec_onerun(Y, obs), "must match length of 'Y'")
 })
 
-test_that("lpme_onerun errors on observables with too few columns", {
+test_that("lpmec_onerun errors on observables with too few columns", {
   Y <- rnorm(80)
   obs <- as.data.frame(matrix(sample(c(0, 1), 80 * 3, replace = TRUE), ncol = 3))
-  expect_error(lpme_onerun(Y, obs), "at least 4 columns")
+  expect_error(lpmec_onerun(Y, obs), "at least 4 columns")
 })
 
-test_that("lpme_onerun warns on excessive missing data", {
+test_that("lpmec_onerun warns on excessive missing data", {
   set.seed(456)
   Y <- rnorm(80)
   obs <- as.data.frame(matrix(sample(c(0, 1), 80 * 8, replace = TRUE), ncol = 8))
@@ -66,7 +66,7 @@ test_that("lpme_onerun warns on excessive missing data", {
   warning_raised <- FALSE
   tryCatch(
     withCallingHandlers(
-      lpme_onerun(Y, obs, estimation_method = "averaging"),
+      lpmec_onerun(Y, obs, estimation_method = "averaging"),
       warning = function(w) {
         if (grepl("More than 50%", conditionMessage(w))) {
           warning_raised <<- TRUE
@@ -83,32 +83,32 @@ test_that("lpme_onerun warns on excessive missing data", {
 # ESTIMATION METHOD VALIDATION TESTS
 # ==============================================================================
 
-test_that("lpme_onerun errors on invalid estimation_method", {
+test_that("lpmec_onerun errors on invalid estimation_method", {
   set.seed(123)
   Y <- rnorm(80)
   obs <- as.data.frame(matrix(sample(c(0, 1), 80 * 6, replace = TRUE), ncol = 6))
   expect_error(
-    lpme_onerun(Y, obs, estimation_method = "invalid_method"),
+    lpmec_onerun(Y, obs, estimation_method = "invalid_method"),
     "'estimation_method' must be one of"
   )
 })
 
-test_that("lpme_onerun errors when custom method lacks function", {
+test_that("lpmec_onerun errors when custom method lacks function", {
   set.seed(123)
   Y <- rnorm(80)
   obs <- as.data.frame(matrix(sample(c(0, 1), 80 * 6, replace = TRUE), ncol = 6))
   expect_error(
-    lpme_onerun(Y, obs, estimation_method = "custom"),
+    lpmec_onerun(Y, obs, estimation_method = "custom"),
     "'latent_estimation_fn' is required"
   )
 })
 
-test_that("lpme_onerun errors when latent_estimation_fn is not a function", {
+test_that("lpmec_onerun errors when latent_estimation_fn is not a function", {
   set.seed(123)
   Y <- rnorm(80)
   obs <- as.data.frame(matrix(sample(c(0, 1), 80 * 6, replace = TRUE), ncol = 6))
   expect_error(
-    lpme_onerun(Y, obs, estimation_method = "custom", latent_estimation_fn = "not_a_function"),
+    lpmec_onerun(Y, obs, estimation_method = "custom", latent_estimation_fn = "not_a_function"),
     "'latent_estimation_fn' must be a function"
   )
 })
@@ -117,12 +117,12 @@ test_that("lpme_onerun errors when latent_estimation_fn is not a function", {
 # ORDINAL PARAMETER VALIDATION TESTS
 # ==============================================================================
 
-test_that("lpme_onerun errors on invalid ordinal parameter", {
+test_that("lpmec_onerun errors on invalid ordinal parameter", {
   set.seed(123)
   Y <- rnorm(80)
   obs <- as.data.frame(matrix(sample(c(0, 1), 80 * 6, replace = TRUE), ncol = 6))
   expect_error(
-    lpme_onerun(Y, obs, estimation_method = "pca", ordinal = "TRUE"),
+    lpmec_onerun(Y, obs, estimation_method = "pca", ordinal = "TRUE"),
     "'ordinal' must be a single logical"
   )
 })
@@ -131,23 +131,23 @@ test_that("lpme_onerun errors on invalid ordinal parameter", {
 # MCMC_CONTROL VALIDATION TESTS
 # ==============================================================================
 
-test_that("lpme_onerun errors on invalid mcmc_control backend", {
+test_that("lpmec_onerun errors on invalid mcmc_control backend", {
   set.seed(123)
   Y <- rnorm(80)
   obs <- as.data.frame(matrix(sample(c(0, 1), 80 * 6, replace = TRUE), ncol = 6))
   expect_error(
-    lpme_onerun(Y, obs, estimation_method = "pca",
+    lpmec_onerun(Y, obs, estimation_method = "pca",
                 mcmc_control = list(backend = "invalid_backend")),
     "mcmc_control\\$backend must be either"
   )
 })
 
-test_that("lpme_onerun errors on invalid mcmc_control n_samples_warmup", {
+test_that("lpmec_onerun errors on invalid mcmc_control n_samples_warmup", {
   set.seed(123)
   Y <- rnorm(80)
   obs <- as.data.frame(matrix(sample(c(0, 1), 80 * 6, replace = TRUE), ncol = 6))
   expect_error(
-    lpme_onerun(Y, obs, estimation_method = "pca",
+    lpmec_onerun(Y, obs, estimation_method = "pca",
                 mcmc_control = list(n_samples_warmup = -1)),
     "n_samples_warmup must be a positive integer"
   )
@@ -157,43 +157,43 @@ test_that("lpme_onerun errors on invalid mcmc_control n_samples_warmup", {
 # LPME-SPECIFIC VALIDATION TESTS
 # ==============================================================================
 
-test_that("lpme errors on invalid n_boot", {
+test_that("lpmec errors on invalid n_boot", {
   set.seed(123)
   Y <- rnorm(80)
   obs <- as.data.frame(matrix(sample(c(0, 1), 80 * 6, replace = TRUE), ncol = 6))
   expect_error(
-    lpme(Y, obs, n_boot = -1, n_partition = 1, estimation_method = "pca"),
+    lpmec(Y, obs, n_boot = -1, n_partition = 1, estimation_method = "pca"),
     "'n_boot' must be a single positive integer"
   )
 })
 
-test_that("lpme errors on invalid n_partition", {
+test_that("lpmec errors on invalid n_partition", {
   set.seed(123)
   Y <- rnorm(80)
   obs <- as.data.frame(matrix(sample(c(0, 1), 80 * 6, replace = TRUE), ncol = 6))
   expect_error(
-    lpme(Y, obs, n_boot = 1, n_partition = 0, estimation_method = "pca"),
+    lpmec(Y, obs, n_boot = 1, n_partition = 0, estimation_method = "pca"),
     "'n_partition' must be a single positive integer"
   )
 })
 
-test_that("lpme errors on boot_basis with wrong length", {
+test_that("lpmec errors on boot_basis with wrong length", {
   set.seed(123)
   Y <- rnorm(80)
   obs <- as.data.frame(matrix(sample(c(0, 1), 80 * 6, replace = TRUE), ncol = 6))
   expect_error(
-    lpme(Y, obs, n_boot = 1, n_partition = 1, boot_basis = 1:50,
+    lpmec(Y, obs, n_boot = 1, n_partition = 1, boot_basis = 1:50,
          estimation_method = "pca"),
     "'boot_basis' must have the same length"
   )
 })
 
-test_that("lpme errors on invalid return_intermediaries", {
+test_that("lpmec errors on invalid return_intermediaries", {
   set.seed(123)
   Y <- rnorm(80)
   obs <- as.data.frame(matrix(sample(c(0, 1), 80 * 6, replace = TRUE), ncol = 6))
   expect_error(
-    lpme(Y, obs, n_boot = 1, n_partition = 1, return_intermediaries = "yes",
+    lpmec(Y, obs, n_boot = 1, n_partition = 1, return_intermediaries = "yes",
          estimation_method = "pca"),
     "'return_intermediaries' must be a single logical"
   )

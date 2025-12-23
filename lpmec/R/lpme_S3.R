@@ -1,28 +1,28 @@
 #' @export
-summary.lpme_onerun <- function(object, ...) {
+summary.lpmec_onerun <- function(object, ...) {
   coef_df <- data.frame(
     Estimate = c(object$ols_coef, object$iv_coef, object$corrected_iv_coef, object$corrected_ols_coef),
     SE = c(object$ols_se, object$iv_se, object$corrected_iv_se, object$corrected_ols_se),
     row.names = c("OLS", "IV", "Corrected IV", "Corrected OLS")
   )
-  
-  cat("Single-Run LPME Model Summary\n")
-  cat("============================\n")
+
+  cat("Single-Run LPMEC Model Summary\n")
+  cat("==============================\n")
   print(coef_df)
   invisible(coef_df)
 }
 
 #' @export
-print.lpme_onerun <- function(x, ...) {
-  cat("Single-Run LPME Results\n")
-  cat("-----------------------\n")
+print.lpmec_onerun <- function(x, ...) {
+  cat("Single-Run LPMEC Results\n")
+  cat("------------------------\n")
   cat(sprintf("Uncorrected Coefficient (OLS): %.3f (SE: %.3f)\n", x$ols_coef, x$ols_se))
   cat(sprintf("Corrected Coefficient: %.3f (SE: %.3f)\n", x$corrected_ols_coef, x$corrected_ols_se))
   cat("Use summary() for detailed results.\n")
 }
 
 #' @export
-plot.lpme_onerun <- function(x, ...) {
+plot.lpmec_onerun <- function(x, ...) {
   plot(x$x_est1, x$x_est2,
        xlab = "First Latent Estimate", ylab = "Second Latent Estimate",
        main = "Single-Run Latent Estimates", pch = 19, ...)
@@ -31,7 +31,7 @@ plot.lpme_onerun <- function(x, ...) {
 
 
 #' @export
-summary.lpme <- function(object, ...) {
+summary.lpmec <- function(object, ...) {
   coef_df <- data.frame(
     Estimate = c(object$ols_coef, object$iv_coef, object$corrected_iv_coef,
                  object$corrected_ols_coef, object$bayesian_ols_coef_outer_normed,
@@ -45,31 +45,31 @@ summary.lpme <- function(object, ...) {
     CI_Upper = c(object$ols_upper, object$iv_upper, object$corrected_iv_upper,
                  object$corrected_ols_upper, object$bayesian_ols_upper_outer_normed,
                  object$bayesian_ols_upper_inner_normed),
-    row.names = c("OLS", "IV", "Corrected IV", "Corrected OLS", 
+    row.names = c("OLS", "IV", "Corrected IV", "Corrected OLS",
                   "Bayesian OLS (Outer)", "Bayesian OLS (Inner)")
   )
-  
-  cat("Latent Profile Measurement Error (LPME) Model Summary\n")
-  cat("====================================================\n")
+
+  cat("Latent Predictor Measurement Error Correction (LPMEC) Model Summary\n")
+  cat("====================================================================\n")
   print(coef_df)
   invisible(coef_df)
 }
 
 #' @export
-print.lpme <- function(x, ...) {
-  cat("Latent Profile Measurement Error (LPME) Model Results\n")
-  cat("----------------------------------------------------\n")
+print.lpmec <- function(x, ...) {
+  cat("Latent Predictor Measurement Error Correction (LPMEC) Model Results\n")
+  cat("-------------------------------------------------------------------\n")
   cat(sprintf("Uncorrected Coefficient (OLS): %.3f (SE: %.3f)\n", x$ols_coef, x$ols_se))
   cat(sprintf("Corrected Coefficient: %.3f (SE: %.3f)\n", x$corrected_iv_coef, x$corrected_iv_se))
-  cat(sprintf("Bayesian OLS (Outer): %.3f (SE: %.3f)\n", x$bayesian_ols_coef_outer_normed, 
+  cat(sprintf("Bayesian OLS (Outer): %.3f (SE: %.3f)\n", x$bayesian_ols_coef_outer_normed,
               x$bayesian_ols_se_outer_normed))
   cat("Use summary() for detailed results.\n")
 }
 
 #' @export
-plot.lpme <- function(x, type = "latent", ...) {
+plot.lpmec <- function(x, type = "latent", ...) {
   if (type == "latent") {
-    plot(x$x_est1, x$x_est2, 
+    plot(x$x_est1, x$x_est2,
          xlab = "First Latent Estimate", ylab = "Second Latent Estimate",
          main = "Latent Variable Estimates", pch = 19, ...)
     abline(a = 0, b = 1, col = "red", lty = 2)

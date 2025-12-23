@@ -2,7 +2,7 @@
   rm(list=ls()); options(error = NULL)
 
   # set path and specify package name
-  setwd(sprintf("~/Documents/%s-software", package_name <- "lpme"))
+  setwd(sprintf("~/Documents/%s-software", package_name <- "lpmec"))
 
   # get version number from DESCRIPTION
   package_path <- sprintf("~/Documents/%s-software/%s", package_name, package_name)
@@ -34,11 +34,11 @@
   # devtools::check( package_path )
   
   # check data integrity
-  # devtools::install_github(repo = "cjerzak/lpme-software/lpme") 
-  # data(package = "lpme")
-  # data("KnowledgeVoteDuty",package="lpme")
-  
-  # install current local build 
-  install.packages( "~/Documents/lpme-software/lpme",repos = NULL, type = "source",force = F) # install from local  
+  # devtools::install_github(repo = "cjerzak/lpmec-software/lpmec")
+  # data(package = "lpmec")
+  # data("KnowledgeVoteDuty",package="lpmec")
+
+  # install current local build
+  install.packages( "~/Documents/lpmec-software/lpmec",repos = NULL, type = "source",force = F) # install from local
 }
 
