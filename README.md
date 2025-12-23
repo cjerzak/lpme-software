@@ -91,6 +91,52 @@ Contributions to lpmec are welcome! Feel free to submit a [pull request](https:/
 We thank [Guilherme Duarte](https://duarteguilherme.github.io/), [Jeff Lewis](https://polisci.ucla.edu/person/jeffrey-b-lewis/), [Umberto Mignozzetti](https://umbertomig.com/), [Aaron Pancost](https://sites.google.com/site/aaronpancost/), [Erik Snowberg](https://eriksnowberg.com/), [Chris Tausanovitch](https://ctausanovitch.com/), and participants of an MPSA panel for very helpful comments. We thank [Major Valls](https://www.linkedin.com/in/major-valls-39b6b9229/) for excellent research assistance.
 
 # References<a id="references"></a>
-[Connor T. Jerzak](https://github.com/cjerzak), [Stephen A. Jessee](https://github.com/sjessee). Measurement Error in Latent Predictors: The Role of Identification Restrictions. _Working Paper._
+[Connor T. Jerzak](https://github.com/cjerzak), [Stephen A. Jessee](https://github.com/sjessee). Attenuation Bias with Latent Predictors. [arXiv:2507.22218](https://arxiv.org/abs/2507.22218), 2025.
 
+```bibtex
+@misc{jerzak2025attenuationbiaslatentpredictors,
+      title={Attenuation Bias with Latent Predictors},
+      author={Connor T. Jerzak and Stephen A. Jessee},
+      year={2025},
+      eprint={2507.22218},
+      archivePrefix={arXiv},
+      primaryClass={stat.AP},
+      url={https://arxiv.org/abs/2507.22218},
+}
+```
+
+<!---
 [<img src="https://connorjerzak.com/wp-content/uploads/2024/08/LatentErrorViz.png">](https://connorjerzak.com/)
+-->
+
+True Values
+                     [Mean 0, Var = 1]
+
+                    o   oo ooooo oo   o
+                   /   /  /  |  \  \   \
+                  /   /  /   |   \  \   \
+                 /   /  /    |    \  \   \
+                /   /  /     |     \  \   \
+               /   /  /      |      \  \   \
+              v   v  v       v       v  v   v
+
+             o    o  o     ooooo     o  o    o
+             
+                      With Noise
+               [Mean 0, Var = 1 + σ_u²]
+
+             o    o  o     ooooo     o  o    o
+              \    \  \      |      /  /    /
+               \    \  \     |     /  /    /
+                \    \  \    |    /  /    /
+                 \    \  \   |   /  /    /
+                  \    \  \  |  /  /    /
+                   v    v  v v v  v    v
+                     ●   ●●●●●●●   ●
+
+        With Noise & Data-dependent Normalization
+                    [Mean 0, Var = 1]
+
+
+       |-------|-------|-------|-------|-------|-------|
+      -3      -2      -1       0       1       2       3
