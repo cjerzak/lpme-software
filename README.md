@@ -90,7 +90,7 @@ Contributions to lpmec are welcome! Feel free to submit a [pull request](https:/
 # Acknowledgements 
 We thank [Guilherme Duarte](https://duarteguilherme.github.io/), [Jeff Lewis](https://polisci.ucla.edu/person/jeffrey-b-lewis/), [Umberto Mignozzetti](https://umbertomig.com/), [Aaron Pancost](https://sites.google.com/site/aaronpancost/), [Erik Snowberg](https://eriksnowberg.com/), [Chris Tausanovitch](https://ctausanovitch.com/), and participants of an MPSA panel for very helpful comments. We thank [Major Valls](https://www.linkedin.com/in/major-valls-39b6b9229/) for excellent research assistance.
 
-# References<a id="references"></a>
+# Citation<a id="references"></a>
 [Connor T. Jerzak](https://github.com/cjerzak), [Stephen A. Jessee](https://github.com/sjessee). Attenuation Bias with Latent Predictors. [arXiv:2507.22218](https://arxiv.org/abs/2507.22218), 2025.
 
 ```bibtex
@@ -109,6 +109,7 @@ We thank [Guilherme Duarte](https://duarteguilherme.github.io/), [Jeff Lewis](ht
 [<img src="https://connorjerzak.com/wp-content/uploads/2024/08/LatentErrorViz.png">](https://connorjerzak.com/)
 -->
 
+# Happy lmpec-ing! 
 
 ```
                         True Values
