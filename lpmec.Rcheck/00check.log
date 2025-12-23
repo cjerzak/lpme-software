@@ -10,7 +10,7 @@
 * checking for file ‘lpmec/DESCRIPTION’ ... OK
 * this is package ‘lpmec’ version ‘1.1.4’
 * package encoding: UTF-8
-* checking CRAN incoming feasibility ... [2s/128s] NOTE
+* checking CRAN incoming feasibility ... [3s/28s] NOTE
 Maintainer: ‘Connor Jerzak <connor.jerzak@gmail.com>’
 
 New submission
@@ -60,10 +60,13 @@ New submission
 * checking installed files from ‘inst/doc’ ... OK
 * checking files in ‘vignettes’ ... OK
 * checking examples ... OK
-* checking examples with --run-donttest ... OK
+* checking examples with --run-donttest ... [12s/12s] OK
+* checking for unstated dependencies in ‘tests’ ... OK
+* checking tests ... OK
+  Running ‘testthat.R’
 * checking for unstated dependencies in vignettes ... OK
 * checking package vignettes ... OK
-* checking re-building of vignette outputs ... OK
+* checking re-building of vignette outputs ... [15s/15s] OK
 * checking PDF version of manual ... OK
 * checking HTML version of manual ... OK
 * checking for non-standard things in the check directory ... OK
