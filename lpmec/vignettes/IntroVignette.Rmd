@@ -127,6 +127,127 @@ numpyro_results <- lpmec(
 }
 ```
 
+## Panel and Fixed-Effects Designs
+
+Fixed-effects and differencing transforms strip the persistent part of a
+latent signal but not its transient measurement error, so the naive panel
+coefficient is attenuated far more than a pooled correction would suggest.
+`lpmec_panel()` estimates the design-specific reliability of each measure,
+corrects the naive OLS coefficient (`b * sqrt(rho_pooled) / rho_design`),
+and reports a design-robust split-IV alternative (which multiplies by
+`sqrt(rho_pooled)` instead of dividing -- IV multiplies, OLS divides).
+Simulate a small panel with two noisy half scores of one latent measure:
+
+```{r, eval=TRUE, message=FALSE}
+set.seed(1234)
+n_units <- 40
+n_periods <- 10
+unit <- rep(seq_len(n_units), times = n_periods)
+time <- rep(seq_len(n_periods), each = n_units)
+
+# Latent predictor with a persistent unit component; Y has unit fixed effects
+latent_panel <- rnorm(n_units)[unit] + rnorm(n_units * n_periods, sd = 0.7)
+half1 <- latent_panel + rnorm(n_units * n_periods, sd = 0.5)
+half2 <- latent_panel + rnorm(n_units * n_periods, sd = 0.5)
+Y_panel <- 0.4 * latent_panel + rnorm(n_units)[unit] +
+  rnorm(n_units * n_periods)
+
+panel_results <- lpmec_panel(
+  Y = Y_panel, unit = unit, time = time,
+  split_scores = list(measure1 = cbind(half1, half2)),
+  design = "within",
+  n_boot = 3,   # Increase in applied work
+  seed = 42
+)
+```
+
+The summary shows the naive within-unit OLS estimate next to the corrected
+OLS coefficient (with its reliability-variant interval) and the corrected
+split-IV estimate, with cluster-bootstrap standard errors:
+
+```{r, eval=TRUE}
+print(panel_results)
+summary(panel_results)
+```
+
+The half scores used for the reliability estimates can be inspected
+visually:
+
+```{r, eval=TRUE}
+plot(panel_results)
+```
+
+## Reliability Bounds with Multiple Measures
+
+With three or more measures of the same latent trait,
+`lpmec_reliability_bounds()` brackets each measure's reliability between the
+within-measure split correlation (an upper candidate when halves share
+method error) and the cross-measure triad estimate
+`rho*_m = r_ml * r_mk / r_lk` (a lower candidate under cross-measure error
+dependence), reporting the identification interval `[rho_lo, rho_hi]`:
+
+```{r, eval=TRUE, message=FALSE}
+set.seed(2025)
+n_rb <- 400
+latent_rb <- rnorm(n_rb)
+rb_half1 <- latent_rb + rnorm(n_rb, sd = 0.6)
+rb_half2 <- latent_rb + rnorm(n_rb, sd = 0.6)
+score2 <- latent_rb + rnorm(n_rb, sd = 0.7)
+score3 <- latent_rb + rnorm(n_rb, sd = 0.7)
+
+bounds <- lpmec_reliability_bounds(
+  split_scores = list(measure1 = cbind(rb_half1, rb_half2)),
+  scores = list(measure2 = score2, measure3 = score3)
+)
+print(bounds)
+```
+
+Passing `unit`, `time`, and `designs = c("pooled", "within")` reports how
+much each measure's reliability deteriorates under the design transform
+actually used for estimation.
+
+## Latent Moderators in Experiments
+
+When a randomized treatment's effect is moderated by a latent trait measured
+with error, the naive interaction coefficient from `Y ~ treatment * x`
+converges to `b_TX * sqrt(rho)` for a standardized moderator score of
+reliability `rho`. `lpmec_moderator()` estimates the Spearman-Brown as-used
+reliability of the score entered in the regression and divides the naive
+interaction by its square root. Simulate an experiment with a 4-item
+moderator battery:
+
+```{r, eval=TRUE, message=FALSE}
+set.seed(321)
+n_mod <- 400
+X_mod <- rnorm(n_mod)
+treatment <- rbinom(n_mod, 1, 0.5)
+Y_mod <- 0.2 * treatment + 0.2 * X_mod +
+  0.3 * treatment * X_mod + rnorm(n_mod)
+items <- sapply(c(1.2, 1.0, 0.8, 1.1), function(discrimination) {
+  rbinom(n_mod, 1, pnorm(discrimination * X_mod - 0.2))
+})
+colnames(items) <- paste0("item", 1:4)
+
+moderator_results <- lpmec_moderator(
+  Y = Y_mod,
+  treatment = treatment,
+  observables = items,
+  estimation_method = "averaging",
+  n_boot = 5,       # Increase in applied work
+  n_partition = 2,  # Reduced for demonstration
+  seed = 99
+)
+```
+
+The corrected interaction is reported with bootstrap intervals that
+propagate the uncertainty in the reliability estimate itself, and
+`rho_score` appears as a headline quantity:
+
+```{r, eval=TRUE}
+print(moderator_results)
+summary(moderator_results)
+```
+
 ## Conclusion
 
 The `lpmec` package provides robust measurement error correction through:
@@ -134,5 +255,8 @@ The `lpmec` package provides robust measurement error correction through:
   - Bootstrapped latent variable estimation
   - Multiple correction methods (OLS, IV, Bayesian)
   - Flexible estimation backends (EM, MCMC)
+  - Panel/fixed-effects and differencing-design corrections (`lpmec_panel`)
+  - Reliability bounds from split and triad estimates (`lpmec_reliability_bounds`)
+  - Latent-moderator interaction corrections in experiments (`lpmec_moderator`)
 
 Refer to package documentation for advanced configuration options.

@@ -182,3 +182,35 @@ test_that("NumPyro MCMC code does not create diagnostic plots implicitly", {
     fixed = TRUE
   ))
 })
+
+test_that(".lpmec_aggregate_by_boot keeps boots-by-columns shape for one column", {
+  values <- matrix(c(1, 2, 3, 4), ncol = 1L,
+                   dimnames = list(NULL, "only_field"))
+  out <- lpmec:::.lpmec_aggregate_by_boot(values, c(1L, 1L, 2L, 2L), mean)
+  expect_true(is.matrix(out))
+  expect_identical(dim(out), c(2L, 1L))
+  expect_identical(colnames(out), "only_field")
+  expect_equal(out[, 1L], c(1.5, 3.5), ignore_attr = TRUE)
+})
+
+test_that("lpmec_multivariate works with a single latent predictor", {
+  set.seed(202)
+  n <- 120L
+  x_true <- stats::rnorm(n)
+  obs <- as.data.frame(
+    vapply(seq_len(6L), function(j) {
+      as.integer(x_true + stats::rnorm(n) > 0)
+    }, integer(n))
+  )
+  Y <- 0.4 * x_true + stats::rnorm(n, sd = 0.5)
+
+  res <- suppressWarnings(suppressMessages(
+    lpmec_multivariate(Y, observables = list(X1 = obs),
+                       estimation_method = "averaging",
+                       n_boot = 2L, n_partition = 2L)
+  ))
+  expect_s3_class(res, "lpmec_multivariate")
+  expect_length(res$ols_coef, 1L)
+  expect_true(is.finite(res$ols_coef))
+  expect_true(is.finite(res$ols_se))
+})

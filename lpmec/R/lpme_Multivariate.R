@@ -559,9 +559,12 @@ lpmec_multivariate <- function(Y,
 
 .lpmec_aggregate_by_boot <- function(values, boot_ids, aggregation_fn) {
   boots <- sort(unique(boot_ids))
-  out <- t(vapply(boots, function(boot) {
+  agg <- vapply(boots, function(boot) {
     apply(values[boot_ids == boot, , drop = FALSE], 2L, aggregation_fn)
-  }, numeric(ncol(values))))
+  }, numeric(ncol(values)))
+  # vapply() returns a plain vector when ncol(values) == 1L and a
+  # ncol(values) x n_boots matrix otherwise; normalize to boots-by-columns.
+  out <- if (is.matrix(agg)) t(agg) else matrix(agg, ncol = 1L)
   colnames(out) <- colnames(values)
   out
 }

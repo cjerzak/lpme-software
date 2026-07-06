@@ -274,3 +274,323 @@ print.lpmec_multivariate <- function(x, ...) {
   cat("Use summary() for coefficient details.\n")
   invisible(x)
 }
+
+#' Summary method for lpmec_panel_onerun objects
+#'
+#' @param object An object of class \code{lpmec_panel_onerun}.
+#' @param ... Additional arguments (currently unused).
+#'
+#' @return A data frame with one row per measure holding the naive OLS
+#'   coefficient (with cluster-robust standard error), the headline corrected
+#'   OLS coefficient with its [min, max] reliability-variant interval, the
+#'   corrected IV coefficient, the pooled split and triad reliabilities, and
+#'   the first-stage F statistic, returned invisibly.
+#'
+#' @export
+summary.lpmec_panel_onerun <- function(object, ...) {
+  coef_df <- data.frame(
+    OLS = object$ols_coef,
+    OLS_SE = object$ols_se,
+    Corrected_OLS = object$corrected_ols_coef,
+    Corrected_OLS_Lower = object$corrected_ols_lower,
+    Corrected_OLS_Upper = object$corrected_ols_upper,
+    Corrected_IV = object$corrected_iv_coef,
+    Split_Correlation = object$split_correlation,
+    Triad = object$triad,
+    First_Stage_F = object$first_stage_fstat,
+    row.names = object$measure_names
+  )
+
+  cat("Single-Run Panel LPMEC Summary\n")
+  cat("==============================\n")
+  cat(sprintf("Design: %s | Units: %s | Observations: %s\n",
+              object$design, object$n_units, object$n_obs))
+  print(coef_df)
+  invisible(coef_df)
+}
+
+#' Print method for lpmec_panel_onerun objects
+#'
+#' @param x An object of class \code{lpmec_panel_onerun}.
+#' @param ... Additional arguments (currently unused).
+#'
+#' @return The input object \code{x}, returned invisibly.
+#'
+#' @export
+print.lpmec_panel_onerun <- function(x, ...) {
+  cat("Single-Run Panel LPMEC Results\n")
+  cat("------------------------------\n")
+  cat(sprintf("Design: %s | Units: %s | Observations: %s\n",
+              x$design, x$n_units, x$n_obs))
+  cat(sprintf("Measures: %s\n", paste(x$measure_names, collapse = ", ")))
+  cat("Use summary() for coefficient details.\n")
+  invisible(x)
+}
+
+#' Summary method for lpmec_panel objects
+#'
+#' @param object An object of class \code{lpmec_panel}.
+#' @param ... Additional arguments (currently unused).
+#'
+#' @return A data frame with one row per measure holding the naive OLS
+#'   coefficient, the headline corrected OLS coefficient with its [min, max]
+#'   reliability-variant interval, the corrected IV coefficient (with
+#'   cluster-bootstrap standard errors), the pooled split and triad
+#'   reliabilities, and the first-stage F statistic, returned invisibly.
+#'
+#' @export
+summary.lpmec_panel <- function(object, ...) {
+  coef_df <- data.frame(
+    OLS = object$ols_coef,
+    OLS_SE = object$ols_coef_se,
+    Corrected_OLS = object$corrected_ols_coef,
+    Corrected_OLS_SE = object$corrected_ols_coef_se,
+    Corrected_OLS_Lower = object$corrected_ols_lower,
+    Corrected_OLS_Upper = object$corrected_ols_upper,
+    Corrected_IV = object$corrected_iv_coef,
+    Corrected_IV_SE = object$corrected_iv_coef_se,
+    Split_Correlation = object$split_correlation,
+    Triad = object$triad,
+    First_Stage_F = object$first_stage_fstat,
+    row.names = object$measure_names
+  )
+
+  cat("Panel LPMEC Summary\n")
+  cat("===================\n")
+  cat(sprintf(
+    "Design: %s | Units: %s | Observations: %s | Bootstrap replications: %s\n",
+    object$design, object$n_units, object$n_obs, object$n_boot
+  ))
+  print(coef_df)
+  invisible(coef_df)
+}
+
+#' Print method for lpmec_panel objects
+#'
+#' @param x An object of class \code{lpmec_panel}.
+#' @param ... Additional arguments (currently unused).
+#'
+#' @return The input object \code{x}, returned invisibly.
+#'
+#' @export
+print.lpmec_panel <- function(x, ...) {
+  cat("Panel LPMEC Results\n")
+  cat("-------------------\n")
+  cat(sprintf("Design: %s | Units: %s | Observations: %s\n",
+              x$design, x$n_units, x$n_obs))
+  cat(sprintf("Measures: %s\n", paste(x$measure_names, collapse = ", ")))
+  cat(sprintf("Bootstrap replications: %s | Partitions: %s\n",
+              x$n_boot, x$n_partition))
+  cat("Use summary() for coefficient details.\n")
+  invisible(x)
+}
+
+#' Plot method for lpmec_panel objects
+#'
+#' Creates a scatter plot of the two pooled half scores of the first measure
+#' with split halves; when no measure has half scores, falls back to a
+#' scatter plot of the first two measure scores.
+#'
+#' @param x An object of class \code{lpmec_panel}.
+#' @param ... Additional arguments passed to \code{\link[graphics]{plot}}.
+#'
+#' @return No return value, called for side effects (creates a plot).
+#'
+#' @export
+plot.lpmec_panel <- function(x, ...) {
+  split_available <- vapply(x$measure_names, function(m) {
+    sum(is.finite(x$x_est1[, m]) & is.finite(x$x_est2[, m])) >= 2L
+  }, logical(1L))
+  if (any(split_available)) {
+    measure <- x$measure_names[split_available][1L]
+    plot(x$x_est1[, measure], x$x_est2[, measure],
+         xlab = "First Half Score", ylab = "Second Half Score",
+         main = sprintf("Panel Measure Half Scores (%s)", measure),
+         pch = 19, ...)
+  } else if (x$n_measures >= 2L) {
+    plot(x$x_est[, 1L], x$x_est[, 2L],
+         xlab = sprintf("Measure Score (%s)", x$measure_names[1L]),
+         ylab = sprintf("Measure Score (%s)", x$measure_names[2L]),
+         main = "Panel Measure Scores", pch = 19, ...)
+  } else {
+    stop("Plotting requires a measure with half scores or at least two measures.")
+  }
+  abline(a = 0, b = 1, col = "blue", lty = 2)
+}
+
+#' Summary method for lpmec_moderator_onerun objects
+#'
+#' @param object An object of class \code{lpmec_moderator_onerun}.
+#' @param ... Additional arguments (currently unused).
+#'
+#' @return A data frame of naive and corrected interaction-regression
+#'   coefficient estimates, returned invisibly. When three or more measures
+#'   are supplied, the per-measure triad corrections are also printed.
+#'
+#' @export
+summary.lpmec_moderator_onerun <- function(object, ...) {
+  coef_df <- data.frame(
+    Estimate = c(object$treatment_coef, object$main_coef,
+                 object$interaction_coef, object$corrected_main_coef,
+                 object$corrected_interaction_coef),
+    SE = c(object$treatment_se, object$main_se, object$interaction_se,
+           NA_real_, NA_real_),
+    row.names = c("Treatment", "Moderator", "Interaction",
+                  "Corrected Moderator", "Corrected Interaction")
+  )
+
+  cat("Single-Run Latent-Moderator LPMEC Summary\n")
+  cat("=========================================\n")
+  cat(sprintf(
+    "Reliability: rho_half = %.3f, SB factor = %s, rho_score = %.3f\n",
+    object$rho_half, object$sb_factor, object$rho_score
+  ))
+  print(coef_df)
+  if (!is.null(object$per_measure)) {
+    cat("\nPer-measure triad corrections:\n")
+    print(object$per_measure)
+  }
+  invisible(coef_df)
+}
+
+#' Print method for lpmec_moderator_onerun objects
+#'
+#' @param x An object of class \code{lpmec_moderator_onerun}.
+#' @param ... Additional arguments (currently unused).
+#'
+#' @return The input object \code{x}, returned invisibly.
+#'
+#' @export
+print.lpmec_moderator_onerun <- function(x, ...) {
+  cat("Single-Run Latent-Moderator LPMEC Results\n")
+  cat("-----------------------------------------\n")
+  cat(sprintf("Naive Interaction: %.3f (SE: %.3f)\n",
+              x$interaction_coef, x$interaction_se))
+  cat(sprintf("Corrected Interaction: %.3f (rho_score: %.3f)\n",
+              x$corrected_interaction_coef, x$rho_score))
+  cat("Use summary() for detailed results.\n")
+  invisible(x)
+}
+
+#' Summary method for lpmec_moderator objects
+#'
+#' @param object An object of class \code{lpmec_moderator}.
+#' @param ... Additional arguments (currently unused).
+#'
+#' @return A data frame of naive and corrected interaction-regression
+#'   coefficient estimates and reliability quantities with bootstrap
+#'   standard errors and percentile confidence intervals, returned
+#'   invisibly.
+#'
+#' @export
+summary.lpmec_moderator <- function(object, ...) {
+  coef_df <- data.frame(
+    Estimate = c(object$treatment_coef, object$main_coef,
+                 object$interaction_coef, object$corrected_main_coef,
+                 object$corrected_interaction_coef, object$rho_half,
+                 object$rho_score),
+    SE = c(object$treatment_se, object$main_se, object$interaction_se,
+           object$corrected_main_se, object$corrected_interaction_se,
+           object$rho_half_se, object$rho_score_se),
+    CI_Lower = c(object$treatment_lower, object$main_lower,
+                 object$interaction_lower, object$corrected_main_lower,
+                 object$corrected_interaction_lower, object$rho_half_lower,
+                 object$rho_score_lower),
+    CI_Upper = c(object$treatment_upper, object$main_upper,
+                 object$interaction_upper, object$corrected_main_upper,
+                 object$corrected_interaction_upper, object$rho_half_upper,
+                 object$rho_score_upper),
+    row.names = c("Treatment", "Moderator", "Interaction",
+                  "Corrected Moderator", "Corrected Interaction",
+                  "rho_half", "rho_score")
+  )
+
+  cat("Latent-Moderator LPMEC Summary\n")
+  cat("==============================\n")
+  cat(sprintf(
+    "Resampling: %s bootstrap replication(s), %s partition(s), SB factor = %s\n",
+    object$n_boot, object$n_partition, object$sb_factor
+  ))
+  print(coef_df)
+  invisible(coef_df)
+}
+
+#' Print method for lpmec_moderator objects
+#'
+#' @param x An object of class \code{lpmec_moderator}.
+#' @param ... Additional arguments (currently unused).
+#'
+#' @return The input object \code{x}, returned invisibly.
+#'
+#' @export
+print.lpmec_moderator <- function(x, ...) {
+  cat("Latent-Moderator LPMEC Results\n")
+  cat("------------------------------\n")
+  cat(sprintf("Naive Interaction: %.3f (SE: %.3f)\n",
+              x$interaction_coef, x$interaction_se))
+  cat(sprintf("Corrected Interaction: %.3f (SE: %.3f)\n",
+              x$corrected_interaction_coef, x$corrected_interaction_se))
+  cat(sprintf("Score Reliability (rho_score): %.3f (SE: %.3f)\n",
+              x$rho_score, x$rho_score_se))
+  cat("Use summary() for detailed results.\n")
+  invisible(x)
+}
+
+#' Plot method for lpmec_moderator objects
+#'
+#' Creates a scatter plot of the two pooled half scores of the first measure
+#' with split halves; when no measure has half scores, falls back to a
+#' scatter plot of the first two measure scores.
+#'
+#' @param x An object of class \code{lpmec_moderator}.
+#' @param ... Additional arguments passed to \code{\link[graphics]{plot}}.
+#'
+#' @return No return value, called for side effects (creates a plot).
+#'
+#' @export
+plot.lpmec_moderator <- function(x, ...) {
+  split_available <- vapply(x$measure_names, function(m) {
+    sum(is.finite(x$x_est1[, m]) & is.finite(x$x_est2[, m])) >= 2L
+  }, logical(1L))
+  if (any(split_available)) {
+    measure <- x$measure_names[split_available][1L]
+    plot(x$x_est1[, measure], x$x_est2[, measure],
+         xlab = "First Half Score", ylab = "Second Half Score",
+         main = sprintf("Moderator Half Scores (%s)", measure),
+         pch = 19, ...)
+  } else if (x$n_measures >= 2L) {
+    plot(x$x_est[, 1L], x$x_est[, 2L],
+         xlab = sprintf("Measure Score (%s)", x$measure_names[1L]),
+         ylab = sprintf("Measure Score (%s)", x$measure_names[2L]),
+         main = "Moderator Measure Scores", pch = 19, ...)
+  } else {
+    stop("Plotting requires a measure with half scores or at least two measures.")
+  }
+  abline(a = 0, b = 1, col = "blue", lty = 2)
+}
+
+#' Print method for lpmec_reliability_bounds objects
+#'
+#' @param x An object of class \code{lpmec_reliability_bounds}.
+#' @param ... Additional arguments (currently unused).
+#'
+#' @return The input object \code{x}, returned invisibly.
+#'
+#' @export
+print.lpmec_reliability_bounds <- function(x, ...) {
+  cat("LPMEC Reliability Bounds\n")
+  cat("------------------------\n")
+  cat(sprintf("Measures: %s\n", paste(x$measure_names, collapse = ", ")))
+  cat(sprintf("Designs: %s\n", paste(x$designs, collapse = ", ")))
+  if (!is.null(x$n_boot) && x$n_boot > 0L) {
+    cat(sprintf("Bootstrap replications: %s (failed: %s)\n",
+                x$n_boot, x$n_boot_failed))
+  }
+  reliability <- x$reliability
+  numeric_columns <- vapply(reliability, is.numeric, logical(1L))
+  reliability[numeric_columns] <- lapply(
+    reliability[numeric_columns], round, digits = 3
+  )
+  print(reliability)
+  invisible(x)
+}
