@@ -1,11 +1,11 @@
 # Skip all tests on CRAN to avoid timeouts
 skip_on_cran()
 
-# Prop-6 mini-sim worlds. Measure 1 is built from two half scores that share
-# a within-measure error u (so its split correlation overstates the score
-# reliability); measures 2 and 3 are full scores. In the divergence world,
-# measures 2 and 3 also share a cross-measure method error, which inflates
-# r_23 and biases measure 1's triad downward.
+# Prop-7 mini-sim worlds. Measure 1 is built from two half scores that share
+# a within-measure error u (so its split-based reliability overstates the
+# score reliability); measures 2 and 3 are full scores. In the divergence
+# world, measures 2 and 3 also share a cross-measure method error, which
+# inflates r_23 and biases measure 1's triad downward.
 #
 # Population values (Var(X) = 1):
 #   measure-1 score ~ X + u + (w1 + w2) / 2, so rho*_1 = 1 / (1 + 0.3 + 0.2)
@@ -57,7 +57,7 @@ test_that("spearman-brown step-up and triad identities are exact", {
   expect_true(all(is.na(.lpmec_triad_reliabilities(R[1:2, 1:2]))))
 })
 
-test_that("Prop-6 mini-sim: triads recover rho* and splits sit above it", {
+test_that("Prop-7 mini-sim: triads recover rho* and splits sit above it", {
   world <- simulate_prop6_world(4000, shared_cross_error = FALSE, seed = 21)
   bounds <- lpmec_reliability_bounds(
     split_scores = list(m1 = cbind(world$h1, world$h2)),
@@ -71,16 +71,21 @@ test_that("Prop-6 mini-sim: triads recover rho* and splits sit above it", {
   expect_equal(row1$triad, world$rho_star_1, tolerance = 0.03)
   expect_equal(row2$triad, world$rho_star_2, tolerance = 0.03)
 
-  # shared within-measure half error: split is an upper bound of rho*
+  # raw split correlation and its Spearman-Brown step-up; with shared
+  # within-measure half error both sit above rho*
   expect_equal(row1$split_correlation, world$split_plim_1, tolerance = 0.03)
+  expect_equal(row1$rho_split,
+               2 * row1$split_correlation / (1 + row1$split_correlation),
+               tolerance = 1e-12)
   expect_gt(row1$split_correlation, world$rho_star_1)
+  expect_gt(row1$rho_split, world$rho_star_1)
 
-  # bounds are the [min, max] of the finite candidates
-  expect_equal(row1$rho_lo, min(row1$triad, row1$split_correlation))
-  expect_equal(row1$rho_hi, max(row1$triad, row1$split_correlation))
+  # the sensitivity range is the [min, max] of the score-scale candidates
+  expect_equal(row1$rho_lo, min(row1$triad, row1$rho_split))
+  expect_equal(row1$rho_hi, max(row1$triad, row1$rho_split))
 })
 
-test_that("Prop-6 mini-sim: divergence world orders triad < rho* < split", {
+test_that("Prop-7 mini-sim: divergence world orders triad < rho* < split", {
   world <- simulate_prop6_world(4000, shared_cross_error = TRUE, seed = 22)
   bounds <- lpmec_reliability_bounds(
     split_scores = list(m1 = cbind(world$h1, world$h2)),
@@ -90,10 +95,10 @@ test_that("Prop-6 mini-sim: divergence world orders triad < rho* < split", {
 
   # population values: triad_1 = 8/15, rho*_1 = 2/3, split_1 = 13/17
   expect_lt(row1$triad, world$rho_star_1 - 0.05)
-  expect_gt(row1$split_correlation, world$rho_star_1 + 0.05)
+  expect_gt(row1$rho_split, world$rho_star_1 + 0.05)
   expect_lt(row1$rho_lo, row1$rho_hi)
   expect_equal(row1$rho_lo, row1$triad)
-  expect_equal(row1$rho_hi, row1$split_correlation)
+  expect_equal(row1$rho_hi, row1$rho_split)
 })
 
 test_that("two measures yield NA triads and split-only bounds", {
@@ -108,8 +113,8 @@ test_that("two measures yield NA triads and split-only bounds", {
   rel <- bounds$reliability
   expect_true(all(is.na(rel$triad)))
   expect_true(all(is.finite(rel$split_correlation)))
-  expect_equal(rel$rho_lo, rel$split_correlation)
-  expect_equal(rel$rho_hi, rel$split_correlation)
+  expect_equal(rel$rho_lo, rel$rho_split)
+  expect_equal(rel$rho_hi, rel$rho_split)
 })
 
 test_that("multiple designs produce one reliability block per design", {
@@ -158,7 +163,8 @@ test_that("bootstrap adds uncertainty columns and intermediaries", {
   bounds <- lpmec_reliability_bounds(scores = scores, n_boot = 4L, seed = 99)
   rel <- bounds$reliability
 
-  for (field in c("split_correlation", "triad", "rho_lo", "rho_hi")) {
+  for (field in c("split_correlation", "rho_split", "triad",
+                  "rho_lo", "rho_hi")) {
     for (suffix in c("_se", "_lower", "_upper")) {
       expect_true(paste0(field, suffix) %in% names(rel))
     }
@@ -257,10 +263,12 @@ test_that("reliabilities below the floor are dropped from bounds with one warnin
   )
   expect_length(warnings_seen, 1L)
   expect_match(warnings_seen, "min_reliability")
+  # without a rho_split column the function derives it via Spearman-Brown:
+  # SB(0.02) = 0.039 is floored for row a; SB(0.6) = 0.75 survives for row b
   expect_equal(out$rho_lo[1], 0.4)
   expect_equal(out$rho_hi[1], 0.4)
-  expect_equal(out$rho_lo[2], 0.6)
-  expect_equal(out$rho_hi[2], 0.6)
+  expect_equal(out$rho_lo[2], 0.75)
+  expect_equal(out$rho_hi[2], 0.75)
 
   # no finite candidate above the floor: bounds are NA
   tab_na <- data.frame(

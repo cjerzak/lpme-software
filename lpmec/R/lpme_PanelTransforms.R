@@ -264,10 +264,12 @@
 #'
 #' Fits \code{stats::lm} of \code{Y} on \code{x} (plus optional covariates)
 #' over complete cases and reports the latent slope with a cluster-robust
-#' standard error from \code{sandwich::vcovCL}.
+#' standard error from \code{sandwich::vcovCL}. \code{x_sd} is the sample
+#' standard deviation of \code{x} on the estimation sample, used to place
+#' coefficients on the design-local scale (Proposition 2a).
 #'
 #' @return List with \code{coef}, \code{se}, \code{coef_all}, \code{se_all},
-#'   \code{n_obs}, \code{n_clusters}.
+#'   \code{n_obs}, \code{n_clusters}, \code{x_sd}.
 #'
 #' @noRd
 .lpmec_panel_ols <- function(Y, x, covariates = NULL, cluster) {
@@ -298,13 +300,15 @@
     complete <- complete & rowSums(!is.finite(covariate_matrix)) == 0L
   }
   n_complete <- sum(complete)
+  x_sd <- if (n_complete >= 2L) stats::sd(x[complete]) else NA_real_
   empty_result <- list(
     coef = NA_real_,
     se = NA_real_,
     coef_all = NULL,
     se_all = NULL,
     n_obs = n_complete,
-    n_clusters = length(unique(cluster[complete]))
+    n_clusters = length(unique(cluster[complete])),
+    x_sd = x_sd
   )
   if (n_complete < ncol(covariate_matrix) + 3L) {
     return(empty_result)
@@ -334,7 +338,8 @@
     coef_all = coef_all[-1L],
     se_all = se_all[-1L],
     n_obs = n_complete,
-    n_clusters = length(unique(cluster[complete]))
+    n_clusters = length(unique(cluster[complete])),
+    x_sd = x_sd
   )
 }
 

@@ -296,6 +296,7 @@ summary.lpmec_panel_onerun <- function(object, ...) {
     Corrected_OLS_Upper = object$corrected_ols_upper,
     Corrected_IV = object$corrected_iv_coef,
     Split_Correlation = object$split_correlation,
+    Rho_Split = object$split_rho_score,
     Triad = object$triad,
     First_Stage_F = object$first_stage_fstat,
     row.names = object$measure_names
@@ -350,6 +351,7 @@ summary.lpmec_panel <- function(object, ...) {
     Corrected_IV = object$corrected_iv_coef,
     Corrected_IV_SE = object$corrected_iv_coef_se,
     Split_Correlation = object$split_correlation,
+    Rho_Split = object$split_rho_score,
     Triad = object$triad,
     First_Stage_F = object$first_stage_fstat,
     row.names = object$measure_names
@@ -578,8 +580,8 @@ plot.lpmec_moderator <- function(x, ...) {
 #'
 #' @export
 print.lpmec_reliability_bounds <- function(x, ...) {
-  cat("LPMEC Reliability Bounds\n")
-  cat("------------------------\n")
+  cat("LPMEC Reliability Sensitivity Diagnostics\n")
+  cat("-----------------------------------------\n")
   cat(sprintf("Measures: %s\n", paste(x$measure_names, collapse = ", ")))
   cat(sprintf("Designs: %s\n", paste(x$designs, collapse = ", ")))
   if (!is.null(x$n_boot) && x$n_boot > 0L) {

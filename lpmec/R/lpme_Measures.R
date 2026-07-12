@@ -1,6 +1,6 @@
 # lpme_Measures.R -- measure resolution (items / scores / split scores),
 # sign alignment, Spearman-Brown, triad reliabilities, reliability tables,
-# Prop-6 bounds, and the exported lpmec_reliability_bounds().
+# Prop-7 sensitivity ranges, and the exported lpmec_reliability_bounds().
 
 #' Pooled z-score with NA-safe moments
 #'
@@ -357,9 +357,9 @@
 
 #' Triad ("triangulation") reliabilities from a cross-measure correlation matrix
 #'
-#' For measure m and two other measures l, k (Prop 6b):
-#' \code{rho*_m = r_ml * r_mk / r_lk}, which is consistent when measurement
-#' errors are independent across measures. Requires at least 3 measures;
+#' For measure m and two other measures l, k (Prop 7b):
+#' \code{rho*_m = r_ml * r_mk / r_lk}, which is consistent when the measures'
+#' total errors are pairwise orthogonal. Requires at least 3 measures;
 #' otherwise all entries are \code{NA}. With more than 3 measures the finite
 #' candidates over all pairs \{l, k\} are averaged.
 #'
@@ -393,13 +393,19 @@
 #' Long reliability table over designs and measures
 #'
 #' For each design transform: transforms all measure score columns, computes
-#' gated within-measure split correlations, the gated cross-measure
-#' correlation matrix, and the per-measure triad reliabilities.
+#' gated within-measure split correlations, their Spearman-Brown step-up to
+#' the full-score scale (\code{rho_split}), the gated cross-measure
+#' correlation matrix, and the per-measure triad reliabilities. The raw
+#' split correlation estimates the reliability of a \emph{half} score;
+#' \code{rho_split = 2r/(1+r)} places it on the scale of the full score that
+#' the corrections divide by (exact when the full score is the average of
+#' two independent parallel halves; a parallel-forms approximation
+#' otherwise).
 #'
 #' @param measures Output of \code{.lpmec_resolve_measures}.
 #'
 #' @return List with \code{table} (data.frame: design, measure, source,
-#'   split_correlation, split_n, triad), \code{cor_matrices}, and
+#'   split_correlation, split_n, rho_split, triad), \code{cor_matrices}, and
 #'   \code{cor_n_matrices} (named by design).
 #'
 #' @noRd
@@ -466,6 +472,7 @@
       source = unname(measures$source),
       split_correlation = split_correlation,
       split_n = split_n,
+      rho_split = as.numeric(.lpmec_spearman_brown(split_correlation)),
       triad = unname(triads),
       stringsAsFactors = FALSE
     )
@@ -482,13 +489,17 @@
   )
 }
 
-#' Prop-6 identification bounds from a reliability table
+#' Prop-7 sensitivity range from a reliability table
 #'
-#' Per (measure, design) row, the bounds are the minimum and maximum of the
-#' finite reliability candidates \{triad, split correlation\}. Candidates
-#' below \code{min_reliability} (including negative values) are excluded --
-#' those corrections are not identified in practice -- and a single warning
-#' lists the affected rows.
+#' Per (measure, design) row, \code{rho_lo}/\code{rho_hi} are the minimum
+#' and maximum of the finite reliability candidates \{triad,
+#' score-scale split reliability \code{rho_split}\}. Both candidates
+#' estimate the full score's reliability, so the range compares
+#' like-for-like; it is a sensitivity range, not an identified set, unless
+#' the corresponding orthogonality or ratio condition of Proposition 7 is
+#' maintained. Candidates below \code{min_reliability} (including negative
+#' values) are excluded -- those corrections are not identified in
+#' practice -- and a single warning lists the affected rows.
 #'
 #' @return The input table with \code{rho_lo} and \code{rho_hi} appended.
 #'
@@ -499,9 +510,14 @@
   n_rows <- nrow(reliability_table)
   rho_lo <- rho_hi <- rep(NA_real_, n_rows)
   floored_labels <- character(0L)
+  rho_split_column <- if (is.null(reliability_table$rho_split)) {
+    as.numeric(.lpmec_spearman_brown(reliability_table$split_correlation))
+  } else {
+    reliability_table$rho_split
+  }
   for (i in seq_len(n_rows)) {
     candidates <- c(reliability_table$triad[i],
-                    reliability_table$split_correlation[i])
+                    rho_split_column[i])
     finite_candidates <- candidates[is.finite(candidates)]
     usable <- finite_candidates[finite_candidates >= min_reliability]
     if (length(usable) < length(finite_candidates)) {
@@ -529,14 +545,19 @@
   reliability_table
 }
 
-#' Reliability bounds for latent measures under panel design transforms
+#' Reliability sensitivity diagnostics for latent measures under panel
+#' design transforms
 #'
 #' Estimates, for each latent measure and each requested design transform,
-#' the within-measure split correlation and the cross-measure triad
-#' reliability, and reports the implied identification interval
-#' \code{[rho_lo, rho_hi]} for the measure's design reliability (Proposition 6
-#' of the accompanying working paper). Optionally attaches a cluster (unit)
-#' bootstrap for all reported reliability quantities.
+#' the within-measure split correlation (with its Spearman-Brown step-up to
+#' the full-score scale, \code{rho_split}) and the cross-measure triad
+#' reliability, and reports the sensitivity range
+#' \code{[rho_lo, rho_hi]} spanned by the two candidates for the measure's
+#' design reliability (Proposition 7 of the accompanying working paper).
+#' The range is a sensitivity diagnostic, not a partial-identification
+#' interval, unless Proposition 7's corresponding orthogonality or ratio
+#' condition is maintained. Optionally attaches a cluster (unit) bootstrap
+#' for all reported reliability quantities.
 #'
 #' @param observables Optional list of item matrices or data frames, one per
 #'   measure (a single matrix is treated as one measure). Each measure is
@@ -593,10 +614,11 @@
 #' @return A list of class \code{lpmec_reliability_bounds} containing:
 #' \itemize{
 #'   \item \code{reliability}: data frame with one row per (design, measure)
-#'     holding \code{split_correlation}, \code{split_n}, \code{triad},
-#'     \code{rho_lo}, \code{rho_hi}, and -- when \code{n_boot > 0} --
-#'     bootstrap \code{_se}, \code{_lower}, and \code{_upper} columns for
-#'     each of these reliability quantities.
+#'     holding \code{split_correlation}, \code{split_n}, \code{rho_split}
+#'     (the Spearman-Brown step-up of the split correlation to the
+#'     full-score scale), \code{triad}, \code{rho_lo}, \code{rho_hi}, and --
+#'     when \code{n_boot > 0} -- bootstrap \code{_se}, \code{_lower}, and
+#'     \code{_upper} columns for each of these reliability quantities.
 #'   \item \code{cor_matrices} and \code{cor_n_matrices}: per-design
 #'     cross-measure correlation matrices and complete-pair counts.
 #'   \item \code{x_est}, \code{x_est1}, \code{x_est2}: pooled z-scored,
@@ -609,27 +631,33 @@
 #'     \code{n_boot_failed}.
 #'   \item When \code{n_boot > 0}: \code{Intermediary_BootIndex} and
 #'     per-replication matrices \code{Intermediary_split_correlation},
-#'     \code{Intermediary_triad}, \code{Intermediary_rho_lo},
-#'     \code{Intermediary_rho_hi} (row 1 is the original sample).
+#'     \code{Intermediary_rho_split}, \code{Intermediary_triad},
+#'     \code{Intermediary_rho_lo}, \code{Intermediary_rho_hi} (row 1 is the
+#'     original sample).
 #' }
 #'
 #' @details
 #' The split correlation between two half scores of the same measure
-#' consistently estimates the half-score reliability; when the halves share
-#' correlated error beyond the latent trait (for example, common method or
-#' coder error within a measure), it overstates the design reliability of the
-#' full score and acts as an upper candidate. The triad estimate
-#' \code{rho*_m = r_ml * r_mk / r_lk} built from three (or more) measures is
-#' consistent when measurement errors are independent across measures and is
-#' biased downward when the other two measures share correlated error, making
-#' it the lower candidate. The reported interval
-#' \code{[rho_lo, rho_hi]} is the [min, max] of the finite candidates; with
-#' fewer than 3 measures the triad is not available and both bounds collapse
-#' to the split correlation. Correlations are computed after pooled
-#' z-scoring and sign alignment of all measure scores; correlations with
-#' fewer than \code{min_cor_n} complete pairs, and reliabilities below
-#' \code{min_reliability}, are reported as \code{NA} rather than propagated
-#' into unstable divisions.
+#' consistently estimates the reliability of a \emph{half} score;
+#' \code{rho_split = 2r/(1+r)} steps it up to the scale of the full score
+#' (exact when the full score is the average of two independent parallel
+#' halves, a parallel-forms approximation otherwise). The two candidates
+#' entering the range therefore both target the full score's reliability.
+#' Their directional interpretation is model-dependent (Proposition 7):
+#' when the halves share a common systematic error component orthogonal to
+#' the trait, the split-based value exceeds construct-relevant reliability
+#' (Prop 7a); the triad \code{rho*_m = r_ml * r_mk / r_lk} equals it exactly
+#' when the measures' total errors are pairwise orthogonal (Prop 7b) and is
+#' a lower bound only under the target-specific ratio condition of Prop 7c
+#' -- shared error among the other two measures pushes it down, but shared
+#' error involving the target measure can push it up. Absent those
+#' conditions, \code{[rho_lo, rho_hi]} is the [min, max] of two sensitivity
+#' candidates, not an identified set. With fewer than 3 measures the triad
+#' is not available and both endpoints collapse to \code{rho_split}.
+#' Correlations are computed after pooled z-scoring and sign alignment of
+#' all measure scores; correlations with fewer than \code{min_cor_n}
+#' complete pairs, and reliabilities below \code{min_reliability}, are
+#' reported as \code{NA} rather than propagated into unstable divisions.
 #'
 #' @examples
 #' \donttest{
@@ -775,7 +803,8 @@ lpmec_reliability_bounds <- function(observables = NULL,
   point_table <- computed$point_table
   boot_tables <- computed$boot_tables
 
-  stat_fields <- c("split_correlation", "triad", "rho_lo", "rho_hi")
+  stat_fields <- c("split_correlation", "rho_split", "triad",
+                   "rho_lo", "rho_hi")
   intermediaries <- NULL
   if (n_boot > 0L) {
     column_keys <- paste0(point_table$measure, ".", point_table$design)
@@ -831,6 +860,7 @@ lpmec_reliability_bounds <- function(observables = NULL,
   if (n_boot > 0L) {
     results$Intermediary_BootIndex <- seq_len(n_boot + 1L)
     results$Intermediary_split_correlation <- intermediaries$split_correlation
+    results$Intermediary_rho_split <- intermediaries$rho_split
     results$Intermediary_triad <- intermediaries$triad
     results$Intermediary_rho_lo <- intermediaries$rho_lo
     results$Intermediary_rho_hi <- intermediaries$rho_hi

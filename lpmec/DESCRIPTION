@@ -1,6 +1,6 @@
 Package: lpmec
 Title: Measurement Error Analysis and Correction Under Identification Restrictions
-Version: 1.2.0
+Version: 1.3.0
 Author: Connor Jerzak [aut, cre], Stephen Jessee [aut]
 Authors@R: c(
     person("Connor", "Jerzak", email = "connor.jerzak@gmail.com", role = c("aut", "cre")),

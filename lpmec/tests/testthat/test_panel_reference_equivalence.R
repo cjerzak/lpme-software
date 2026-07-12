@@ -6,8 +6,8 @@ skip_on_cran()
 # estimate_core() below is a line-for-line re-implementation of the verified
 # reference in LatentMeasures/V2/Code/sim_paper/00_common.R:
 #   naive : two-way FE OLS of Y on the pooled-standardized split-1 score
-#   corOLS: Prop 2a, naive * sqrt(rho_pooled_hat) / rho_within_hat
-#   corIV : Prop 2b, within split-IV (instrument = split 2) * sqrt(rho_pooled)
+#   corOLS: Prop 3a, naive * sqrt(rho_pooled_hat) / rho_within_hat
+#   corIV : Prop 3b, within split-IV (instrument = split 2) * sqrt(rho_pooled)
 # ---------------------------------------------------------------------------
 ref_std <- function(x) (x - mean(x)) / sd(x)
 ref_std_mat <- function(M) matrix(ref_std(as.vector(M)), nrow(M))

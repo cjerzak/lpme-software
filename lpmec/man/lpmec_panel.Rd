@@ -5,13 +5,14 @@
 \title{Aggregated panel/fixed-effects measurement-error correction}
 \usage{
 lpmec_panel(
-  Y,
-  unit,
+  Y = NULL,
+  unit = NULL,
   time = NULL,
   observables = NULL,
   scores = NULL,
   split_scores = NULL,
   covariates = NULL,
+  Y_split_scores = NULL,
   design = c("within", "twoway", "difference", "pooled"),
   diff_k = 1L,
   estimation_method = "averaging",
@@ -29,11 +30,15 @@ lpmec_panel(
 }
 \arguments{
 \item{Y}{Numeric outcome vector (one value per panel row). Non-finite
-values are treated as missing.}
+values are treated as missing. Optional when \code{Y_split_scores} is
+supplied (the outcome score is then built from the two halves).}
 
-\item{unit}{Vector of unit (cluster) identifiers, one per row. Required:
-it defines the fixed-effect groups, the exact-gap differencing paths,
-and the cluster-robust standard errors.}
+\item{unit}{Vector of unit (cluster) identifiers, one per row. Required
+for the \code{"within"}, \code{"twoway"}, and \code{"difference"}
+designs (it defines the fixed-effect groups, the exact-gap
+differencing paths, and the cluster-robust standard errors). May be
+\code{NULL} for \code{design = "pooled"} (each row is then its own
+cluster, covering the pure cross-sectional case).}
 
 \item{time}{Optional numeric vector of time identifiers, one per row.
 Required for the \code{"twoway"} and \code{"difference"} designs.
@@ -54,6 +59,17 @@ one per measure.}
 \item{covariates}{Optional matrix or data frame of observed covariates;
 they are design-transformed together with the outcome and scores and
 enter both the OLS and both IV stages. Values must be finite.}
+
+\item{Y_split_scores}{Optional n x 2 matrix of outcome half scores for a
+\emph{latent} outcome (Proposition 4). Each half is pooled z-scored;
+the outcome reliability \code{rho_Y} is the Spearman-Brown step-up of
+the half correlation, and every corrected estimator is additionally
+divided by \code{sqrt(rho_Y)}. When \code{Y} is not supplied, the
+outcome score is the pooled z-score of the mean of the two z-scored
+halves; when \code{Y} is also supplied, it is used as the outcome
+score and the halves only estimate \code{rho_Y} (a sensitivity
+calculation unless the halves' error covariance matches that of
+\code{Y}).}
 
 \item{design}{Panel design transform for estimation: one of
 \code{"within"} (unit demeaning), \code{"twoway"} (iterated
@@ -111,10 +127,15 @@ the bootstrap (the caller's random-number state is restored on exit).}
 A list of class \code{lpmec_panel}. For each aggregated quantity
 \code{<field>} of \code{\link{lpmec_panel_onerun}} -- \code{ols_coef},
 \code{corrected_ols_coef(_split/_triad/_pair)},
-\code{corrected_ols_lower/upper}, \code{iv_coef},
+\code{corrected_ols_lower/upper}, \code{sd_design_x},
+\code{ols_coef_local},
+\code{corrected_ols_coef_local(_split/_triad/_pair)},
+\code{corrected_ols_local_lower/upper}, \code{iv_coef},
 \code{corrected_iv_coef(_within/_cross)}, \code{split_correlation},
-\code{design_split_correlation}, \code{triad}, \code{design_triad},
+\code{design_split_correlation}, \code{split_rho_score},
+\code{design_split_rho_score}, \code{triad}, \code{design_triad},
 \code{pair_correlation}, \code{design_pair_correlation},
+\code{rho_Y_half}, \code{rho_Y},
 \code{first_stage_fstat}, \code{cross_iv_coef},
 \code{corrected_cross_iv_coef}, \code{corrected_cross_iv_pair} -- the
 result holds the original-sample partition-aggregated estimate
@@ -123,7 +144,8 @@ and \code{<field>_upper} (percentile 2.5\%/97.5\%). Also included:
 \code{ols_cluster_se} (analytic cluster-robust SE from the original
 sample), the original-sample \code{reliability} table,
 \code{cor_matrices}, \code{cor_n_matrices}, \code{x_est}, \code{x_est1},
-\code{x_est2}, \code{corrected_ols_source}, \code{corrected_iv_source},
+\code{x_est2}, \code{corrected_ols_source},
+\code{corrected_ols_local_source}, \code{corrected_iv_source},
 metadata (\code{measure_names}, \code{n_measures}, \code{design},
 \code{diff_k}, \code{n_obs}, \code{n_units}, \code{n_boot},
 \code{n_partition}, \code{boot_n_failed}), and -- when

@@ -2,7 +2,8 @@
 % Please edit documentation in R/lpme_Measures.R
 \name{lpmec_reliability_bounds}
 \alias{lpmec_reliability_bounds}
-\title{Reliability bounds for latent measures under panel design transforms}
+\title{Reliability sensitivity diagnostics for latent measures under panel
+design transforms}
 \usage{
 lpmec_reliability_bounds(
   observables = NULL,
@@ -91,10 +92,11 @@ the bootstrap (the caller's random-number state is restored on exit).}
 A list of class \code{lpmec_reliability_bounds} containing:
 \itemize{
   \item \code{reliability}: data frame with one row per (design, measure)
-    holding \code{split_correlation}, \code{split_n}, \code{triad},
-    \code{rho_lo}, \code{rho_hi}, and -- when \code{n_boot > 0} --
-    bootstrap \code{_se}, \code{_lower}, and \code{_upper} columns for
-    each of these reliability quantities.
+    holding \code{split_correlation}, \code{split_n}, \code{rho_split}
+    (the Spearman-Brown step-up of the split correlation to the
+    full-score scale), \code{triad}, \code{rho_lo}, \code{rho_hi}, and --
+    when \code{n_boot > 0} -- bootstrap \code{_se}, \code{_lower}, and
+    \code{_upper} columns for each of these reliability quantities.
   \item \code{cor_matrices} and \code{cor_n_matrices}: per-design
     cross-measure correlation matrices and complete-pair counts.
   \item \code{x_est}, \code{x_est1}, \code{x_est2}: pooled z-scored,
@@ -107,35 +109,45 @@ A list of class \code{lpmec_reliability_bounds} containing:
     \code{n_boot_failed}.
   \item When \code{n_boot > 0}: \code{Intermediary_BootIndex} and
     per-replication matrices \code{Intermediary_split_correlation},
-    \code{Intermediary_triad}, \code{Intermediary_rho_lo},
-    \code{Intermediary_rho_hi} (row 1 is the original sample).
+    \code{Intermediary_rho_split}, \code{Intermediary_triad},
+    \code{Intermediary_rho_lo}, \code{Intermediary_rho_hi} (row 1 is the
+    original sample).
 }
 }
 \description{
 Estimates, for each latent measure and each requested design transform,
-the within-measure split correlation and the cross-measure triad
-reliability, and reports the implied identification interval
-\code{[rho_lo, rho_hi]} for the measure's design reliability (Proposition 6
-of the accompanying working paper). Optionally attaches a cluster (unit)
-bootstrap for all reported reliability quantities.
+the within-measure split correlation (with its Spearman-Brown step-up to
+the full-score scale, \code{rho_split}) and the cross-measure triad
+reliability, and reports the sensitivity range
+\code{[rho_lo, rho_hi]} spanned by the two candidates for the measure's
+design reliability (Proposition 7 of the accompanying working paper).
+The range is a sensitivity diagnostic, not a partial-identification
+interval, unless Proposition 7's corresponding orthogonality or ratio
+condition is maintained. Optionally attaches a cluster (unit) bootstrap
+for all reported reliability quantities.
 }
 \details{
 The split correlation between two half scores of the same measure
-consistently estimates the half-score reliability; when the halves share
-correlated error beyond the latent trait (for example, common method or
-coder error within a measure), it overstates the design reliability of the
-full score and acts as an upper candidate. The triad estimate
-\code{rho*_m = r_ml * r_mk / r_lk} built from three (or more) measures is
-consistent when measurement errors are independent across measures and is
-biased downward when the other two measures share correlated error, making
-it the lower candidate. The reported interval
-\code{[rho_lo, rho_hi]} is the [min, max] of the finite candidates; with
-fewer than 3 measures the triad is not available and both bounds collapse
-to the split correlation. Correlations are computed after pooled
-z-scoring and sign alignment of all measure scores; correlations with
-fewer than \code{min_cor_n} complete pairs, and reliabilities below
-\code{min_reliability}, are reported as \code{NA} rather than propagated
-into unstable divisions.
+consistently estimates the reliability of a \emph{half} score;
+\code{rho_split = 2r/(1+r)} steps it up to the scale of the full score
+(exact when the full score is the average of two independent parallel
+halves, a parallel-forms approximation otherwise). The two candidates
+entering the range therefore both target the full score's reliability.
+Their directional interpretation is model-dependent (Proposition 7):
+when the halves share a common systematic error component orthogonal to
+the trait, the split-based value exceeds construct-relevant reliability
+(Prop 7a); the triad \code{rho*_m = r_ml * r_mk / r_lk} equals it exactly
+when the measures' total errors are pairwise orthogonal (Prop 7b) and is
+a lower bound only under the target-specific ratio condition of Prop 7c
+-- shared error among the other two measures pushes it down, but shared
+error involving the target measure can push it up. Absent those
+conditions, \code{[rho_lo, rho_hi]} is the [min, max] of two sensitivity
+candidates, not an identified set. With fewer than 3 measures the triad
+is not available and both endpoints collapse to \code{rho_split}.
+Correlations are computed after pooled z-scoring and sign alignment of
+all measure scores; correlations with fewer than \code{min_cor_n}
+complete pairs, and reliabilities below \code{min_reliability}, are
+reported as \code{NA} rather than propagated into unstable divisions.
 }
 \examples{
 \donttest{

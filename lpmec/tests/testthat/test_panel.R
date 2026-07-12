@@ -6,7 +6,10 @@ skip_on_cran()
 panel_dat <- make_panel_test_data(n_units = 40L, n_periods = 10L,
                                   sig2U = 0.25, seed = 42L)
 
-test_that(".lpmec_panel_corrections implements the V2 correction algebra exactly", {
+# Spearman-Brown step-up used by the split-based OLS variant
+sb2 <- function(r) 2 * r / (1 + r)
+
+test_that(".lpmec_panel_corrections implements the correction algebra exactly", {
   measure_names <- c("a", "b", "c")
   ols_coef <- c(a = 0.10, b = 0.20, c = 0.30)
   iv_coef_a <- c(a = 0.15, b = NA_real_, c = 0.25)
@@ -45,9 +48,11 @@ test_that(".lpmec_panel_corrections implements the V2 correction algebra exactly
   expect_match(warnings_seen, "min_reliability")
   expect_match(warnings_seen, "c \\(split\\)")
 
-  # corrected OLS = b * sqrt(rho_pooled) / rho_design, per variant
-  expect_equal(out$corrected_ols_coef_split[["a"]], 0.10 * sqrt(0.8) / 0.4,
-               tolerance = 1e-12)
+  # corrected OLS = b * sqrt(rho_pooled) / rho_design, per variant; the
+  # split variant uses the Spearman-Brown step-up of both correlations so
+  # the reliabilities match the full score entered in the regression
+  expect_equal(out$corrected_ols_coef_split[["a"]],
+               0.10 * sqrt(sb2(0.8)) / sb2(0.4), tolerance = 1e-12)
   expect_true(is.na(out$corrected_ols_coef_split[["b"]]))  # unavailable
   expect_true(is.na(out$corrected_ols_coef_split[["c"]]))  # floored
   expect_equal(out$corrected_ols_coef_triad[["b"]], 0.20 * sqrt(0.6) / 0.30,
@@ -56,13 +61,14 @@ test_that(".lpmec_panel_corrections implements the V2 correction algebra exactly
                tolerance = 1e-12)
   expect_true(all(is.na(out$corrected_ols_coef_pair)))  # M = 3: no pair
 
-  # headline = split when available, else triad; interval = [min, max]
+  # headline = split when available, else triad; range = [min, max]
   expect_equal(unname(out$corrected_ols_source), c("split", "triad", "triad"))
   expect_equal(out$corrected_ols_coef[["a"]],
                out$corrected_ols_coef_split[["a"]], tolerance = 1e-12)
   expect_equal(out$corrected_ols_coef[["c"]],
                out$corrected_ols_coef_triad[["c"]], tolerance = 1e-12)
-  candidates_a <- c(0.10 * sqrt(0.8) / 0.4, 0.10 * sqrt(0.7) / 0.35)
+  candidates_a <- c(0.10 * sqrt(sb2(0.8)) / sb2(0.4),
+                    0.10 * sqrt(0.7) / 0.35)
   expect_equal(out$corrected_ols_lower[["a"]], min(candidates_a),
                tolerance = 1e-12)
   expect_equal(out$corrected_ols_upper[["a"]], max(candidates_a),
@@ -77,16 +83,19 @@ test_that(".lpmec_panel_corrections implements the V2 correction algebra exactly
   expect_equal(out$corrected_iv_coef_within[["a"]],
                (0.15 + 0.17) / 2 * sqrt(0.8), tolerance = 1e-12)
 
-  # cross-measure IV: per direction x sqrt(pooled pair correlation), pair =
-  # direction average, per-regressor = average over instruments
-  expect_equal(out$corrected_cross_iv_coef[["a_by_b"]], 0.11 * sqrt(0.6),
+  # cross-measure IV at M >= 3: target-oriented (Prop 3c) -- each m_by_l
+  # multiplied by sqrt of the REGRESSOR's pooled triad reliability, never
+  # by sqrt of the pairwise correlation
+  expect_equal(out$corrected_cross_iv_coef[["a_by_b"]], 0.11 * sqrt(0.7),
                tolerance = 1e-12)
   expect_equal(out$corrected_cross_iv_coef[["b_by_a"]], 0.12 * sqrt(0.6),
                tolerance = 1e-12)
+  expect_equal(out$corrected_cross_iv_coef[["c_by_a"]], 0.14 * sqrt(0.5),
+               tolerance = 1e-12)
   expect_equal(out$corrected_cross_iv_pair[["a_x_b"]],
-               (0.11 + 0.12) / 2 * sqrt(0.6), tolerance = 1e-12)
+               (0.11 * sqrt(0.7) + 0.12 * sqrt(0.6)) / 2, tolerance = 1e-12)
   expect_equal(out$corrected_iv_coef_cross[["a"]],
-               mean(c(0.11 * sqrt(0.6), 0.13 * sqrt(0.5))), tolerance = 1e-12)
+               mean(c(0.11 * sqrt(0.7), 0.13 * sqrt(0.7))), tolerance = 1e-12)
 
   # headline IV: within-split when available, else cross-measure
   expect_equal(out$corrected_iv_coef[["a"]],

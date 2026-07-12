@@ -1,3 +1,59 @@
+# lpmec 1.3.0
+
+## Correction Fixes (results-changing)
+* **Split-based corrected OLS now uses score-scale (Spearman-Brown)
+  reliabilities.** In `split_scores` and `observables` modes the regression
+  uses the full score (the average of the two z-scored halves, or the
+  full-battery estimate) while the raw half-split correlation estimates the
+  reliability of a *half* score, so the previous correction
+  `b * sqrt(r_pooled) / r_design` overcorrected (by tens of percent under
+  aggressive design transforms). The split variant now applies
+  `b * sqrt(SB(r_pooled)) / SB(r_design)` with `SB(r) = 2r / (1 + r)`,
+  matching Assumption 3 of the accompanying paper and agreeing
+  asymptotically with the corrected split-IV. New fields
+  `split_rho_score` / `design_split_rho_score` report the stepped-up
+  values; the raw correlations are still returned. The triad, pair, and
+  split-IV corrections were already correctly scaled and are unchanged, as
+  is the two-measure `scores`-mode path (the V2 reference pipeline).
+* **Cross-measure IV corrections are now target-oriented (Proposition
+  3c).** With 3+ measures, each `m_by_l` coefficient is multiplied by
+  `sqrt` of target `m`'s pooled triad reliability instead of `sqrt` of the
+  pairwise correlation `r_ml` (consistent only under equal reliabilities).
+  The two-measure parallel-pair fallback is unchanged.
+
+## New Methods
+* **Latent outcomes (Proposition 4).** `lpmec_panel_onerun()` and
+  `lpmec_panel()` accept `Y_split_scores` (an n x 2 matrix of outcome half
+  scores): the outcome reliability `rho_Y` is estimated by Spearman-Brown
+  step-up and every corrected estimator is additionally divided by
+  `sqrt(rho_Y)`. `Y` becomes optional (the outcome score is then built from
+  the halves), and `unit` may be `NULL` for `design = "pooled"`, covering
+  the pure cross-sectional case.
+* **Design-local scale (Proposition 2a).** The panel functions report
+  `sd_design_x`, the naive local slope `ols_coef_local` (effect per SD of
+  the design-transformed latent trait), and corrected local coefficients
+  `corrected_ols_coef_local(_split/_triad/_pair)` with their sensitivity
+  range, satisfying the exact local-pooled bridge identity.
+
+## Compatibility
+* `Y_split_scores` is inserted after `covariates` in the signatures of
+  `lpmec_panel_onerun()` and `lpmec_panel()`; calls that passed `design`
+  or later arguments positionally must switch to named arguments.
+
+## Reliability Diagnostics
+* `lpmec_reliability_bounds()` and the panel reliability tables gain a
+  `rho_split` column (Spearman-Brown step-up of the split correlation to
+  the full-score scale); `rho_lo` / `rho_hi` now span `{triad, rho_split}`
+  so both candidates estimate the same full-score target.
+* Documentation reframed per the paper's Proposition 7: the
+  `[rho_lo, rho_hi]` interval is a *sensitivity range*, not a
+  partial-identification interval, unless the corresponding orthogonality
+  or ratio condition is maintained; directional claims about the split and
+  triad candidates are now stated with their conditions.
+* Proposition numbering in the documentation updated to the current
+  manuscript (design correction = Prop 3, latent controls = Prop 5,
+  latent moderators = Prop 6, triangulation = Prop 7).
+
 # lpmec 1.2.0
 
 ## Panel and Fixed-Effects Designs

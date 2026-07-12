@@ -204,7 +204,7 @@
 #'
 #' @details
 #' The correction divides by the square root of the reliability of the score
-#' actually used as the regressor (Proposition 5 of the accompanying working
+#' actually used as the regressor (Proposition 6 of the accompanying working
 #' paper). With a single item battery, the split-half correlation
 #' \code{rho_half} estimates the reliability of a half score, so the
 #' full-battery score reliability is the Spearman-Brown step-up

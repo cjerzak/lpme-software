@@ -14,7 +14,11 @@ infer_orientation_signs(Y, observables, method = c("Y", "PC1"))
 \item{method}{Character string specifying how to orient the indicators.
 \describe{
   \item{\code{"Y"}}{orient each indicator so that its correlation with
-    \code{Y} is positive.}
+    \code{Y} is positive. Caution: this uses the outcome in the
+    construction of the measurement, which is in mild tension with the
+    assumption that measurement error is independent of the outcome
+    error; prefer \code{"PC1"} when the indicators alone determine the
+    orientation.}
   \item{\code{"PC1"}}{orient each indicator so that its correlation with
     the first principal component of \code{observables} is positive.}
 }
