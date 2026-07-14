@@ -159,17 +159,19 @@ Contributions to lpmec are welcome! Feel free to submit a [pull request](https:/
 We thank [Guilherme Duarte](https://duarteguilherme.github.io/), [Jeff Lewis](https://polisci.ucla.edu/person/jeffrey-b-lewis/), [Umberto Mignozzetti](https://umbertomig.com/), [Aaron Pancost](https://sites.google.com/site/aaronpancost/), [Erik Snowberg](https://eriksnowberg.com/), [Chris Tausanovitch](https://ctausanovitch.com/), and participants of an MPSA panel for very helpful comments. We thank [Major Valls](https://www.linkedin.com/in/major-valls-39b6b9229/) for excellent research assistance.
 
 # Citation<a id="references"></a>
-[Connor T. Jerzak](https://github.com/cjerzak), [Stephen A. Jessee](https://github.com/sjessee). Attenuation Bias with Latent Predictors. [arXiv:2507.22218](https://arxiv.org/abs/2507.22218), 2025.
+[Connor T. Jerzak](https://github.com/cjerzak), [Stephen
+A. Jessee](https://github.com/sjessee). Attenuation Bias with Latent
+Predictors. Forthcoming at *Political Analysis* (pending final replication), 2026. [[PDF]](https://arxiv.org/pdf/2507.22218)
 
 ```bibtex
-@misc{jerzak2025attenuationbiaslatentpredictors,
-      title={Attenuation Bias with Latent Predictors},
-      author={Connor T. Jerzak and Stephen A. Jessee},
-      year={2025},
-      eprint={2507.22218},
-      archivePrefix={arXiv},
-      primaryClass={stat.AP},
+@article{jerzak2026attenuationbiaslatent,
+      title={Attenuation Bias with Latent Predictors}, 
+      author={Jerzak, Connor T. and Jessee, Stephen A.},
+      journal={Political Analysis},
+      year={2026},
+      note={Forthcoming pending final replication},
       url={https://arxiv.org/abs/2507.22218},
+      keywords={latent variables, measurement error, attenuation bias, identification restrictions, method of composition}
 }
 ```
 
