@@ -160,12 +160,11 @@ We thank [Guilherme Duarte](https://duarteguilherme.github.io/), [Jeff Lewis](ht
 
 # Citation<a id="references"></a>
 [Connor T. Jerzak](https://github.com/cjerzak), [Stephen
-A. Jessee](https://github.com/sjessee). Attenuation Bias with Latent
-Predictors. Forthcoming at *Political Analysis* (pending final replication), 2026. [[PDF]](https://arxiv.org/pdf/2507.22218)
+A. Jessee](https://github.com/sjessee). Correcting Bias When Using Latent Regressors. Forthcoming at *Political Analysis* (pending final replication), 2026. [[PDF]](https://arxiv.org/pdf/2507.22218)
 
 ```bibtex
 @article{jerzak2026attenuationbiaslatent,
-      title={Attenuation Bias with Latent Predictors}, 
+      title={Correcting Bias When Using Latent Regressors}, 
       author={Jerzak, Connor T. and Jessee, Stephen A.},
       journal={Political Analysis},
       year={2026},
